@@ -7191,3 +7191,412 @@ ASSISTANT - client/src/app/registry.ts
 ASSISTANT ```
 ASSISTANT // entire file content ...
 ASSISTANT ```
+TO LLM 2026-10-11T22:10:22
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER client/src/modules/placement/pages/MyApplicationsPage.tsx
+USER ```
+USER import { useState } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Stack, Text,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaHistory, FaUserCheck } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { DataTable } from "../../../ui/components/DataTable";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import { CpiBadge } from "../components/CpiBadge";
+USER import { HistoryDrawer } from "../components/HistoryDrawer";
+USER import { useApplications, useTransition } from "../api/hooks";
+USER import type { Application } from "../api/types";
+USER 
+USER export default function MyApplicationsPage() {
+USER   const { data, isPending, error } = useApplications();
+USER   const transition = useTransition();
+USER   const [historyFor, setHistoryFor] = useState<number | null>(null);
+USER 
+USER   if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
+USER 
+USER   function withdraw(app: Application) {
+USER     transition.mutate(
+USER       { id: app.id, to_status: "withdrawn", reason: "Withdrawn by the student" },
+USER       {
+USER         onSuccess: () => notifications.show({
+USER           color: "gray", title: "Withdrawn",
+USER           message: `Your application to ${app.posting.title} has been withdrawn.`,
+USER         }),
+USER         onError: (e) => notifications.show({
+USER           color: "red", title: "Could not withdraw", message: errorMessage(e),
+USER         }),
+USER       },
+USER     );
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader
+USER         title="My Applications"
+USER         subtitle="Every application you have submitted, and where it stands"
+USER       />
+USER       <Card padding="lg">
+USER         <DataTable<Application>
+USER           rows={(data?.results ?? []) as Application[]}
+USER           loading={isPending}
+USER           rowKey={(r) => r.id}
+USER           minWidth={900}
+USER           columns={[
+USER             {
+USER               key: "posting", header: "Role",
+USER               render: (r) => (
+USER                 <Stack gap={0}>
+USER                   <Text fw={600}>{r.posting?.title}</Text>
+USER                   <Text size="xs" c="dimmed">{r.posting?.company?.name}</Text>
+USER                 </Stack>
+USER               ),
+USER             },
+USER             {
+USER               key: "cpi_at_apply", header: "CPI at apply",
+USER               // The frozen value: what the decision was made on, not today's CPI.
+USER               render: (r) => (
+USER                 <CpiBadge
+USER                   cpi={r.cpi_at_apply}
+USER                   standing={{
+USER                     semester: r.semester_at_apply, semester_type: null,
+USER                     declared_seq: null, synced_at: null, computed_by: null,
+USER                   }}
+USER                 />
+USER               ),
+USER             },
+USER             { key: "applied_at", header: "Applied",
+USER               render: (r) => r.applied_at
+USER                 ? new Date(r.applied_at).toLocaleDateString() : "—" },
+USER             { key: "status", header: "Status",
+USER               render: (r) => <StatusBadge status={r.status} /> },
+USER             {
+USER               key: "actions", header: "", align: "right",
+USER               render: (r) => (
+USER                 <Group justify="flex-end" gap="xs">
+USER                   {/* "Why is my application at this status?" answered without
+USER                       a support request. */}
+USER                   <ActionIcon
+USER                     variant="subtle" color="gray" aria-label="History"
+USER                     onClick={() => setHistoryFor(r.id)}
+USER                   >
+USER                     <FaHistory size={12} />
+USER                   </ActionIcon>
+USER                   {r.allowed_transitions?.includes("withdrawn") && (
+USER                     <Button
+USER                       size="xs" variant="subtle" color="gray"
+USER                       loading={transition.isPending}
+USER                       onClick={() => withdraw(r)}
+USER                     >
+USER                       Withdraw
+USER                     </Button>
+USER                   )}
+USER                 </Group>
+USER               ),
+USER             },
+USER           ]}
+USER           empty={{
+USER             icon: FaUserCheck,
+USER             title: "You have not applied to anything yet",
+USER             description: "Applications you submit will be tracked here.",
+USER           }}
+USER         />
+USER       </Card>
+USER 
+USER       <HistoryDrawer
+USER         applicationId={historyFor} onClose={() => setHistoryFor(null)}
+USER       />
+USER     </Container>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/modules/leave/api.ts
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/routes.tsx
+USER ```
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/app/registry.ts:
+USER ⋮
+USER │export interface ModuleManifest {
+USER │  code: string;
+USER │  basePath: string;
+USER │  load: () => Promise<{ routes: RouteObject[] }>;
+USER ⋮
+USER 
+USER client/src/lib/http.ts:
+USER ⋮
+USER │export function setUnauthorizedHandler(fn: () => void) {
+USER │  onUnauthorized = fn;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER client/src/ui/components/StatusBadge.tsx:
+USER ⋮
+USER │export function StatusBadge({ status }: { status: string }) {
+USER │  return (
+USER │    <Badge color={COLORS[status] ?? "gray"} variant="light" size="sm">
+USER │      {status.replace(/_/g, " ")}
+USER │    </Badge>
+USER │  );
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/permissions.py:
+USER ⋮
+USER │def HasPermission(*codes: str, require_all: bool = False):  # noqa: N802
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/modules/leave/pages/ApplyLeavePage.tsx
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/pages/MyLeavesPage.tsx
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/pages/ApprovalsPage.tsx
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.
+USER 
+USER Repository rules you must follow:
+USER - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.
+USER - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).
+USER - The module code is "leave", and every permission code starts with "leave.".
+USER - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.
+USER 
+USER Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.
+USER 
+USER Step 7b of 7 — client pages. Read-only: client/src/modules/placement/pages/MyApplicationsPage.tsx (the page pattern to follow), client/src/modules/leave/api.ts, client/src/modules/leave/routes.tsx.
+USER 
+USER Create these pages, each with a default export, reusing PageHeader, DataTable, StatusBadge and ErrorState from client/src/ui/components and Mantine 7 inputs:
+USER 1. client/src/modules/leave/pages/ApplyLeavePage.tsx — the leave application form (category, dates, CL half-day, purpose, Station Leave details, substitute user id).
+USER 2. client/src/modules/leave/pages/MyLeavesPage.tsx — my balances and my applications, with withdraw and cancel actions.
+USER 3. client/src/modules/leave/pages/ApprovalsPage.tsx — requests waiting for my decision, with approve, reject and recommend actions.
+USER 4. client/src/modules/leave/pages/SubstituteRequestsPage.tsx — substitute requests addressed to me, with accept and decline.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
