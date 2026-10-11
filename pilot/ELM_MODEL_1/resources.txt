@@ -22,3 +22,7 @@ System-wide memory free percentage: 12%
 NAME          ID              SIZE      PROCESSOR          CONTEXT    RUNNER      UNTIL              
 qwen3.5:4b    d8b0f5e9760c    4.6 GB    30%/70% CPU/GPU    24576      llamacpp    4 minutes from now    
 System-wide memory free percentage: 12%
+--- after step6 (20:22:01)
+NAME          ID              SIZE      PROCESSOR          CONTEXT    RUNNER      UNTIL              
+qwen3.5:4b    d8b0f5e9760c    4.6 GB    30%/70% CPU/GPU    24576      llamacpp    4 minutes from now    
+System-wide memory free percentage: 13%
