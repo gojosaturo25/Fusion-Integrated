@@ -7,3 +7,4 @@ step4,"Services: withdraw, cancel, extend, resume, inquiry",0,787,1
 step5,"REST API (serializers, views, urls)",0,858,4
 step6,"Register the module in settings and URLs",0,97,2
 step7,"Client wiring (api hooks, routes, module registry)",0,232,3
+step8,"Client pages",0,377,4

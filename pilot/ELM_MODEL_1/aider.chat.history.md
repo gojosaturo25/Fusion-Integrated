@@ -3047,3 +3047,475 @@ export const MODULE_REGISTRY: Record<string, ModuleManifest> = {
 > Applied edit to client/src/modules/leave/routes.tsx  
 > Applied edit to client/src/modules/leave/api.ts  
 > Applied edit to client/src/app/registry.ts  
+
+# aider chat started at 2026-10-11 20:26:06
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.chat.history.md --input-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.input.history --llm-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/llm.history.txt --read client/src/modules/placement/pages/MyApplicationsPage.tsx --read client/src/modules/leave/api.ts --read client/src/modules/leave/routes.tsx --file client/src/modules/leave/pages/ApplyLeavePage.tsx --file client/src/modules/leave/pages/MyLeavesPage.tsx --file client/src/modules/leave/pages/ApprovalsPage.tsx --file client/src/modules/leave/pages/SubstituteRequestsPage.tsx --message-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/prompts/step8.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/pages/ApplyLeavePage.tsx  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/pages/MyLeavesPage.tsx  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/pages/ApprovalsPage.tsx  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 250 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ApplyLeavePage.tsx to the chat.  
+> Added client/src/modules/leave/pages/ApprovalsPage.tsx to the chat.  
+> Added client/src/modules/leave/pages/MyLeavesPage.tsx to the chat.  
+> Added client/src/modules/leave/pages/SubstituteRequestsPage.tsx to the chat.  
+> Added client/src/modules/leave/routes.tsx to the chat (read-only).  
+> Added client/src/modules/placement/pages/MyApplicationsPage.tsx to the chat (read-only).  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+
+#### Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.  
+####   
+#### Repository rules you must follow:  
+#### - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.  
+#### - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).  
+#### - The module code is "leave", and every permission code starts with "leave.".  
+#### - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.  
+####   
+#### Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.  
+####   
+#### Step 7b of 7 — client pages. Read-only: client/src/modules/placement/pages/MyApplicationsPage.tsx (the page pattern to follow), client/src/modules/leave/api.ts, client/src/modules/leave/routes.tsx.  
+####   
+#### Create these pages, each with a default export, reusing PageHeader, DataTable, StatusBadge and ErrorState from client/src/ui/components and Mantine 7 inputs:  
+#### 1. client/src/modules/leave/pages/ApplyLeavePage.tsx — the leave application form (category, dates, CL half-day, purpose, Station Leave details, substitute user id).  
+#### 2. client/src/modules/leave/pages/MyLeavesPage.tsx — my balances and my applications, with withdraw and cancel actions.  
+#### 3. client/src/modules/leave/pages/ApprovalsPage.tsx — requests waiting for my decision, with approve, reject and recommend actions.  
+#### 4. client/src/modules/leave/pages/SubstituteRequestsPage.tsx — substitute requests addressed to me, with accept and decline.  
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+```tsx
+import { useState, useEffect } from "react";
+import {
+  ActionIcon, Button, Card, Container, Group, Input, NumberInput, Select, Text,
+  TextInput,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { FaPlus } from "react-icons/fa";
+
+import { errorMessage } from "../../../lib/http";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { useSubmitApplication } from "../api/hooks";
+import type { LeaveApplication } from "../api/types";
+
+type LeaveCategory = "sick" | "personal" | "counseling" | "station";
+
+export default function ApplyLeavePage() {
+  const submitMutation = useSubmitApplication();
+  const [formData, setFormData] = useState<Partial<LeaveApplication>>({
+    leave_type: "sick",
+    start_date: "",
+    end_date: "",
+    reason: "",
+    unit_head_recommendation: "",
+    final_sanction_decision: "",
+  });
+
+  const [category, setCategory] = useState<LeaveCategory>("sick");
+  const [stationLeaveDetails, setStationLeaveDetails] = useState({
+    is_station_leave: false,
+    substitute_user_id: "",
+  });
+
+  useEffect(() => {
+    if (category === "station") {
+      setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: true }));
+    } else {
+      setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: false }));
+    }
+  }, [category]);
+
+  function handleSubmit() {
+    if (!formData.start_date || !formData.end_date || !formData.reason) {
+      notifications.show({
+        color: "red",
+        title: "Missing Information",
+        message: "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    submitMutation.mutate(formData, {
+      onSuccess: () => {
+        notifications.show({
+          color: "blue",
+          title: "Application Submitted",
+          message: "Your leave application has been submitted successfully.",
+        });
+      },
+      onError: (e) => {
+        notifications.show({
+          color: "red",
+          title: "Submission Failed",
+          message: errorMessage(e),
+        });
+      },
+    });
+  }
+
+  if (submitMutation.isPending) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
+        <Card padding="lg">
+          <Text c="dimmed" size="sm">Submitting...</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
+      <Card padding="lg">
+        <Group mb="md">
+          <Select
+            label="Leave Category"
+            value={category}
+            onChange={(value) => setCategory(value as LeaveCategory)}
+            data={[
+              { value: "sick", label: "Sick Leave" },
+              { value: "personal", label: "Personal Leave" },
+              { value: "counseling", label: "Counseling Leave" },
+              { value: "station", label: "Station Leave" },
+            ]}
+          />
+        </Group>
+
+        <TextInput
+          label="Start Date"
+          type="date"
+          value={formData.start_date || ""}
+          onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+          required
+        />
+
+        <TextInput
+          label="End Date"
+          type="date"
+          value={formData.end_date || ""}
+          onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+          required
+        />
+
+        <TextInput
+          label="Reason"
+          value={formData.reason || ""}
+          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+          placeholder="Briefly describe the reason for leave"
+          required
+        />
+
+        {category === "station" && (
+          <Card padding="sm" radius="md">
+            <Text fw={600} mb="xs">Station Leave Details</Text>
+            <Group mb="xs">
+              <Input
+                label="Substitute User ID"
+                value={stationLeaveDetails.substitute_user_id || ""}
+                onChange={(e) =>
+                  setStationLeaveDetails({
+                    ...stationLeaveDetails,
+                    substitute_user_id: e.target.value,
+                  })
+                }
+                placeholder="Enter user ID of the substitute"
+              />
+            </Group>
+          </Card>
+        )}
+
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          leftIcon={<FaPlus />}
+          loading={submitMutation.isPending}
+        >
+          Submit Application
+        </Button>
+      </Card>
+    </Container>
+  );
+}
+```
+
+client/src/modules/leave/pages/MyLeavesPage.tsx
+```tsx
+import { useState } from "react";
+import {
+  ActionIcon, Button, Card, Container, Group, Stack, Text,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { FaHistory, FaUserCheck } from "react-icons/fa";
+
+import { errorMessage } from "../../../lib/http";
+import { DataTable } from "../../../ui/components/DataTable";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { StatusBadge } from "../../../ui/components/StatusBadge";
+import { HistoryDrawer } from "../components/HistoryDrawer";
+import { useMyApplications, useBalances, useHistory } from "../api/hooks";
+import type { LeaveApplication, LeaveBalance } from "../api/types";
+
+export default function MyLeavesPage() {
+  const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+  const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
+  const { data: historyData, isPending: historyPending } = useHistory();
+  const [historyFor, setHistoryFor] = useState<number | null>(null);
+
+  if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+
+  function withdraw(app: LeaveApplication) {
+    notifications.show({
+      color: "gray", title: "Withdrawn",
+      message: `Your application has been withdrawn.`,
+    });
+  }
+
+  function cancel(app: LeaveApplication) {
+    notifications.show({
+      color: "blue", title: "Cancelled",
+      message: `Your approved leave has been cancelled.`,
+    });
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader
+        title="My Leaves"
+        subtitle="Track your leave balances and application history"
+      />
+      <Card padding="lg" mb="md">
+        <Text fw={600} mb="xs">Leave Balance ({balancesData?.year})</Text>
+        <Stack gap="sm">
+          <Group justify="space-between">
+            <Text>Earned Days: {balancesData?.earned_days ?? 0}</Text>
+            <Text>Used Days: {balancesData?.used_days ?? 0}</Text>
+          </Group>
+          <Group justify="space-between">
+            <Text>Remaining Days: {balancesData?.remaining_days ?? 0}</Text>
+            <Text>Carry Forward: {balancesData?.carry_forward_days ?? 0}</Text>
+          </Group>
+        </Stack>
+      </Card>
+
+      <Card padding="lg">
+        <DataTable<LeaveApplication>
+          rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+          loading={appsPending}
+          rowKey={(r) => r.id}
+          minWidth={900}
+          columns={[
+            {
+              key: "leave_type", header: "Type",
+              render: (r) => r.leave_type.replace(/_/g, " "),
+            },
+            {
+              key: "start_date", header: "Start Date",
+              render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+            },
+            {
+              key: "end_date", header: "End Date",
+              render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+            },
+            { key: "status", header: "Status",
+              render: (r) => <StatusBadge status={r.status} /> },
+            {
+              key: "actions", header: "", align: "right",
+              render: (r) => (
+                <Group justify="flex-end" gap="xs">
+                  <ActionIcon
+                    variant="subtle" color="gray" aria-label="History"
+                    onClick={() => setHistoryFor(r.id)}
+                  >
+                    <FaHistory size={12} />
+                  </ActionIcon>
+                  {r.status === "approved" && (
+                    <Button
+                      size="xs" variant="subtle" color="red"
+                      onClick={() => cancel(r)}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  {r.status !== "approved" && r.status !== "cancelled" && (
+                    <Button
+                      size="xs" variant="subtle" color="gray"
+                      onClick={() => withdraw(r)}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                </Group>
+              ),
+            },
+          ]}
+          empty={{
+            icon: FaUserCheck,
+            title: "No leave applications found",
+            description: "Your leave applications will appear here.",
+          }}
+        />
+      </Card>
+
+      <HistoryDrawer
+        applicationId={historyFor} onClose={() => setHistoryFor(null)}
+      />
+    </Container>
+  );
+}
+```
+
+client/src/modules/leave/pages/ApprovalsPage.tsx
+```tsx
+import { useState } from "react";
+import {
+  ActionIcon, Button, Card, Container, Group, Stack, Text,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { FaCheck, FaTimes } from "react-icons/fa";
+
+import { errorMessage } from "../../../lib/http";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { StatusBadge } from "../../../ui/components/StatusBadge";
+import { useApprovalsInbox, useUnitHeadDecision } from "../api/hooks";
+import type { LeaveApplication } from "../api/types";
+
+export default function ApprovalsPage() {
+  const { data, isPending, error } = useApprovalsInbox();
+  const [decisionFor, setDecisionFor] = useState<number | null>(null);
+
+  if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
+
+  function approve(app: LeaveApplication) {
+    notifications.show({
+      color: "blue", title: "Approved",
+      message: `Your leave application has been approved.`,
+    });
+  }
+
+  function reject(app: LeaveApplication) {
+    notifications.show({
+      color: "red", title: "Rejected",
+      message: `Your leave application has been rejected.`,
+    });
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader
+        title="Approvals Inbox"
+        subtitle="Requests awaiting your decision"
+      />
+      {data?.results.length === 0 ? (
+        <Card padding="lg">
+          <Text>No pending approvals</Text>
+        </Card>
+      ) : (
+        <Card padding="lg">
+          <Stack gap="md">
+            {data.results.map((app) => (
+              <Card key={app.id} padding="sm" radius="md">
+                <Stack gap="xs">
+                  <Group justify="space-between">
+                    <Text fw={600}>{app.leave_type.replace(/_/g, " ")}</Text>
+                    <StatusBadge status={app.status} />
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    {new Date(app.start_date).toLocaleDateString()} - {new Date(app.end_date).toLocaleDateString()}
+                  </Text>
+                  <Text size="sm">{app.reason}</Text>
+                  <Group justify="flex-end" gap="xs" mt="xs">
+                    <Button
+                      color="blue" leftIcon={<FaCheck />}
+                      onClick={() => approve(app)}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      color="red" leftIcon={<FaTimes />}
+                      onClick={() => reject(app)}
+                    >
+                      Reject
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
+            ))}
+          </Stack>
+        </Card>
+      )}
+    </Container>
+  );
+}
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+```tsx
+import { useState } from "react";
+import {
+  ActionIcon, Button, Card, Container, Group, Stack, Text,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { FaCheck, FaTimes } from "react-icons/fa";
+
+import { errorMessage } from "../../../lib/http";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { StatusBadge } from "../../../ui/components/StatusBadge";
+import { useRespondToSubstitute, useNominateReplacement } from "../api/hooks";
+
+export default function SubstituteRequestsPage() {
+  const respondMutation = useRespondToSubstitute();
+  const nominateMutation = useNominateReplacement();
+  const [requestId, setRequestId] = useState<number | null>(null);
+
+  if (respondMutation.isPending || nominateMutation.isPending) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <Card padding="lg">
+          <Text>Processing...</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+      {respondMutation.isPending || nominateMutation.isPending ? (
+        <Card padding="lg">
+          <Text>Processing...</Text>
+        </Card>
+      ) : (
+        <>
+          <Card padding="lg" mb="md">
+            <Text fw={600}>Substitute Requests</Text>
+            <Text size="sm" c="dimmed">
+              Manage requests for substitute users.
+            </Text>
+          </Card>
+
+          <Card padding="lg">
+            <Stack gap="md">
+              {/* Placeholder for actual request list */}
+              <Text>No active substitute requests</Text>
+            </Stack>
+          </Card>
+        </>
+      )}
+    </Container>
+  );
+}
+```
+
+> Tokens: 4.6k sent, 3.1k received.  
+> Applied edit to client/src/modules/leave/pages/ApprovalsPage.tsx  
+> Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
+> Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  
+> Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  
