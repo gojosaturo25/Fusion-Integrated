@@ -1,2 +1,3 @@
 step,title,aider_exit,seconds,files_changed
 step0,"Instructor prompt as given (dry run: response recorded, no files written)",0,48,0
+step1,"Module foundation (apps, registry, models)",0,96,4
