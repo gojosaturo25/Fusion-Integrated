@@ -344,3 +344,195 @@ These files contain the leave policy rules as plain Python functions and datacla
 > Tokens: 4.7k sent, 1.1k received.  
 > Applied edit to modules/leave/domain/__init__.py  
 > Applied edit to modules/leave/domain/policy.py  
+
+# aider chat started at 2026-10-11 22:01:02
+
+> /opt/homebrew/bin/aider --model ollama_chat/phi4-mini --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file /Users/vishalkumar/ELM_MODEL_2/pilot/ELM_MODEL_2/aider.chat.history.md --input-history-file /Users/vishalkumar/ELM_MODEL_2/pilot/ELM_MODEL_2/aider.input.history --llm-history-file /Users/vishalkumar/ELM_MODEL_2/pilot/ELM_MODEL_2/llm.history.txt --read /Users/vishalkumar/elm_specs_md/pilot_kit/chunks/uc_core.md --read /Users/vishalkumar/elm_specs_md/pilot_kit/chunks/br_routing.md --read modules/leave/models.py --read modules/leave/domain/policy.py --file modules/leave/services/__init__.py --file modules/leave/services/applications.py --message-file /Users/vishalkumar/ELM_MODEL_2/pilot/ELM_MODEL_2/prompts/step3.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/modules/leave/services/__init__.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/modules/leave/services/applications.py  
+> Aider v0.86.2  
+> Model: ollama_chat/phi4-mini with whole edit format  
+> Git repo: .git with 241 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/services/__init__.py to the chat.  
+> Added modules/leave/services/applications.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/chunks/uc_core.md to the chat (read-only).  
+> Added modules/leave/domain/policy.py to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/chunks/br_routing.md to the chat (read-only).  
+
+#### Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.  
+####   
+#### Repository rules you must follow:  
+#### - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.  
+#### - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).  
+#### - The module code is "leave", and every permission code starts with "leave.".  
+#### - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.  
+####   
+#### Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.  
+####   
+#### Step 3 of 7 — service layer for applying, substitute consent and decisions, from the read-only use cases EL-UC-001..005 and EL-UC-019 and business rules BR-EL-016..038, with modules/leave/models.py and modules/leave/domain/policy.py read-only.  
+####   
+#### Create these files:  
+#### 1. modules/leave/services/__init__.py — empty.  
+#### 2. modules/leave/services/applications.py — functions, each wrapped in transaction.atomic and appending an action-history row: apply_leave (validate with domain/policy.py, then route either to substitute consent or to the Unit Head), respond_to_substitute_request (accept or decline), nominate_replacement_substitute, unit_head_review (final decision for CL/RH; Recommended / Not Recommended for the other categories), establishment_verify_and_route, final_sanction_decision (approve or reject; deduct the balance on approval). Each function takes the acting user's id and raises ValueError with a clear message when the action is not allowed in the current status.  
+
+Ok, I will:
+
+1. Create the files as requested.
+2. Add the functions to modules/leave/services/applications.py as described.
+
+modules/leave/services/applications.py
+```
+"""
+Service layer for applying, substitute consent and decisions.
+"""
+
+from django.db import transaction
+from django.core.exceptions import ValidationError
+from fusion_auth.principal import Principal
+from fusion_auth.permissions import HasModuleGrant, HasPermission
+from .domain.state_machine import Transition
+from .domain.policy import get_cl_entitlement, get_cl_lapse, get_cl_applicable_categories, get_cl_entitlement, get_cl_lapse, get_cl_applicable_categories
+from .domain.state_machine import Transition
+
+@transaction.atomic
+def apply_leave(principal_id: int, *, leave_category: str, start_date: str, end_date: str, *, reason: str = None, substitute_id: int = None) -> str:
+    """
+    Apply for leave.
+
+    :param principal_id: The id of the acting person.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param reason: The reason for the leave.
+    :param substitute_id: The id of the substitute, if applicable.
+    :return: A string indicating the result of the operation.
+    """
+    try:
+        principal = Principal(user_id=principal_id)
+        if not get_cl_applicable_categories(principal, leave_category):
+            raise ValidationError(f"Leave category '{leave_category}' is not applicable for principal '{principal}'.")
+        
+        if not get_cl_entitlement(principal, leave_category):
+            raise ValidationError(f"Principal '{principal}' does not have entitlement for leave category '{leave_category}'.")
+        
+        if not get_cl_lapse(principal, leave_category):
+            raise ValidationError(f"Leave category '{leave_category}' does not lapse for principal '{principal}'.")
+        
+        transition = Transition(principal, leave_category, "apply", start_date, end_date, reason)
+        transition.apply()
+        
+        if substitute_id:
+            respond_to_substitute_request(substitute_id, principal_id, leave_category, start_date, end_date, reason)
+            return "Leave application submitted. Awaiting substitute consent."
+        else:
+            unit_head_review(principal_id, leave_category, start_date, end_date, reason)
+            return "Leave application submitted. Awaiting Unit Head review."
+    except ValidationError as e:
+        return str(e)
+
+@transaction.atomic
+def respond_to_substitute_request(substitute_id: int, principal_id: int, leave_category: str, start_date: str, end_date: str, *, action: str) -> str:
+    """
+    Respond to a substitute request.
+
+    :param substitute_id: The id of the substitute.
+    :param principal_id: The id of the principal.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param action: The action to take ('accept' or 'decline').
+    :return: A string indicating the result of the operation.
+    """
+    if action not in ["accept", "decline"]:
+        raise ValueError(f"Invalid action '{action}'. Action must be 'accept' or 'decline'.")
+    
+    transition = Transition(substitute_id, principal_id, leave_category, start_date, end_date, action)
+    transition.apply()
+    
+    if action == "accept":
+        return "Substitute consent given. Request routed to Unit Head."
+    else:
+        return "Substitute declined. Request routed to Unit Head for final decision."
+
+@transaction.atomic
+def nominate_replacement_substitute(principal_id: int, leave_category: str, start_date: str, end_date: str, *, substitute_id: int) -> str:
+    """
+    Nominate a replacement substitute.
+
+    :param principal_id: The id of the principal.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param substitute_id: The id of the replacement substitute.
+    :return: A string indicating the result of the operation.
+    """
+    transition = Transition(substitute_id, principal_id, leave_category, start_date, end_date, "nominate_replacement_substitute")
+    transition.apply()
+    
+    return f"Replacement substitute '{substitute_id}' nominated for principal '{principal_id}'. Request routed to Unit Head."
+
+@transaction.atomic
+def unit_head_review(principal_id: int, leave_category: str, start_date: str, end_date: str, *, recommendation: str) -> str:
+    """
+    Unit Head makes a final decision.
+
+    :param principal_id: The id of the principal.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param recommendation: The recommendation ('Recommended' or 'Not Recommended').
+    :return: A string indicating the result of the operation.
+    """
+    if recommendation not in ["Recommended", "Not Recommended"]:
+        raise ValueError(f"Invalid recommendation '{recommendation}'. Recommendation must be 'Recommended' or 'Not Recommended'.")
+    
+    transition = Transition(principal_id, leave_category, "unit_head_review", start_date, end_date, recommendation)
+    transition.apply()
+    
+    return f"Unit Head made a final decision: '{recommendation}' for principal '{principal_id}'."
+
+@transaction.atomic
+def establishment_verify_and_route(principal_id: int, leave_category: str, start_date: str, end_date: str, *, recommendation: str) -> str:
+    """
+    Establishment verifies and routes a higher-sanction request.
+
+    :param principal_id: The id of the principal.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param recommendation: The recommendation ('Recommended' or 'Not Recommended').
+    :return: A string indicating the result of the operation.
+    """
+    if recommendation not in ["Recommended", "Not Recommended"]:
+        raise ValueError(f"Invalid recommendation '{recommendation}'. Recommendation must be 'Recommended' or 'Not Recommended'.")
+    
+    transition = Transition(principal_id, leave_category, "establishment_verify_and_route", start_date, end_date, recommendation)
+    transition.apply()
+    
+    return f"Establishment verified and routed the request. Recommendation: '{recommendation}' for principal '{principal_id}'."
+
+@transaction.atomic
+def final_sanction_decision(principal_id: int, leave_category: str, start_date: str, end_date: str, *, decision: str) -> str:
+    """
+    Make a final sanctioning decision.
+
+    :param principal_id: The id of the principal.
+    :param leave_category: The leave category.
+    :param start_date: The start date of the leave.
+    :param end_date: The end date of the leave.
+    :param decision: The decision ('approve' or 'reject').
+    :return: A string indicating the result of the operation.
+    """
+    if decision not in ["approve", "reject"]:
+        raise ValueError(f"Invalid decision '{decision}'. Decision must be 'approve' or 'reject'.")
+    
+    transition = Transition(principal_id, leave_category, "final_sanction_decision", start_date, end_date, decision)
+    transition.apply()
+    
+    return f"Final sanctioning decision made: '{decision}' for principal '{principal_id}'."
+```
+
+> Tokens: 9.2k sent, 1.6k received.  
+> Applied edit to modules/leave/services/applications.py  

@@ -1907,3 +1907,1030 @@ ASSISTANT         return True
 ASSISTANT ```
 ASSISTANT 
 ASSISTANT These files contain the leave policy rules as plain Python functions and dataclasses, with citations to the corresponding BR-EL id where each rule is enforced.
+TO LLM 2026-10-11T22:01:07
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/chunks/uc_core.md
+USER ```
+USER # ELM Use Cases — apply, substitute, review, sanction (EL-UC-001..005, 019)
+USER 
+USER (Unedited excerpt from the supplied ELM specification package.)
+USER 
+USER ### EL-UC-001 — Apply for Leave
+USER 
+USER - **Primary Actor:** Employee
+USER - **Supporting Actors / Systems:** Academic Calendar service (for VL vacation-period data); Substitute interaction is handled by EL-UC-002 when required.
+USER - **Goal / Description:** Create and submit a valid new leave application and place it into the applicable processing path.
+USER - **Trigger:** Employee needs to request CL, RH, SCL, EL, COL, or VL.
+USER - **Preconditions:** • Employee is authenticated and authorized for own leave activity.
+USER • Current configured leave policy/hierarchy is available; effective published holiday/RH calendar is available; Academic Calendar vacation-period data is available where VL is requested.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Employee starts a new leave application.
+USER 
+USER M2. Employee selects the leave category and requested period and enters purpose/reason and other required information.
+USER 
+USER M3. System captures Station Leave details in the same application when applicable.
+USER 
+USER M4. System validates category eligibility, entitlement/balance, counting/calendar conditions, and impermissible overlap.
+USER 
+USER M5. When responsibility coverage is required, Employee nominates one eligible substitute.
+USER 
+USER M6. Employee submits the application.
+USER 
+USER M7. If substitute consent is required, System places the request in Awaiting Substitute Response; otherwise it routes the request to Unit Head review. A Director-applicant follows the self-sanction path.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 Validation fails: identify the failed condition and do not allow progression.
+USER 
+USER A2 Substitute nomination invalid: reject the nominee and allow another eligible nominee.
+USER 
+USER A3 After a substitute decline, the Employee may invoke EL-UC-019 to nominate a replacement or EL-UC-007 to withdraw.
+USER 
+USER - **Success Postcondition:** A valid submitted request exists in the correct next processing state.
+USER - **Failure / Minimal Guarantee:** No invalid request is allowed to progress; previously entered data may remain available as implementation permits.
+USER - **Related Business Rules:** BR-EL-001–015, BR-EL-020, BR-EL-030–031, BR-EL-036
+USER - **Related Functional Requirements:** CFR-EL-002–003, CFR-EL-011, CFR-EL-015
+USER - **Related Workflow(s):** CW-EL-01
+USER 
+USER ### EL-UC-002 — Respond to Substitute Request
+USER 
+USER - **Primary Actor:** Substitute / Responsibility Holder
+USER - **Supporting Actors / Systems:** Employee
+USER - **Goal / Description:** Accept or decline a nominated responsibility assignment.
+USER - **Trigger:** A substitute responsibility request is assigned to the nominated employee.
+USER - **Preconditions:** • The nominee is an eligible substitute for the responsibility period.
+USER • The associated leave/extension request is awaiting substitute response.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Substitute opens the assigned responsibility request.
+USER 
+USER M2. System presents the applicant, responsibility period, and relevant request context.
+USER 
+USER M3. Substitute selects Accept or Decline.
+USER 
+USER M4. System records the response.
+USER 
+USER M5. If Accept, the consent gate is released and the request proceeds to Unit Head review; if Decline, the request becomes Applicant Action Required.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 If the request is no longer pending, System prevents a stale response.
+USER 
+USER - **Success Postcondition:** The substitute response is recorded and the request enters the outcome-appropriate state.
+USER - **Failure / Minimal Guarantee:** No routing occurs without a valid recorded response.
+USER - **Related Business Rules:** BR-EL-014–015, BR-EL-035–036
+USER - **Related Functional Requirements:** CFR-EL-012, CFR-EL-030
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER 
+USER ### EL-UC-003 — Review Leave-Related Request at Unit Head
+USER 
+USER - **Primary Actor:** Unit Head
+USER - **Supporting Actors / Systems:** Employee; Establishment / final Sanctioning Authority as downstream roles
+USER - **Goal / Description:** Review a routed new-leave, cancellation, or extension request and record the decision/recommendation permitted by the applicable policy.
+USER - **Trigger:** A request enters the Unit Head work queue.
+USER - **Preconditions:** • The request has passed applicable submission/consent gates.
+USER • The Unit Head is the resolved Unit Head for the applicant.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Unit Head opens the assigned request and reviews the request context and available supporting information.
+USER 
+USER M2. For a new CL/RH request, Unit Head records final Approve or Reject.
+USER 
+USER M3. For higher-sanction new leave, cancellation of higher-sanction leave, or EL/COL/VL extension, Unit Head records Recommended or Not Recommended.
+USER 
+USER M4. System records the outcome.
+USER 
+USER M5. A Unit-Head-final outcome completes the decision; a recommendation outcome continues through the configured higher-sanction path.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 Director-applicant cases do not use the normal Unit Head path.
+USER 
+USER A2 Not Recommended for higher-sanction contexts is not a final rejection.
+USER 
+USER - **Success Postcondition:** The Unit Head outcome is recorded and the request is either finally decided or advanced to the configured next stage.
+USER - **Failure / Minimal Guarantee:** No unauthorized or out-of-scope decision is recorded.
+USER - **Related Business Rules:** BR-EL-016–020, BR-EL-023, BR-EL-025, BR-EL-030, BR-EL-036
+USER - **Related Functional Requirements:** CFR-EL-013–016, CFR-EL-019–020
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER 
+USER ### EL-UC-004 — Verify and Route Higher-Sanction Request
+USER 
+USER - **Primary Actor:** Deputy Registrar (Estt.) / Establishment Processing Role
+USER - **Supporting Actors / Systems:** Unit Head; final Sanctioning Authority
+USER - **Goal / Description:** Perform the configured Establishment-level verification/routing step and forward the request to the resolved competent authority.
+USER - **Trigger:** A higher-sanction request reaches an Establishment step that is configured for its path.
+USER - **Preconditions:** • An Establishment step is configured for this request context.
+USER • The required upstream review/consent outcome has been recorded.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Establishment opens the routed work item.
+USER 
+USER M2. System presents the request and resolved routing context.
+USER 
+USER M3. Establishment performs the configured verification/routing checks.
+USER 
+USER M4. System resolves/validates the next competent authority using current hierarchy configuration.
+USER 
+USER M5. Establishment forwards the request to the resolved final Sanctioning Authority.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 If no Establishment step is configured, this use case is bypassed.
+USER 
+USER A2 If routing context is inconsistent or incomplete, do not forward until the inconsistency is resolved through authorized configuration/record handling.
+USER 
+USER - **Success Postcondition:** The request is assigned to the resolved final Sanctioning Authority.
+USER - **Failure / Minimal Guarantee:** The request is not forwarded to an unauthorized/unresolved authority.
+USER - **Related Business Rules:** BR-EL-018–019, BR-EL-023, BR-EL-025, BR-EL-030, BR-EL-036
+USER - **Related Functional Requirements:** CFR-EL-014, CFR-EL-019–020
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER 
+USER ### EL-UC-005 — Make Final Sanctioning Decision
+USER 
+USER - **Primary Actor:** Sanctioning Authority (Deputy Registrar (Estt.), Dean, Registrar, Director, or other configured competent authority)
+USER - **Supporting Actors / Systems:** Employee; Unit Head; Establishment where configured
+USER - **Goal / Description:** Record the final approve/reject decision for a routed higher-sanction new-leave, cancellation, or extension request.
+USER - **Trigger:** A request is assigned to the resolved final Sanctioning Authority.
+USER - **Preconditions:** • The actor is the resolved competent final authority for the request.
+USER • Required upstream routing and consent gates have been completed.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Authority opens the assigned request and reviews the request, recommendation, and available evidence.
+USER 
+USER M2. Authority records Approve or Reject.
+USER 
+USER M3. System records the final decision and notifies the employee.
+USER 
+USER M4. For new-leave approval, System updates the leave record/account.
+USER 
+USER M5. For cancellation approval, System marks the leave Cancelled and restores/adjusts deducted balance; cancellation rejection preserves the original approval.
+USER 
+USER M6. For extension approval, System posts only the incremental additional period; extension rejection preserves the original approved leave.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 SCL purpose admissibility is decided by the applicable Sanctioning Authority; no separate encoded admissibility criterion is required.
+USER 
+USER A2 Director-as-applicant uses the Director-specific self-sanction path.
+USER 
+USER - **Success Postcondition:** A final decision and the context-appropriate completion effects are recorded.
+USER - **Failure / Minimal Guarantee:** No final decision is recorded by an unauthorized authority.
+USER - **Related Business Rules:** BR-EL-004, BR-EL-017–020, BR-EL-023–025, BR-EL-030, BR-EL-036
+USER - **Related Functional Requirements:** CFR-EL-006, CFR-EL-014–016, CFR-EL-019–020
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER 
+USER ### EL-UC-019 — Nominate Replacement Substitute After Decline
+USER 
+USER - **Primary Actor:** Employee
+USER - **Supporting Actors / Systems:** Substitute / Responsibility Holder
+USER - **Goal / Description:** Recover from a substitute decline by nominating one replacement eligible substitute.
+USER - **Trigger:** A nominated substitute declines and the request enters Applicant Action Required.
+USER - **Preconditions:** • The associated request remains pending.
+USER • Responsibility coverage is still required.
+USER - **UC Type:** Actor-triggered
+USER 
+USER Main Success Scenario
+USER 
+USER M1. Employee chooses to replace the declined substitute.
+USER 
+USER M2. Employee nominates one replacement.
+USER 
+USER M3. System validates replacement eligibility.
+USER 
+USER M4. System assigns a fresh substitute request and places the leave/extension request in Awaiting Substitute Response.
+USER 
+USER Alternative / Exception Flows
+USER 
+USER A1 Employee may instead withdraw the pending request where withdrawal is applicable.
+USER 
+USER - **Success Postcondition:** A fresh substitute response is awaited for an eligible replacement.
+USER - **Failure / Minimal Guarantee:** An ineligible replacement is not assigned.
+USER - **Related Business Rules:** BR-EL-014–015, BR-EL-022, BR-EL-036
+USER - **Related Functional Requirements:** CFR-EL-011–012, CFR-EL-018
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER 
+USER ## 3. Retired Use Case
+USER 
+USER - **Use Case:** EL-UC-006 — Modify Pending Request
+USER - **Disposition:** RETIRED
+USER - **Reason:** The adjudicated baseline prohibits in-place post-submission modification. Change before final approval is handled by immediate withdrawal followed, if needed, by a fresh application.
+USER - **Replacement semantics:** CFR-EL-017, CFR-EL-018; BR-EL-034, BR-EL-022; EL-UC-007 and EL-UC-001.
+USER 
+USER ## 4. Event-Triggered Use Cases
+USER ```
+USER 
+USER modules/leave/domain/policy.py
+USER ```
+USER from dataclasses import dataclass
+USER 
+USER @dataclass(frozen=True)
+USER class LeavePolicy:
+USER     # BR-EL-001 — Supported leave-category eligibility
+USER     @staticmethod
+USER     def is_category_applicable(category: str, principal: int) -> bool:
+USER         return category in ["CL", "RH", "SCL", "EL", "COL", "VL"]
+USER 
+USER     # BR-EL-002 — Casual Leave entitlement and lapse
+USER     @staticmethod
+USER     def get_cl_entitlement(principal: int) -> int:
+USER         return 8  # 8 CL days per year
+USER 
+USER     @staticmethod
+USER     def get_cl_lapse(principal: int) -> bool:
+USER         return True  # unused CL lapses at year end
+USER 
+USER     # BR-EL-003 — Restricted Holiday entitlement and applicability
+USER     @staticmethod
+USER     def get_rh_entitlement(principal: int) -> int:
+USER         return 2  # 2 RH days per year
+USER 
+USER     @staticmethod
+USER     def is_rh_applicable(principal: int, rh_date: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-004 — Special Casual Leave entitlement and admissibility
+USER     @staticmethod
+USER     def get_scl_entitlement(principal: int) -> int:
+USER         return 15  # 15 SCL days per year
+USER 
+USER     @staticmethod
+USER     def is_scl_applicable(principal: int, scl_reason: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-005 — Non-faculty Earned Leave credit and carry-forward
+USER     @staticmethod
+USER     def get_el_entitlement(principal: int) -> int:
+USER         return 30  # 30 EL days per year
+USER 
+USER     @staticmethod
+USER     def get_el_carry_forward(principal: int) -> int:
+USER         return 30  # unused EL carries forward
+USER 
+USER     # BR-EL-006 — Faculty Vacation Leave entitlement and vacation-period applicability
+USER     @staticmethod
+USER     def get_vl_entitlement(principal: int) -> int:
+USER         return 60  # 60 VL days per year
+USER 
+USER     @staticmethod
+USER     def is_vl_applicable(principal: int, vl_date: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-007 — VL-to-EL year-end conversion
+USER     @staticmethod
+USER     def convert_vl_to_el(principal: int, vl_days: int) -> int:
+USER         return vl_days // 2  # 2 VL : 1 EL conversion
+USER 
+USER     @staticmethod
+USER     def get_el_from_vl_conversion(principal: int, vl_days: int) -> int:
+USER         return vl_days // 2  # EL created by VL conversion
+USER 
+USER     # BR-EL-008 — Treatment of EL created by VL conversion
+USER     @staticmethod
+USER     def get_el_from_vl_conversion(principal: int, vl_days: int) -> int:
+USER         return vl_days // 2  # EL created by VL conversion
+USER 
+USER     # BR-EL-009 — Commuted Leave entitlement and treatment
+USER     @staticmethod
+USER     def get_col_entitlement(principal: int) -> int:
+USER         return 20  # 20 COL days per year
+USER 
+USER     @staticmethod
+USER     def get_col_lapse(principal: int) -> bool:
+USER         return True  # unused COL carries forward
+USER 
+USER     # BR-EL-010 — Half-day CL treatment
+USER     @staticmethod
+USER     def get_half_day_cl_value() -> float:
+USER         return 0.5  # Half-day CL is 0.5 day
+USER 
+USER     # BR-EL-011 — Continuous-day counting
+USER     @staticmethod
+USER     def count_continuous_days(start_date: str, end_date: str) -> int:
+USER         # Placeholder for actual implementation
+USER         return (end_date - start_date).days + 1
+USER 
+USER     # BR-EL-012 — Applicant non-overlap with half-day CL exception
+USER     @staticmethod
+USER     def is_non_overlapping_with_half_day_cl(start_date: str, end_date: str, existing_cl: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-013 — Substitute eligibility
+USER     @staticmethod
+USER     def is_substitute_eligible(substitute_principal: int, applicant_principal: int, responsibility_period: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-014 — Substitute consent gate and decline recovery
+USER     @staticmethod
+USER     def can_proceed_with_substitute(substitute_principal: int, consent_given: bool) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER 
+USER     # BR-EL-015 — Unit Head final decision
+USER     @staticmethod
+USER     def is_unit_head_final_decision(principal: int, category: str) -> bool:
+USER         # Placeholder for actual implementation
+USER         return True
+USER ```
+USER 
+USER modules/leave/models.py
+USER ```
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/chunks/br_routing.md
+USER ```
+USER # ELM Business Rules — review, routing, lifecycle, authorization (BR-EL-016..038)
+USER 
+USER (Unedited excerpt from the supplied ELM specification package.)
+USER 
+USER ### BR-EL-016 — Unit Head final scope for CL/RH
+USER 
+USER - **Rule Type:** Authority
+USER - **Rule Statement:** For CL and RH, including associated Station Leave, the applicant's Unit Head is the final approve/reject authority except for the Director-specific self-sanction case.
+USER - **Applies To:** New leave / same-hierarchy cancellation
+USER - **Condition / Trigger:** CL/RH request
+USER - **Required Outcome / Constraint:** Final decision is made at Unit Head unless Director exception applies.
+USER - **Related CFRs:** CFR-EL-013, CFR-EL-019
+USER - **Related Use Cases:** EL-UC-003, EL-UC-008
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-017 — Unit Head recommendation for higher-sanction leave
+USER 
+USER - **Rule Type:** Authority / Routing
+USER - **Rule Statement:** For SCL, EL, COL, and VL, the Unit Head records Recommended or Not Recommended; Not Recommended is not a final rejection and both outcomes continue through the applicable higher-sanction path.
+USER - **Applies To:** Higher-sanction new leave/extension/cancellation
+USER - **Condition / Trigger:** Higher-sanction request
+USER - **Required Outcome / Constraint:** Record recommendation and continue routing.
+USER - **Related CFRs:** CFR-EL-014, CFR-EL-019–020
+USER - **Related Use Cases:** EL-UC-003
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER - **Status / Revision Note:** Clarified after adjudication.
+USER 
+USER ### BR-EL-018 — Higher-sanction routing
+USER 
+USER - **Rule Type:** Routing
+USER - **Rule Statement:** SCL, EL, COL, and VL requests requiring higher sanction shall proceed through the current configured hierarchy to the resolved final Sanctioning Authority.
+USER - **Applies To:** Higher-sanction contexts
+USER - **Condition / Trigger:** Routed request
+USER - **Required Outcome / Constraint:** Route to competent final authority using current configuration.
+USER - **Related CFRs:** CFR-EL-014, CFR-EL-019–020
+USER - **Related Use Cases:** EL-UC-003–005
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER - **Status / Revision Note:** Revised to current configuration terminology.
+USER 
+USER ### BR-EL-019 — Authority resolution and optional Establishment step
+USER 
+USER - **Rule Type:** Routing / Authority
+USER - **Rule Statement:** The processing/sanctioning path shall be resolved from applicant, organizational unit, designation/role, leave category, and current hierarchy configuration; an Establishment step and the roles Deputy Registrar (Estt.), Dean, Registrar, and Director occur only where configured.
+USER - **Applies To:** Routing resolution
+USER - **Condition / Trigger:** Higher-sanction request
+USER - **Required Outcome / Constraint:** Resolve and use only configured processing/authority steps.
+USER - **Related CFRs:** CFR-EL-014, CFR-EL-019–020
+USER - **Related Use Cases:** EL-UC-003–005
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER - **Status / Revision Note:** Revised to remove effective-published-policy wording.
+USER 
+USER ### BR-EL-020 — Director self-sanction
+USER 
+USER - **Rule Type:** Authority / Exception
+USER - **Rule Statement:** When the Director is the applicant, the Director-specific self-sanction path replaces the normal Unit Head/higher-authority route.
+USER - **Applies To:** Director-applicant leave
+USER - **Condition / Trigger:** Applicant role = Director
+USER - **Required Outcome / Constraint:** Use Director self-sanction path.
+USER - **Related CFRs:** CFR-EL-015
+USER - **Related Use Cases:** EL-UC-001, EL-UC-005
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-022 — Immediate withdrawal of pending request
+USER 
+USER - **Rule Type:** Lifecycle
+USER - **Rule Statement:** A pending request may be withdrawn at any time before final approval; withdrawal is immediate, terminates remaining approval processing, blocks later approve/reject actions, and informs concerned roles. After final approval, withdrawal is unavailable.
+USER - **Applies To:** Pending request lifecycle
+USER - **Condition / Trigger:** Pending before final approval
+USER - **Required Outcome / Constraint:** Apply immediate terminal withdrawal effects.
+USER - **Related CFRs:** CFR-EL-018
+USER - **Related Use Cases:** EL-UC-007
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Consolidated and strengthened.
+USER 
+USER ### BR-EL-023 — Cancellation of approved leave before start
+USER 
+USER - **Rule Type:** Lifecycle / Routing
+USER - **Rule Statement:** An approved leave may be cancelled only before its start date; cancellation uses the same applicable hierarchy, does not edit the approved leave in place, approval marks the leave Cancelled and restores/adjusts already deducted balance, while rejection leaves the original approval unchanged.
+USER - **Applies To:** Approved-leave cancellation
+USER - **Condition / Trigger:** Approved and not started
+USER - **Required Outcome / Constraint:** Enforce pre-start boundary and context-specific final effects.
+USER - **Related CFRs:** CFR-EL-019
+USER - **Related Use Cases:** EL-UC-008, EL-UC-003–005
+USER - **Related Workflow(s):** CW-EL-02
+USER - **Status / Revision Note:** Expanded with adjudicated outcome effects.
+USER 
+USER ### BR-EL-024 — Fresh application after cancellation
+USER 
+USER - **Rule Type:** Lifecycle
+USER - **Rule Statement:** If revised leave is still required after cancellation, a fresh leave application shall be submitted rather than editing the approved leave in place.
+USER - **Applies To:** Approved-leave change
+USER - **Condition / Trigger:** Successful cancellation followed by revised need
+USER - **Required Outcome / Constraint:** Require fresh application.
+USER - **Related CFRs:** CFR-EL-019
+USER - **Related Use Cases:** EL-UC-008, EL-UC-001
+USER - **Related Workflow(s):** CW-EL-02
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-025 — Extension of ongoing EL/COL/VL
+USER 
+USER - **Rule Type:** Lifecycle / Calculation
+USER - **Rule Statement:** Extension is available only for ongoing EL/COL/VL; it uses applicable eligibility, balance, substitute, calendar and sanction rules; approval posts only the incremental additional period while rejection preserves the original approved leave.
+USER - **Applies To:** Ongoing leave extension
+USER - **Condition / Trigger:** Ongoing EL/COL/VL
+USER - **Required Outcome / Constraint:** Validate/rout appropriately and apply incremental-only approval effect.
+USER - **Related CFRs:** CFR-EL-020
+USER - **Related Use Cases:** EL-UC-009, EL-UC-002–005, EL-UC-019
+USER - **Related Workflow(s):** CW-EL-03
+USER - **Status / Revision Note:** Expanded with adjudicated incremental-posting rule.
+USER 
+USER ### BR-EL-027 — Resumption applicability and review authority
+USER 
+USER - **Rule Type:** Lifecycle / Authority
+USER - **Rule Statement:** Formal resumption review applies to EL, COL, and VL; the employee submits actual resumption information and the applicable Sanctioning Authority reviews it.
+USER - **Applies To:** Resumption
+USER - **Condition / Trigger:** Return from EL/COL/VL
+USER - **Required Outcome / Constraint:** Route submitted resumption to applicable Sanctioning Authority.
+USER - **Related CFRs:** CFR-EL-021
+USER - **Related Use Cases:** EL-UC-010–011
+USER - **Related Workflow(s):** CW-EL-04
+USER - **Status / Revision Note:** Revised verifier identity.
+USER 
+USER ### BR-EL-028 — Normal, early, and late resumption outcome
+USER 
+USER - **Rule Type:** Lifecycle / Account
+USER - **Rule Statement:** If actual resumption equals the approved end date, review causes no adjustment to approved leave period or balance. If actual resumption is earlier or later, after review ELM records the actual leave period, adjusts leave balance accordingly, and synchronizes relevant leave/attendance records.
+USER - **Applies To:** Resumption review
+USER - **Condition / Trigger:** Compare actual vs approved end date
+USER - **Required Outcome / Constraint:** Apply no-adjustment or adjusted synchronization branch.
+USER - **Related CFRs:** CFR-EL-021
+USER - **Related Use Cases:** EL-UC-011
+USER - **Related Workflow(s):** CW-EL-04
+USER - **Status / Revision Note:** Major revision: no generic closure state; late resumption explicitly supported.
+USER 
+USER ### BR-EL-029 — Offline-sanctioned leave synchronization
+USER 
+USER - **Rule Type:** Record integrity
+USER - **Rule Statement:** Only leave already sanctioned through an authorized offline/paper process may be retrospectively recorded; sanction/reference evidence shall be captured, record consistency validated, relevant balance/history synchronized, and no second approval workflow initiated.
+USER - **Applies To:** Offline leave entry
+USER - **Condition / Trigger:** Already-sanctioned leave + acceptable ELM-unavailable context
+USER - **Required Outcome / Constraint:** Synchronize records without new sanction.
+USER - **Related CFRs:** CFR-EL-027
+USER - **Related Use Cases:** EL-UC-016
+USER - **Related Workflow(s):** N/A
+USER - **Status / Revision Note:** Expanded with evidence and consistency requirements.
+USER 
+USER ### BR-EL-030 — Current configured policy and hierarchy
+USER 
+USER - **Rule Type:** Configuration
+USER - **Rule Statement:** ELM validation and routing shall use the current configured leave-policy parameters and hierarchy configuration. No draft/publish/effective-version lifecycle applies to leave-policy parameters in this baseline.
+USER - **Applies To:** Validation/routing/admin config
+USER - **Condition / Trigger:** Current configured values
+USER - **Required Outcome / Constraint:** Use current configuration directly; do not depend on policy publication state.
+USER - **Related CFRs:** CFR-EL-003, CFR-EL-014, CFR-EL-024
+USER - **Related Use Cases:** EL-UC-001, EL-UC-003–005, EL-UC-014
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03
+USER - **Status / Revision Note:** Materially revised from former 'Effective Policy Version' rule.
+USER 
+USER ### BR-EL-031 — Effective published holiday/RH calendar
+USER 
+USER - **Rule Type:** Calendar
+USER - **Rule Statement:** Date and RH validation shall use the currently effective published holiday/RH calendar until a replacement calendar is published.
+USER - **Applies To:** Date/RH validation
+USER - **Condition / Trigger:** Published calendar state
+USER - **Required Outcome / Constraint:** Use current published calendar; activate replacement only when published.
+USER - **Related CFRs:** CFR-EL-003, CFR-EL-005, CFR-EL-025
+USER - **Related Use Cases:** EL-UC-001, EL-UC-015
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Confirmed after adjudication.
+USER 
+USER ### BR-EL-032 — SLA reminder on still-pending task
+USER 
+USER - **Rule Type:** Threshold / Notification
+USER - **Rule Statement:** When an SLA-controlled actionable task reaches its configured reminder threshold, issue a reminder to the responsible user and log it only if the task is still pending; otherwise issue no reminder.
+USER - **Applies To:** EL-UC-021 / SLA reminder-threshold processing
+USER - **Condition / Trigger:** Task at reminder threshold
+USER - **Required Outcome / Constraint:** Pending -> remind+log; non-pending -> no reminder.
+USER - **Related CFRs:** CFR-EL-031
+USER - **Related Use Cases:** EL-UC-021
+USER - **Related Workflow(s):** N/A — reminder alone does not create a workflow transition.
+USER - **Status / Revision Note:** Strengthened with pending-only guard.
+USER 
+USER ### BR-EL-033 — SLA escalation on still-pending task
+USER 
+USER - **Rule Type:** Threshold / Escalation
+USER - **Rule Statement:** When an SLA-controlled actionable task remains pending past its configured escalation threshold, the system shall perform the configured escalation action: notify the configured higher/responsible authority and, where the escalation configuration changes routing/responsibility, apply that routing/responsibility change; the escalation action shall be logged. If the task is no longer pending, no escalation shall be issued.
+USER - **Applies To:** EL-UC-021 / SLA escalation-threshold processing
+USER - **Condition / Trigger:** Task past escalation threshold
+USER - **Required Outcome / Constraint:** Pending -> configured notify/escalate action + log; non-pending -> no escalation.
+USER - **Related CFRs:** CFR-EL-032
+USER - **Related Use Cases:** EL-UC-021
+USER - **Related Workflow(s):** Conditional cross-cutting trace to the applicable CW-EL-01–04 only when escalation changes routing/responsibility; notification-only escalation = N/A.
+USER - **Status / Revision Note:** Pending-only guard retained; notification-only and routing/responsibility-changing escalation are distinguished formally.
+USER 
+USER ### BR-EL-034 — No post-submission modification
+USER 
+USER - **Rule Type:** Lifecycle constraint
+USER - **Rule Statement:** A submitted pending leave request shall not be modified in place. If change is needed before final approval, the employee may withdraw and submit a new application if needed.
+USER - **Applies To:** Pending request
+USER - **Condition / Trigger:** Submitted and pending
+USER - **Required Outcome / Constraint:** Block in-place modification; preserve withdrawal/new-application route.
+USER - **Related CFRs:** CFR-EL-017
+USER - **Related Use Cases:** EL-UC-007, EL-UC-001
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** New replacement rule for retired BR-EL-021.
+USER 
+USER ### BR-EL-035 — Actionable task assignment notification
+USER 
+USER - **Rule Type:** Notification
+USER - **Rule Statement:** When an actionable workflow task is assigned to a user, ELM shall notify the assigned user.
+USER - **Applies To:** Task assignment
+USER - **Condition / Trigger:** New actionable assignment
+USER - **Required Outcome / Constraint:** Generate assignment notification.
+USER - **Related CFRs:** CFR-EL-030
+USER - **Related Use Cases:** EL-UC-002–005, EL-UC-011; EL-UC-021
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-02; CW-EL-03; CW-EL-04
+USER - **Status / Revision Note:** New explicit rule from adjudicated PS.
+USER 
+USER ### BR-EL-036 — Role-based authorization
+USER 
+USER - **Rule Type:** Authorization
+USER - **Rule Statement:** ELM capabilities shall be available only to users authorized for the corresponding employee, processing, sanctioning, or administrative role.
+USER - **Applies To:** All protected ELM actions
+USER - **Condition / Trigger:** Attempted protected action
+USER - **Required Outcome / Constraint:** Permit only role-authorized action.
+USER - **Related CFRs:** CFR-EL-001
+USER - **Related Use Cases:** All actor UCs
+USER - **Related Workflow(s):** All composite workflows
+USER - **Status / Revision Note:** New explicit cross-cutting rule from PS.
+USER 
+USER ### BR-EL-037 — Administrative maintenance is not sanctioning
+USER 
+USER - **Rule Type:** Authorization / Record integrity
+USER - **Rule Statement:** Authorized leave-record maintenance/correction shall not itself create a new sanctioning decision; retrospective offline entry is also synchronization rather than a second approval.
+USER - **Applies To:** Administrative record maintenance
+USER - **Condition / Trigger:** Admin maintenance action
+USER - **Required Outcome / Constraint:** Preserve separation between record maintenance and sanctioning.
+USER - **Related CFRs:** CFR-EL-026–027
+USER - **Related Use Cases:** EL-UC-016–017
+USER - **Related Workflow(s):** N/A
+USER - **Status / Revision Note:** New explicit cross-cutting distinction.
+USER 
+USER ### BR-EL-038 — Configurable SLA thresholds
+USER 
+USER - **Rule Type:** Configuration
+USER - **Rule Statement:** Reminder and escalation thresholds for SLA-controlled actionable workflow tasks shall be configurable by an authorized administrative role and shall govern EL-UC-021 event-triggered SLA processing.
+USER - **Applies To:** SLA configuration
+USER - **Condition / Trigger:** Authorized threshold change
+USER - **Required Outcome / Constraint:** Store valid thresholds and use them in EL-UC-021.
+USER - **Related CFRs:** CFR-EL-029
+USER - **Related Use Cases:** EL-UC-018; EL-UC-021
+USER - **Related Workflow(s):** N/A
+USER - **Status / Revision Note:** New explicit configuration rule.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/app/registry.ts:
+USER ⋮
+USER │export interface ModuleManifest {
+USER │  code: string;
+USER │  basePath: string;
+USER │  load: () => Promise<{ routes: RouteObject[] }>;
+USER ⋮
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/permissions.py:
+USER ⋮
+USER │def HasPermission(*codes: str, require_all: bool = False):  # noqa: N802
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/services/applications.py
+USER ```
+USER ```
+USER 
+USER modules/leave/services/__init__.py
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.
+USER 
+USER Repository rules you must follow:
+USER - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.
+USER - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).
+USER - The module code is "leave", and every permission code starts with "leave.".
+USER - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.
+USER 
+USER Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.
+USER 
+USER Step 3 of 7 — service layer for applying, substitute consent and decisions, from the read-only use cases EL-UC-001..005 and EL-UC-019 and business rules BR-EL-016..038, with modules/leave/models.py and modules/leave/domain/policy.py read-only.
+USER 
+USER Create these files:
+USER 1. modules/leave/services/__init__.py — empty.
+USER 2. modules/leave/services/applications.py — functions, each wrapped in transaction.atomic and appending an action-history row: apply_leave (validate with domain/policy.py, then route either to substitute consent or to the Unit Head), respond_to_substitute_request (accept or decline), nominate_replacement_substitute, unit_head_review (final decision for CL/RH; Recommended / Not Recommended for the other categories), establishment_verify_and_route, final_sanction_decision (approve or reject; deduct the balance on approval). Each function takes the acting user's id and raises ValueError with a clear message when the action is not allowed in the current status.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-11T22:05:34
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Create the files as requested.
+ASSISTANT 2. Add the functions to modules/leave/services/applications.py as described.
+ASSISTANT 
+ASSISTANT modules/leave/services/applications.py
+ASSISTANT ```
+ASSISTANT """
+ASSISTANT Service layer for applying, substitute consent and decisions.
+ASSISTANT """
+ASSISTANT 
+ASSISTANT from django.db import transaction
+ASSISTANT from django.core.exceptions import ValidationError
+ASSISTANT from fusion_auth.principal import Principal
+ASSISTANT from fusion_auth.permissions import HasModuleGrant, HasPermission
+ASSISTANT from .domain.state_machine import Transition
+ASSISTANT from .domain.policy import get_cl_entitlement, get_cl_lapse, get_cl_applicable_categories, get_cl_entitlement, get_cl_lapse, get_cl_applicable_categories
+ASSISTANT from .domain.state_machine import Transition
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def apply_leave(principal_id: int, *, leave_category: str, start_date: str, end_date: str, *, reason: str = None, substitute_id: int = None) -> str:
+ASSISTANT     """
+ASSISTANT     Apply for leave.
+ASSISTANT 
+ASSISTANT     :param principal_id: The id of the acting person.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param reason: The reason for the leave.
+ASSISTANT     :param substitute_id: The id of the substitute, if applicable.
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     try:
+ASSISTANT         principal = Principal(user_id=principal_id)
+ASSISTANT         if not get_cl_applicable_categories(principal, leave_category):
+ASSISTANT             raise ValidationError(f"Leave category '{leave_category}' is not applicable for principal '{principal}'.")
+ASSISTANT         
+ASSISTANT         if not get_cl_entitlement(principal, leave_category):
+ASSISTANT             raise ValidationError(f"Principal '{principal}' does not have entitlement for leave category '{leave_category}'.")
+ASSISTANT         
+ASSISTANT         if not get_cl_lapse(principal, leave_category):
+ASSISTANT             raise ValidationError(f"Leave category '{leave_category}' does not lapse for principal '{principal}'.")
+ASSISTANT         
+ASSISTANT         transition = Transition(principal, leave_category, "apply", start_date, end_date, reason)
+ASSISTANT         transition.apply()
+ASSISTANT         
+ASSISTANT         if substitute_id:
+ASSISTANT             respond_to_substitute_request(substitute_id, principal_id, leave_category, start_date, end_date, reason)
+ASSISTANT             return "Leave application submitted. Awaiting substitute consent."
+ASSISTANT         else:
+ASSISTANT             unit_head_review(principal_id, leave_category, start_date, end_date, reason)
+ASSISTANT             return "Leave application submitted. Awaiting Unit Head review."
+ASSISTANT     except ValidationError as e:
+ASSISTANT         return str(e)
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def respond_to_substitute_request(substitute_id: int, principal_id: int, leave_category: str, start_date: str, end_date: str, *, action: str) -> str:
+ASSISTANT     """
+ASSISTANT     Respond to a substitute request.
+ASSISTANT 
+ASSISTANT     :param substitute_id: The id of the substitute.
+ASSISTANT     :param principal_id: The id of the principal.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param action: The action to take ('accept' or 'decline').
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     if action not in ["accept", "decline"]:
+ASSISTANT         raise ValueError(f"Invalid action '{action}'. Action must be 'accept' or 'decline'.")
+ASSISTANT     
+ASSISTANT     transition = Transition(substitute_id, principal_id, leave_category, start_date, end_date, action)
+ASSISTANT     transition.apply()
+ASSISTANT     
+ASSISTANT     if action == "accept":
+ASSISTANT         return "Substitute consent given. Request routed to Unit Head."
+ASSISTANT     else:
+ASSISTANT         return "Substitute declined. Request routed to Unit Head for final decision."
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def nominate_replacement_substitute(principal_id: int, leave_category: str, start_date: str, end_date: str, *, substitute_id: int) -> str:
+ASSISTANT     """
+ASSISTANT     Nominate a replacement substitute.
+ASSISTANT 
+ASSISTANT     :param principal_id: The id of the principal.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param substitute_id: The id of the replacement substitute.
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     transition = Transition(substitute_id, principal_id, leave_category, start_date, end_date, "nominate_replacement_substitute")
+ASSISTANT     transition.apply()
+ASSISTANT     
+ASSISTANT     return f"Replacement substitute '{substitute_id}' nominated for principal '{principal_id}'. Request routed to Unit Head."
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def unit_head_review(principal_id: int, leave_category: str, start_date: str, end_date: str, *, recommendation: str) -> str:
+ASSISTANT     """
+ASSISTANT     Unit Head makes a final decision.
+ASSISTANT 
+ASSISTANT     :param principal_id: The id of the principal.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param recommendation: The recommendation ('Recommended' or 'Not Recommended').
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     if recommendation not in ["Recommended", "Not Recommended"]:
+ASSISTANT         raise ValueError(f"Invalid recommendation '{recommendation}'. Recommendation must be 'Recommended' or 'Not Recommended'.")
+ASSISTANT     
+ASSISTANT     transition = Transition(principal_id, leave_category, "unit_head_review", start_date, end_date, recommendation)
+ASSISTANT     transition.apply()
+ASSISTANT     
+ASSISTANT     return f"Unit Head made a final decision: '{recommendation}' for principal '{principal_id}'."
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def establishment_verify_and_route(principal_id: int, leave_category: str, start_date: str, end_date: str, *, recommendation: str) -> str:
+ASSISTANT     """
+ASSISTANT     Establishment verifies and routes a higher-sanction request.
+ASSISTANT 
+ASSISTANT     :param principal_id: The id of the principal.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param recommendation: The recommendation ('Recommended' or 'Not Recommended').
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     if recommendation not in ["Recommended", "Not Recommended"]:
+ASSISTANT         raise ValueError(f"Invalid recommendation '{recommendation}'. Recommendation must be 'Recommended' or 'Not Recommended'.")
+ASSISTANT     
+ASSISTANT     transition = Transition(principal_id, leave_category, "establishment_verify_and_route", start_date, end_date, recommendation)
+ASSISTANT     transition.apply()
+ASSISTANT     
+ASSISTANT     return f"Establishment verified and routed the request. Recommendation: '{recommendation}' for principal '{principal_id}'."
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def final_sanction_decision(principal_id: int, leave_category: str, start_date: str, end_date: str, *, decision: str) -> str:
+ASSISTANT     """
+ASSISTANT     Make a final sanctioning decision.
+ASSISTANT 
+ASSISTANT     :param principal_id: The id of the principal.
+ASSISTANT     :param leave_category: The leave category.
+ASSISTANT     :param start_date: The start date of the leave.
+ASSISTANT     :param end_date: The end date of the leave.
+ASSISTANT     :param decision: The decision ('approve' or 'reject').
+ASSISTANT     :return: A string indicating the result of the operation.
+ASSISTANT     """
+ASSISTANT     if decision not in ["approve", "reject"]:
+ASSISTANT         raise ValueError(f"Invalid decision '{decision}'. Decision must be 'approve' or 'reject'.")
+ASSISTANT     
+ASSISTANT     transition = Transition(principal_id, leave_category, "final_sanction_decision", start_date, end_date, decision)
+ASSISTANT     transition.apply()
+ASSISTANT     
+ASSISTANT     return f"Final sanctioning decision made: '{decision}' for principal '{principal_id}'."
+ASSISTANT ```
