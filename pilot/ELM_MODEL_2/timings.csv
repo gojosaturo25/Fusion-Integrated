@@ -3,3 +3,4 @@ step0,"Instructor prompt as given (dry run: response recorded, no files written)
 step1,"Module foundation (apps, registry, models)",0,96,4
 step2,"Domain policy rules",0,179,2
 step3,"Services: apply, substitute, review and sanction",0,274,2
+step4,"Services: withdraw, cancel, extend, resume, inquiry",0,81,1
