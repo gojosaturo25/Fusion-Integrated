@@ -10268,3 +10268,808 @@ ASSISTANT     path("api/v1/leave/", include("modules.leave.api.urls")),
 ASSISTANT     path("api/v1/placement/", include("modules.placement.api.urls")),
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-10-11T20:22:16
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER client/src/modules/placement/routes.tsx
+USER ```
+USER import { lazy } from "react";
+USER import { Navigate, type RouteObject } from "react-router-dom";
+USER 
+USER /** One lazy chunk per page. Vite can only split these if the import() argument
+USER  *  is a static literal — a computed path silently bundles everything. */
+USER const PostingsPage = lazy(() => import("./pages/PostingsPage"));
+USER const MyApplicationsPage = lazy(() => import("./pages/MyApplicationsPage"));
+USER const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
+USER const OffersPage = lazy(() => import("./pages/OffersPage"));
+USER const CompaniesPage = lazy(() => import("./pages/CompaniesPage"));
+USER const InterviewsPage = lazy(() => import("./pages/InterviewsPage"));
+USER const AnnouncementsPage = lazy(() => import("./pages/AnnouncementsPage"));
+USER const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+USER const StudentCpiPage = lazy(() => import("./pages/StudentCpiPage"));
+USER const RegistrationPage = lazy(() => import("./pages/RegistrationPage"));
+USER const RegistrationApprovalsPage = lazy(
+USER   () => import("./pages/RegistrationApprovalsPage"));
+USER 
+USER /** Paths are RELATIVE — the shell mounts them under the manifest's basePath.
+USER  *
+USER  *  Every entry here has a matching nav item in the server's registry.py, and
+USER  *  that correspondence matters: the sidebar is built server-side, so a nav item
+USER  *  without a route here renders a link that goes nowhere. */
+USER export const routes: RouteObject[] = [
+USER   { index: true, element: <Navigate to="postings" replace /> },
+USER   { path: "registration", element: <RegistrationPage /> },
+USER   { path: "registration-approvals", element: <RegistrationApprovalsPage /> },
+USER   { path: "postings", element: <PostingsPage /> },
+USER   { path: "mine", element: <MyApplicationsPage /> },
+USER   { path: "offers", element: <OffersPage /> },
+USER   { path: "applications", element: <ApplicationsPage /> },
+USER   { path: "companies", element: <CompaniesPage /> },
+USER   { path: "interviews", element: <InterviewsPage /> },
+USER   { path: "announcements", element: <AnnouncementsPage /> },
+USER   { path: "students-cpi", element: <StudentCpiPage /> },
+USER   { path: "reports", element: <ReportsPage /> },
+USER ];
+USER ```
+USER 
+USER modules/leave/api/urls.py
+USER ```
+USER """
+USER URL patterns for the Leave Management API.
+USER Maps HTTP methods and paths to DRF views.
+USER """
+USER 
+USER from django.urls import path, include
+USER from rest_framework.routers import DefaultRouter
+USER 
+USER from modules.leave.api.views import (
+USER     MyApplicationsView,
+USER     ApplyLeaveView,
+USER     ApplicationDetailView,
+USER     WithdrawApplicationView,
+USER     CancelApprovedLeaveView,
+USER     ExtendLeaveView,
+USER     SubmitResumptionView,
+USER     RespondToSubstituteView,
+USER     NominateReplacementSubstituteView,
+USER     ApprovalsInboxView,
+USER     UnitHeadDecisionView,
+USER     UnitHeadRecommendationView,
+USER     EstablishmentVerifyAndRouteView,
+USER     FinalSanctionDecisionView,
+USER     DecideCancellationView,
+USER     BalancesView,
+USER     HistoryView,
+USER     ReviewResumptionView,
+USER )
+USER 
+USER # Router for generic CRUD if needed in future, though we use specific views here.
+USER router = DefaultRouter()
+USER 
+USER urlpatterns = [
+USER     # Application Management
+USER     path("my-applications/", MyApplicationsView.as_view(), name="my-applications-list"),
+USER     path("apply/", ApplyLeaveView.as_view(), name="apply-leave"),
+USER     
+USER     # Single Application Detail (used by all actions)
+USER     path("<int:pk>/", ApplicationDetailView.as_view(), name="application-detail"),
+USER     
+USER     # Lifecycle Actions on Application
+USER     path("<int:pk>/withdraw/", WithdrawApplicationView.as_view(), name="withdraw-application"),
+USER     path("<int:pk>/cancel/", CancelApprovedLeaveView.as_view(), name="cancel-approved-leave"),
+USER     path("<int:pk>/extend/", ExtendLeaveView.as_view(), name="extend-leave"),
+USER     path("<int:pk>/resumption-submit/", SubmitResumptionView.as_view(), name="submit-resumption"),
+USER     path("<int:pk>/substitute/respond/", RespondToSubstituteView.as_view(), name="respond-to-substitute"),
+USER     path("<int:pk>/substitute/nominate-replacement/", NominateReplacementSubstituteView.as_view(), name="nominate-replacement-substitute"),
+USER     
+USER     # Decision Actions (Inbox and specific decisions)
+USER     path("approvals-inbox/", ApprovalsInboxView.as_view(), name="approvals-inbox-list"),
+USER     path("<int:pk>/decide-unit-head/", UnitHeadDecisionView.as_view(), name="unit-head-decision"),
+USER     path("<int:pk>/decide-recommendation/", UnitHeadRecommendationView.as_view(), name="unit-head-recommendation"),
+USER     path("<int:pk>/establishment-route/", EstablishmentVerifyAndRouteView.as_view(), name="establishment-route"),
+USER     path("<int:pk>/final-sanction/", FinalSanctionDecisionView.as_view(), name="final-sanction-decision"),
+USER     path("<int:pk>/decide-cancellation/", DecideCancellationView.as_view(), name="decide-cancellation"),
+USER     
+USER     # Resumption Review (Specific to resumption applications)
+USER     path("<int:pk>/resumption-review/", ReviewResumptionView.as_view(), name="review-resumption"),
+USER     
+USER     # Balances and History
+USER     path("balances/<int:year>/", BalancesView.as_view(), name="user-balances"),
+USER     path("history/", HistoryView.as_view(), name="user-history"),
+USER ]
+USER ```
+USER 
+USER modules/leave/registry.py
+USER ```
+USER """What the server tells the shell about this module (ADR-0010).
+USER 
+USER Nav items carry `required_permission` and the server filters before sending —
+USER the client does zero filtering, so a link a role cannot use never reaches the
+USER browser at all.
+USER """
+USER MODULE = {
+USER     "code": "leave",
+USER     "label": "Leave Management",
+USER     "icon": "CalendarAlt",
+USER     "base_path": "/leave",
+USER     "nav_section": "Leave",
+USER     "sort_order": 5,
+USER     "status": "active",
+USER }
+USER 
+USER NAV_ITEMS = [
+USER     # -- Employee-facing actions -------------------------------------------
+USER     {"code": "leave.apply", "label": "Apply for Leave",
+USER      "icon": "PlusCircle",
+USER      "to": "/leave/apply",
+USER      "required_permission": "leave.application.create",
+USER      "sort_order": 5},
+USER     {"code": "leave.mine", "label": "My Leave",
+USER      "icon": "UserCheck",
+USER      "to": "/leave/mine",
+USER      "required_permission": "leave.balance.view_self",
+USER      "sort_order": 10},
+USER     {"code": "leave.substitute", "label": "Nominated Substitute",
+USER      "icon": "Users",
+USER      "to": "/leave/substitute",
+USER      "required_permission": "leave.application.view_self",
+USER      "sort_order": 15},
+USER 
+USER     # -- Unit Head / Sanctioning Authority actions ------------------------
+USER     {"code": "leave.approvals", "label": "Leave Approvals",
+USER      "icon": "CheckCircle",
+USER      "to": "/leave/approvals",
+USER      "required_permission": "leave.application.review",
+USER      "sort_order": 20},
+USER 
+USER     # -- Administrative actions --------------------------------------------
+USER     {"code": "leave.admin", "label": "Leave Administration",
+USER      "icon": "Cog",
+USER      "to": "/leave/admin",
+USER      "required_permission": "leave.admin.manage",
+USER      "sort_order": 30},
+USER ]
+USER 
+USER #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
+USER PERMISSIONS = [
+USER     ("leave.application.create", "Create a leave application"),
+USER     ("leave.application.view", "View all applications"),
+USER     ("leave.application.view_self", "View one's own applications"),
+USER     ("leave.application.review", "Review and recommend applications"),
+USER     ("leave.application.approve", "Approve or reject applications"),
+USER     ("leave.balance.view", "View leave balances"),
+USER     ("leave.balance.view_self", "View one's own leave balance"),
+USER     ("leave.admin.manage", "Manage leave records and policies"),
+USER ]
+USER 
+USER #: Performed by a service or a scheduled task, so no designation holds them.
+USER SYSTEM_PERMISSIONS = [
+USER     "leave.application.auto_withdraw",
+USER     "leave.balance.calculate",
+USER ]
+USER 
+USER # Role-based permission grants based on Appendix A actors.
+USER # Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
+USER ROLE_GRANTS = {
+USER     "Employee": [
+USER         "leave.application.create",
+USER         "leave.application.view_self",
+USER         "leave.balance.view_self",
+USER     ],
+USER     "Unit Head": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Deputy Registrar (Estt.)": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.admin.manage",
+USER     ],
+USER     "Dean": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Registrar": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Director": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.admin.manage",
+USER     ],
+USER     "Leave Administrator": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER         "leave.admin.manage",
+USER     ],
+USER }
+USER ```
+USER 
+USER client/src/lib/http.ts
+USER ```
+USER /** One axios instance for the whole app, with the interceptors the legacy
+USER  *  academic SPA never had. */
+USER import axios from "axios";
+USER 
+USER export const http = axios.create({
+USER   baseURL: "/api/v1",
+USER   withCredentials: true,          // the session cookie, never a JS-readable token
+USER   timeout: 15000,
+USER });
+USER 
+USER /** Paired with the session cookie. Held in memory rather than a readable
+USER  *  cookie, which the SPA could not read cross-origin in development. */
+USER let csrfToken = "";
+USER export function setCsrfToken(value: string) {
+USER   csrfToken = value ?? "";
+USER }
+USER 
+USER const UNSAFE = new Set(["post", "put", "patch", "delete"]);
+USER 
+USER http.interceptors.request.use((config) => {
+USER   if (csrfToken && UNSAFE.has((config.method ?? "get").toLowerCase())) {
+USER     config.headers.set("X-CSRF-Token", csrfToken);
+USER   }
+USER   return config;
+USER });
+USER 
+USER let onUnauthorized: (() => void) | null = null;
+USER export function setUnauthorizedHandler(fn: () => void) {
+USER   onUnauthorized = fn;
+USER }
+USER 
+USER http.interceptors.response.use(
+USER   (r) => r,
+USER   (error) => {
+USER     if (error.response?.status === 401) onUnauthorized?.();
+USER     return Promise.reject(error);
+USER   },
+USER );
+USER 
+USER /** Pull a usable message out of the platform's error envelope. */
+USER export function errorMessage(e: unknown): string {
+USER   const env = (e as { response?: { data?: { error?: {
+USER     message?: string; details?: { message?: string }[] } } } })
+USER     ?.response?.data?.error;
+USER   if (!env) return "Something went wrong. Please try again.";
+USER   if (env.details?.length) {
+USER     return env.details.map((d) => d.message).filter(Boolean).join(" ") ||
+USER       env.message || "Request failed.";
+USER   }
+USER   return env.message ?? "Request failed.";
+USER }
+USER 
+USER /** A `responseType: "blob"` request delivers the *error* body as a Blob too,
+USER  *  which hides the envelope from errorMessage. Read it back before rethrowing. */
+USER export async function readBlobError(e: unknown): Promise<unknown> {
+USER   const res = (e as { response?: { data?: unknown } })?.response;
+USER   if (res?.data instanceof Blob) {
+USER     try {
+USER       res.data = JSON.parse(await res.data.text());
+USER     } catch {
+USER       res.data = undefined;             // an HTML page, not our envelope
+USER     }
+USER   }
+USER   return e;
+USER }
+USER 
+USER export function errorStatus(e: unknown): number | undefined {
+USER   return (e as { response?: { status?: number } })?.response?.status;
+USER }
+USER 
+USER export function requestId(e: unknown): string | undefined {
+USER   return (e as { response?: { data?: { error?: { request_id?: string } } } })
+USER     ?.response?.data?.error?.request_id;
+USER }
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER client/src/ui/layout/AppShellLayout.tsx:
+USER ⋮
+USER │export interface NavGroupItem {
+USER │  code: string;
+USER │  label: string;
+USER │  icon?: string;
+USER │  to?: string;
+USER │  app?: string;
+USER │  links?: NavLinkItem[];
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/permissions.py:
+USER ⋮
+USER │def HasPermission(*codes: str, require_all: bool = False):  # noqa: N802
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/app/registry.ts
+USER ```
+USER /** Frontend module registry.
+USER  *
+USER  *  `code` MUST match accesscontrol_module.code on the server. An ungranted
+USER  *  module gets no route at all, so deep-linking it 404s rather than rendering
+USER  *  blank. `load` must be a STATIC import() literal or Vite cannot split it. */
+USER import type { RouteObject } from "react-router-dom";
+USER 
+USER export interface ModuleManifest {
+USER   code: string;
+USER   basePath: string;
+USER   load: () => Promise<{ routes: RouteObject[] }>;
+USER }
+USER 
+USER export const MODULE_REGISTRY: Record<string, ModuleManifest> = {
+USER   placement_cell: {
+USER     code: "placement_cell",
+USER     basePath: "/placement",
+USER     load: () => import("../modules/placement/routes"),
+USER   },
+USER };
+USER ```
+USER 
+USER client/src/modules/leave/routes.tsx
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/api.ts
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.
+USER 
+USER Repository rules you must follow:
+USER - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.
+USER - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).
+USER - The module code is "leave", and every permission code starts with "leave.".
+USER - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.
+USER 
+USER Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.
+USER 
+USER Step 7a of 7 — client module wiring. Read-only: client/src/modules/placement/routes.tsx, client/src/lib/http.ts, modules/leave/registry.py, modules/leave/api/urls.py.
+USER 
+USER Create or change these files:
+USER 1. client/src/modules/leave/api.ts — TypeScript types and @tanstack/react-query hooks that call the leave endpoints through the shared `http` axios instance exported by client/src/lib/http.ts (its base URL is already /api/v1, so paths start with /leave/).
+USER 2. client/src/modules/leave/routes.tsx — lazy-loaded pages for the paths "apply", "mine", "approvals" and "substitute" (these must match the NAV_ITEMS "to" paths in registry.py), plus an index redirect to "mine", following placement/routes.tsx. The page files will be pages/ApplyLeavePage.tsx, pages/MyLeavesPage.tsx, pages/ApprovalsPage.tsx and pages/SubstituteRequestsPage.tsx.
+USER 3. client/src/app/registry.ts — add a "leave" entry (code "leave", basePath "/leave", load: () => import("../modules/leave/routes")) next to placement_cell. Keep everything else unchanged.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-11T20:26:03
+ASSISTANT client/src/modules/leave/api.ts
+ASSISTANT ```typescript
+ASSISTANT import { http } from "../../lib/http";
+ASSISTANT import type { ApplicationStatus } from "../placement/api/types";
+ASSISTANT 
+ASSISTANT /** Leave application data structure matching the backend serializer. */
+ASSISTANT export interface LeaveApplication {
+ASSISTANT   id: number;
+ASSISTANT   applicant_id: number;
+ASSISTANT   leave_type: string;
+ASSISTANT   start_date: string; // ISO date string
+ASSISTANT   end_date: string;   // ISO date string
+ASSISTANT   reason: string;
+ASSISTANT   status: ApplicationStatus;
+ASSISTANT   created_at: string;
+ASSISTANT   updated_at: string;
+ASSISTANT   unit_head_recommendation?: string | null;
+ASSISTANT   final_sanction_decision?: string | null;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Leave balance data structure. */
+ASSISTANT export interface LeaveBalance {
+ASSISTANT   year: number;
+ASSISTANT   earned_days: number;
+ASSISTANT   used_days: number;
+ASSISTANT   remaining_days: number;
+ASSISTANT   carry_forward_days: number;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Response envelope for list views. */
+ASSISTANT export interface ListResponse<T> {
+ASSISTANT   results: T[];
+ASSISTANT   count: number;
+ASSISTANT   next: string | null;
+ASSISTANT   previous: string | null;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Error response structure. */
+ASSISTANT export interface ErrorResponse {
+ASSISTANT   error?: {
+ASSISTANT     message?: string;
+ASSISTANT     details?: Array<{ message: string }>;
+ASSISTANT     request_id?: string;
+ASSISTANT   };
+ASSISTANT }
+ASSISTANT 
+ASSISTANT // --- Hooks ---
+ASSISTANT 
+ASSISTANT /** Fetch all leave applications for the current user. */
+ASSISTANT export function useMyApplications() {
+ASSISTANT   const data = http.get<ListResponse<LeaveApplication>>("/leave/mine");
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Fetch a single leave application by ID. */
+ASSISTANT export function useApplicationDetail(id: number) {
+ASSISTANT   const data = http.get<LeaveApplication>(`/leave/${id}/`);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Submit a new leave application. */
+ASSISTANT export function useSubmitApplication() {
+ASSISTANT   const data = http.post("/leave/apply/", {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Withdraw an application. */
+ASSISTANT export function useWithdrawApplication(id: number) {
+ASSISTANT   const data = http.delete(`/leave/${id}/withdraw/`);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Cancel an approved leave. */
+ASSISTANT export function useCancelApprovedLeave(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/cancel/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Extend an existing leave. */
+ASSISTANT export function useExtendLeave(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/extend/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Submit a resumption request for an approved leave. */
+ASSISTANT export function useSubmitResumption(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/resumption-submit/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Respond to a substitute request. */
+ASSISTANT export function useRespondToSubstitute(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/substitute/respond/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Nominate a replacement for a substitute. */
+ASSISTANT export function useNominateReplacement(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/substitute/nominate-replacement/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** View the approvals inbox (for Unit Heads). */
+ASSISTANT export function useApprovalsInbox() {
+ASSISTANT   const data = http.get("/leave/approvals-inbox/", {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Make a unit head decision on an application. */
+ASSISTANT export function useUnitHeadDecision(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/decide-unit-head/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Make a recommendation decision (e.g., for Dean). */
+ASSISTANT export function useRecommendationDecision(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/decide-recommendation/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Route an application to establishment verification. */
+ASSISTANT export function useEstablishmentRoute(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/establishment-route/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Make a final sanction decision. */
+ASSISTANT export function useFinalSanctionDecision(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/final-sanction/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Decide on cancellation of an approved leave. */
+ASSISTANT export function useDecideCancellation(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/decide-cancellation/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** View leave balances for a specific year. */
+ASSISTANT export function useBalances(year: number) {
+ASSISTANT   const data = http.get<LeaveBalance>(`/leave/balances/${year}/`);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** View history of leave applications. */
+ASSISTANT export function useHistory() {
+ASSISTANT   const data = http.get("/leave/history/", {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Review a resumption application (specific endpoint). */
+ASSISTANT export function useReviewResumption(id: number) {
+ASSISTANT   const data = http.post(`/leave/${id}/resumption-review/`, {} as any);
+ASSISTANT   return data;
+ASSISTANT }
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT client/src/modules/leave/routes.tsx
+ASSISTANT ```typescript
+ASSISTANT import { lazy } from "react";
+ASSISTANT import { Navigate, type RouteObject } from "react-router-dom";
+ASSISTANT 
+ASSISTANT /** One lazy chunk per page. Vite can only split these if the import() argument
+ASSISTANT  *  is a static literal — a computed path silently bundles everything. */
+ASSISTANT const ApplyLeavePage = lazy(() => import("./pages/ApplyLeavePage"));
+ASSISTANT const MyLeavesPage = lazy(() => import("./pages/MyLeavesPage"));
+ASSISTANT const ApprovalsPage = lazy(() => import("./pages/ApprovalsPage"));
+ASSISTANT const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));
+ASSISTANT 
+ASSISTANT /** Paths are RELATIVE — the shell mounts them under the manifest's basePath.
+ASSISTANT  *
+ASSISTANT  *  Every entry here has a matching nav item in the server's registry.py, and
+ASSISTANT  *  that correspondence matters: the sidebar is built server-side, so a nav item
+ASSISTANT  *  without a route here renders a link that goes nowhere. */
+ASSISTANT export const routes: RouteObject[] = [
+ASSISTANT   { index: true, element: <Navigate to="mine" replace /> },
+ASSISTANT   { path: "apply", element: <ApplyLeavePage /> },
+ASSISTANT   { path: "mine", element: <MyLeavesPage /> },
+ASSISTANT   { path: "approvals", element: <ApprovalsPage /> },
+ASSISTANT   { path: "substitute", element: <SubstituteRequestsPage /> },
+ASSISTANT ];
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT client/src/app/registry.ts
+ASSISTANT ```typescript
+ASSISTANT /** Frontend module registry.
+ASSISTANT  *
+ASSISTANT  *  `code` MUST match accesscontrol_module.code on the server. An ungranted
+ASSISTANT  *  module gets no route at all, so deep-linking it 404s rather than rendering
+ASSISTANT  *  blank. `load` must be a STATIC import() literal or Vite cannot split it. */
+ASSISTANT import type { RouteObject } from "react-router-dom";
+ASSISTANT 
+ASSISTANT export interface ModuleManifest {
+ASSISTANT   code: string;
+ASSISTANT   basePath: string;
+ASSISTANT   load: () => Promise<{ routes: RouteObject[] }>;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT export const MODULE_REGISTRY: Record<string, ModuleManifest> = {
+ASSISTANT   placement_cell: {
+ASSISTANT     code: "placement_cell",
+ASSISTANT     basePath: "/placement",
+ASSISTANT     load: () => import("../modules/placement/routes"),
+ASSISTANT   },
+ASSISTANT   leave: {
+ASSISTANT     code: "leave",
+ASSISTANT     basePath: "/leave",
+ASSISTANT     load: () => import("../modules/leave/routes"),
+ASSISTANT   },
+ASSISTANT };
+ASSISTANT ```

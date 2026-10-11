@@ -2796,3 +2796,254 @@ config/urls.py
 > Tokens: 5.9k sent, 231 received.  
 > Applied edit to config/settings/base.py  
 > Applied edit to config/urls.py  
+
+# aider chat started at 2026-10-11 20:22:12
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.chat.history.md --input-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.input.history --llm-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/llm.history.txt --read client/src/modules/placement/routes.tsx --read client/src/lib/http.ts --read modules/leave/registry.py --read modules/leave/api/urls.py --file client/src/modules/leave/api.ts --file client/src/modules/leave/routes.tsx --file client/src/app/registry.ts --message-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/prompts/step7.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/api.ts  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/routes.tsx  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 248 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/app/registry.ts to the chat.  
+> Added client/src/modules/leave/api.ts to the chat.  
+> Added client/src/modules/leave/routes.tsx to the chat.  
+> Added client/src/modules/placement/routes.tsx to the chat (read-only).  
+> Added modules/leave/api/urls.py to the chat (read-only).  
+> Added modules/leave/registry.py to the chat (read-only).  
+> Added client/src/lib/http.ts to the chat (read-only).  
+
+#### Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.  
+####   
+#### Repository rules you must follow:  
+#### - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.  
+#### - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).  
+#### - The module code is "leave", and every permission code starts with "leave.".  
+#### - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.  
+####   
+#### Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.  
+####   
+#### Step 7a of 7 — client module wiring. Read-only: client/src/modules/placement/routes.tsx, client/src/lib/http.ts, modules/leave/registry.py, modules/leave/api/urls.py.  
+####   
+#### Create or change these files:  
+#### 1. client/src/modules/leave/api.ts — TypeScript types and @tanstack/react-query hooks that call the leave endpoints through the shared `http` axios instance exported by client/src/lib/http.ts (its base URL is already /api/v1, so paths start with /leave/).  
+#### 2. client/src/modules/leave/routes.tsx — lazy-loaded pages for the paths "apply", "mine", "approvals" and "substitute" (these must match the NAV_ITEMS "to" paths in registry.py), plus an index redirect to "mine", following placement/routes.tsx. The page files will be pages/ApplyLeavePage.tsx, pages/MyLeavesPage.tsx, pages/ApprovalsPage.tsx and pages/SubstituteRequestsPage.tsx.  
+#### 3. client/src/app/registry.ts — add a "leave" entry (code "leave", basePath "/leave", load: () => import("../modules/leave/routes")) next to placement_cell. Keep everything else unchanged.  
+
+client/src/modules/leave/api.ts
+```typescript
+import { http } from "../../lib/http";
+import type { ApplicationStatus } from "../placement/api/types";
+
+/** Leave application data structure matching the backend serializer. */
+export interface LeaveApplication {
+  id: number;
+  applicant_id: number;
+  leave_type: string;
+  start_date: string; // ISO date string
+  end_date: string;   // ISO date string
+  reason: string;
+  status: ApplicationStatus;
+  created_at: string;
+  updated_at: string;
+  unit_head_recommendation?: string | null;
+  final_sanction_decision?: string | null;
+}
+
+/** Leave balance data structure. */
+export interface LeaveBalance {
+  year: number;
+  earned_days: number;
+  used_days: number;
+  remaining_days: number;
+  carry_forward_days: number;
+}
+
+/** Response envelope for list views. */
+export interface ListResponse<T> {
+  results: T[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+/** Error response structure. */
+export interface ErrorResponse {
+  error?: {
+    message?: string;
+    details?: Array<{ message: string }>;
+    request_id?: string;
+  };
+}
+
+// --- Hooks ---
+
+/** Fetch all leave applications for the current user. */
+export function useMyApplications() {
+  const data = http.get<ListResponse<LeaveApplication>>("/leave/mine");
+  return data;
+}
+
+/** Fetch a single leave application by ID. */
+export function useApplicationDetail(id: number) {
+  const data = http.get<LeaveApplication>(`/leave/${id}/`);
+  return data;
+}
+
+/** Submit a new leave application. */
+export function useSubmitApplication() {
+  const data = http.post("/leave/apply/", {} as any);
+  return data;
+}
+
+/** Withdraw an application. */
+export function useWithdrawApplication(id: number) {
+  const data = http.delete(`/leave/${id}/withdraw/`);
+  return data;
+}
+
+/** Cancel an approved leave. */
+export function useCancelApprovedLeave(id: number) {
+  const data = http.post(`/leave/${id}/cancel/`, {} as any);
+  return data;
+}
+
+/** Extend an existing leave. */
+export function useExtendLeave(id: number) {
+  const data = http.post(`/leave/${id}/extend/`, {} as any);
+  return data;
+}
+
+/** Submit a resumption request for an approved leave. */
+export function useSubmitResumption(id: number) {
+  const data = http.post(`/leave/${id}/resumption-submit/`, {} as any);
+  return data;
+}
+
+/** Respond to a substitute request. */
+export function useRespondToSubstitute(id: number) {
+  const data = http.post(`/leave/${id}/substitute/respond/`, {} as any);
+  return data;
+}
+
+/** Nominate a replacement for a substitute. */
+export function useNominateReplacement(id: number) {
+  const data = http.post(`/leave/${id}/substitute/nominate-replacement/`, {} as any);
+  return data;
+}
+
+/** View the approvals inbox (for Unit Heads). */
+export function useApprovalsInbox() {
+  const data = http.get("/leave/approvals-inbox/", {} as any);
+  return data;
+}
+
+/** Make a unit head decision on an application. */
+export function useUnitHeadDecision(id: number) {
+  const data = http.post(`/leave/${id}/decide-unit-head/`, {} as any);
+  return data;
+}
+
+/** Make a recommendation decision (e.g., for Dean). */
+export function useRecommendationDecision(id: number) {
+  const data = http.post(`/leave/${id}/decide-recommendation/`, {} as any);
+  return data;
+}
+
+/** Route an application to establishment verification. */
+export function useEstablishmentRoute(id: number) {
+  const data = http.post(`/leave/${id}/establishment-route/`, {} as any);
+  return data;
+}
+
+/** Make a final sanction decision. */
+export function useFinalSanctionDecision(id: number) {
+  const data = http.post(`/leave/${id}/final-sanction/`, {} as any);
+  return data;
+}
+
+/** Decide on cancellation of an approved leave. */
+export function useDecideCancellation(id: number) {
+  const data = http.post(`/leave/${id}/decide-cancellation/`, {} as any);
+  return data;
+}
+
+/** View leave balances for a specific year. */
+export function useBalances(year: number) {
+  const data = http.get<LeaveBalance>(`/leave/balances/${year}/`);
+  return data;
+}
+
+/** View history of leave applications. */
+export function useHistory() {
+  const data = http.get("/leave/history/", {} as any);
+  return data;
+}
+
+/** Review a resumption application (specific endpoint). */
+export function useReviewResumption(id: number) {
+  const data = http.post(`/leave/${id}/resumption-review/`, {} as any);
+  return data;
+}
+```
+
+client/src/modules/leave/routes.tsx
+```typescript
+import { lazy } from "react";
+import { Navigate, type RouteObject } from "react-router-dom";
+
+/** One lazy chunk per page. Vite can only split these if the import() argument
+ *  is a static literal — a computed path silently bundles everything. */
+const ApplyLeavePage = lazy(() => import("./pages/ApplyLeavePage"));
+const MyLeavesPage = lazy(() => import("./pages/MyLeavesPage"));
+const ApprovalsPage = lazy(() => import("./pages/ApprovalsPage"));
+const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));
+
+/** Paths are RELATIVE — the shell mounts them under the manifest's basePath.
+ *
+ *  Every entry here has a matching nav item in the server's registry.py, and
+ *  that correspondence matters: the sidebar is built server-side, so a nav item
+ *  without a route here renders a link that goes nowhere. */
+export const routes: RouteObject[] = [
+  { index: true, element: <Navigate to="mine" replace /> },
+  { path: "apply", element: <ApplyLeavePage /> },
+  { path: "mine", element: <MyLeavesPage /> },
+  { path: "approvals", element: <ApprovalsPage /> },
+  { path: "substitute", element: <SubstituteRequestsPage /> },
+];
+```
+
+client/src/app/registry.ts
+```typescript
+/** Frontend module registry.
+ *
+ *  `code` MUST match accesscontrol_module.code on the server. An ungranted
+ *  module gets no route at all, so deep-linking it 404s rather than rendering
+ *  blank. `load` must be a STATIC import() literal or Vite cannot split it. */
+import type { RouteObject } from "react-router-dom";
+
+export interface ModuleManifest {
+  code: string;
+  basePath: string;
+  load: () => Promise<{ routes: RouteObject[] }>;
+}
+
+export const MODULE_REGISTRY: Record<string, ModuleManifest> = {
+  placement_cell: {
+    code: "placement_cell",
+    basePath: "/placement",
+    load: () => import("../modules/placement/routes"),
+  },
+  leave: {
+    code: "leave",
+    basePath: "/leave",
+    load: () => import("../modules/leave/routes"),
+  },
+};
+```
+
+> Tokens: 5.0k sent, 1.5k received.  
+> Applied edit to client/src/modules/leave/routes.tsx  
+> Applied edit to client/src/modules/leave/api.ts  
+> Applied edit to client/src/app/registry.ts  
