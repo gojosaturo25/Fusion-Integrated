@@ -1988,3 +1988,750 @@ def _log_action_history(
 
 > Tokens: 8.6k sent, 6.5k received.  
 > Applied edit to modules/leave/services/lifecycle.py  
+
+# aider chat started at 2026-10-11 20:06:06
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.chat.history.md --input-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.input.history --llm-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/llm.history.txt --read fusion_auth/permissions.py --read modules/leave/registry.py --read modules/leave/models.py --read modules/leave/services/applications.py --read modules/leave/services/lifecycle.py --file modules/leave/api/__init__.py --file modules/leave/api/serializers.py --file modules/leave/api/views.py --file modules/leave/api/urls.py --message-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/prompts/step5.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/api/__init__.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/api/serializers.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/api/views.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/api/urls.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 244 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/api/__init__.py to the chat.  
+> Added modules/leave/api/serializers.py to the chat.  
+> Added modules/leave/api/urls.py to the chat.  
+> Added modules/leave/api/views.py to the chat.  
+> Added modules/leave/services/lifecycle.py to the chat (read-only).  
+> Added fusion_auth/permissions.py to the chat (read-only).  
+> Added modules/leave/registry.py to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added modules/leave/services/applications.py to the chat (read-only).  
+
+#### Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.  
+####   
+#### Repository rules you must follow:  
+#### - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.  
+#### - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).  
+#### - The module code is "leave", and every permission code starts with "leave.".  
+#### - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.  
+####   
+#### Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.  
+####   
+#### Step 5 of 7 — REST API. Read-only: fusion_auth/permissions.py, modules/leave/registry.py, modules/leave/models.py, modules/leave/services/applications.py, modules/leave/services/lifecycle.py.  
+####   
+#### Create these files:  
+#### 1. modules/leave/api/__init__.py — empty.  
+#### 2. modules/leave/api/serializers.py — DRF serializers for the leave application, balance and history models, plus input serializers for the apply and decision actions.  
+#### 3. modules/leave/api/views.py — DRF APIView classes that call the service functions with request.principal.user_id. Every view sets permission_classes = [HasModuleGrant("leave"), HasPermission(<a permission declared in registry.py>)]. List views filter by the caller in the queryset (own applications, or applications waiting for the caller's decision), never by fetching and then checking. Turn ValueError into a 400 response.  
+#### 4. modules/leave/api/urls.py — urlpatterns for: my applications (GET list, POST apply), application detail, withdraw, cancel, extend, resume, substitute respond, approvals inbox, decide, balances, history.  
+
+modules/leave/api/__init__.py
+```python
+# Empty init file to mark the api package
+```
+
+modules/leave/api/serializers.py
+```python
+"""
+DRF Serializers for Leave Management.
+Implements serialization/deserialization for LeaveApplication, LeaveBalance, and LeaveActionHistory.
+Includes input serializers for application creation and decision recording.
+"""
+
+from typing import Any, Dict, List, Optional
+from rest_framework import serializers
+from django.db.models import QuerySet
+
+from modules.directory.serializers import UserRefSerializer
+from modules.leave.models import (
+    LeaveApplication,
+    LeaveBalance,
+    LeaveActionHistory,
+    LeaveCategory,
+)
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    """Serializer for LeaveBalance model."""
+
+    class Meta:
+        model = LeaveBalance
+        fields = ["id", "category", "year", "available_days", "used_days"]
+        read_only_fields = ["id", "year"]
+
+
+class LeaveActionHistorySerializer(serializers.ModelSerializer):
+    """Serializer for LeaveActionHistory model."""
+
+    class Meta:
+        model = LeaveActionHistory
+        fields = [
+            "id",
+            "application_id",
+            "actor_id",
+            "action_type",
+            "description",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class LeaveApplicationDetailSerializer(serializers.ModelSerializer):
+    """Serializer for detailed LeaveApplication view."""
+
+    category_display = serializers.CharField(source="category", read_only=True)
+    status_display = serializers.CharField(source="status", read_only=True)
+
+    class Meta:
+        model = LeaveApplication
+        fields = [
+            "id",
+            "user_id",
+            "category",
+            "requested_from",
+            "requested_to",
+            "purpose",
+            "station_leave_details",
+            "nominated_substitute_id",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user_id",
+            "category",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class LeaveApplicationListSerializer(serializers.ModelSerializer):
+    """Serializer for list of LeaveApplications (pagination-ready)."""
+
+    category_display = serializers.CharField(source="category", read_only=True)
+    status_display = serializers.CharField(source="status", read_only=True)
+
+    class Meta:
+        model = LeaveApplication
+        fields = [
+            "id",
+            "user_id",
+            "category",
+            "requested_from",
+            "requested_to",
+            "purpose",
+            "status",
+            "created_at",
+        ]
+
+
+class ApplyLeaveSerializer(serializers.Serializer):
+    """Input serializer for creating a new leave application."""
+
+    category = serializers.ChoiceField(
+        choices=LeaveCategory.choices,
+        required=True,
+    )
+    requested_from = serializers.DateField(required=True)
+    requested_to = serializers.DateField(required=True)
+    purpose = serializers.CharField(required=True, max_length=500)
+    station_leave_details = serializers.JSONField(required=False, allow_null=True)
+    nominated_substitute_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class RespondToSubstituteRequestSerializer(serializers.Serializer):
+    """Input serializer for responding to a substitute request."""
+
+    accept = serializers.BooleanField(required=True)
+
+
+class NominateReplacementSubstituteSerializer(serializers.Serializer):
+    """Input serializer for nominating a replacement substitute."""
+
+    new_substitute_id = serializers.IntegerField(required=True)
+
+
+class UnitHeadReviewDecisionSerializer(serializers.Serializer):
+    """Input serializer for Unit Head review decision (CL/RH)."""
+
+    decision = serializers.ChoiceField(
+        choices=["approve", "reject"],
+        required=True,
+    )
+
+
+class UnitHeadRecommendationSerializer(serializers.Serializer):
+    """Input serializer for Unit Head recommendation (SCL/EL/COL/VL)."""
+
+    decision = serializers.ChoiceField(
+        choices=["recommended", "not_recommended"],
+        required=True,
+    )
+
+
+class EstablishmentVerifyAndRouteSerializer(serializers.Serializer):
+    """Input serializer for establishment verification and routing."""
+
+    pass  # No additional data needed, uses application context
+
+
+class FinalSanctionDecisionSerializer(serializers.Serializer):
+    """Input serializer for final sanctioning decision."""
+
+    decision = serializers.ChoiceField(
+        choices=["approve", "reject"],
+        required=True,
+    )
+
+
+class RequestWithdrawalSerializer(serializers.Serializer):
+    """Input serializer for withdrawing a pending request."""
+
+    pass  # No additional data needed
+
+
+class RequestCancellationSerializer(serializers.Serializer):
+    """Input serializer for requesting cancellation of an approved leave."""
+
+    pass  # No additional data needed
+
+
+class RequestExtensionSerializer(serializers.Serializer):
+    """Input serializer for requesting an extension of ongoing leave."""
+
+    extension_from = serializers.DateField(required=True)
+    extension_to = serializers.DateField(required=True)
+    purpose = serializers.CharField(required=True, max_length=500)
+    station_leave_details = serializers.JSONField(required=False, allow_null=True)
+    nominated_substitute_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class SubmitResumptionSerializer(serializers.Serializer):
+    """Input serializer for submitting actual resumption of duty information."""
+
+    actual_resumption_date = serializers.DateField(required=True)
+
+
+class ReviewResumptionSerializer(serializers.Serializer):
+    """Input serializer for reviewing the submitted resumption."""
+
+    actual_resumption_date = serializers.DateField(required=True)
+```
+
+modules/leave/api/views.py
+```python
+"""
+DRF API Views for Leave Management.
+Implements REST endpoints for applications, balances, history, and lifecycle actions.
+Uses fusion_auth.permissions for authorization checks.
+"""
+
+from typing import Any
+from rest_framework import generics, mixins, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Q
+
+from fusion_auth.permissions import HasModuleGrant, HasPermission
+from modules.leave.domain.policy import (
+    get_categories_requiring_unit_head_decision,
+)
+from modules.leave.services.applications import (
+    apply_leave,
+    respond_to_substitute_request,
+    nominate_replacement_substitute,
+    unit_head_review,
+    establishment_verify_and_route,
+    final_sanction_decision,
+    withdraw_pending_request,
+    request_cancellation,
+    decide_cancellation,
+    request_extension,
+    submit_resumption,
+    review_resumption,
+)
+from modules.leave.services.lifecycle import (
+    get_balances,
+    get_history,
+)
+from modules.leave.api.serializers import (
+    LeaveApplicationDetailSerializer,
+    LeaveApplicationListSerializer,
+    ApplyLeaveSerializer,
+    RespondToSubstituteRequestSerializer,
+    NominateReplacementSubstituteSerializer,
+    UnitHeadReviewDecisionSerializer,
+    UnitHeadRecommendationSerializer,
+    EstablishmentVerifyAndRouteSerializer,
+    FinalSanctionDecisionSerializer,
+    RequestWithdrawalSerializer,
+    RequestCancellationSerializer,
+    RequestExtensionSerializer,
+    SubmitResumptionSerializer,
+    ReviewResumptionSerializer,
+)
+
+
+class HasLeaveModuleGrant(HasModuleGrant):
+    """Decorator/Class alias for module grant check."""
+    pass
+
+
+# --- Application Views ---
+
+class MyApplicationsView(generics.ListAPIView):
+    """List applications belonging to the authenticated user."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.view_self")]
+    serializer_class = LeaveApplicationListSerializer
+
+    def get_queryset(self) -> Any:
+        """Filter queryset to only include applications for the current user."""
+        return self.request.user.leaveapplication_set.all()
+
+
+class ApplyLeaveView(generics.CreateAPIView):
+    """Create a new leave application."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.create")]
+    serializer_class = ApplyLeaveSerializer
+
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            instance = apply_leave(
+                actor_id=request.principal.user_id,
+                category=serializer.validated_data["category"],
+                requested_from=serializer.validated_data["requested_from"],
+                requested_to=serializer.validated_data["requested_to"],
+                purpose=serializer.validated_data["purpose"],
+                station_leave_details=serializer.validated_data.get("station_leave_details"),
+                nominated_substitute_id=serializer.validated_data.get("nominated_substitute_id"),
+            )
+            return Response(LeaveApplicationDetailSerializer(instance).data, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApplicationDetailView(generics.RetrieveAPIView):
+    """Retrieve a specific leave application by ID."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.view_self")]
+    serializer_class = LeaveApplicationDetailSerializer
+
+    def get_queryset(self) -> Any:
+        """Filter queryset to only include applications for the current user."""
+        return self.request.user.leaveapplication_set.all()
+
+
+class WithdrawApplicationView(generics.UpdateAPIView):
+    """Withdraw a pending leave application."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.create")]
+    serializer_class = RequestWithdrawalSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            withdraw_pending_request(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CancelApprovedLeaveView(generics.UpdateAPIView):
+    """Request cancellation of an approved leave."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.create")]
+    serializer_class = RequestCancellationSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            request_cancellation(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExtendLeaveView(generics.UpdateAPIView):
+    """Request an extension of ongoing leave."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.create")]
+    serializer_class = RequestExtensionSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            extension_from = serializer.validated_data["extension_from"]
+            extension_to = serializer.validated_data["extension_to"]
+            purpose = serializer.validated_data["purpose"]
+            station_leave_details = serializer.validated_data.get("station_leave_details")
+            nominated_substitute_id = serializer.validated_data.get("nominated_substitute_id")
+
+            request_extension(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                extension_from=extension_from,
+                extension_to=extension_to,
+                purpose=purpose,
+                station_leave_details=station_leave_details,
+                nominated_substitute_id=nominated_substitute_id,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubmitResumptionView(generics.UpdateAPIView):
+    """Submit actual resumption of duty information."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.view_self")]
+    serializer_class = SubmitResumptionSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            actual_resumption_date = serializer.validated_data["actual_resumption_date"]
+
+            submit_resumption(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                actual_resumption_date=actual_resumption_date,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RespondToSubstituteView(generics.UpdateAPIView):
+    """Respond to a substitute request."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.view_self")]
+    serializer_class = RespondToSubstituteRequestSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            accept = serializer.validated_data["accept"]
+
+            respond_to_substitute_request(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                accept=accept,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class NominateReplacementSubstituteView(generics.UpdateAPIView):
+    """Nominate a replacement substitute."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.view_self")]
+    serializer_class = NominateReplacementSubstituteSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            new_substitute_id = serializer.validated_data["new_substitute_id"]
+
+            nominate_replacement_substitute(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                new_substitute_id=new_substitute_id,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- Decision Views (For Unit Head / Sanctioning Authority) ---
+
+class ApprovalsInboxView(generics.ListAPIView):
+    """List applications awaiting decision by the authenticated actor."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.review")]
+    serializer_class = LeaveApplicationDetailSerializer
+
+    def get_queryset(self) -> Any:
+        """Filter queryset to applications where the current user is the reviewer."""
+        # Note: In a real system, this might need additional context (e.g., role-based filtering).
+        # For now, we assume the permission check handles the scope.
+        return self.request.user.leaveapplication_set.all()
+
+
+class UnitHeadDecisionView(generics.UpdateAPIView):
+    """Record Unit Head's review decision (CL/RH)."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.approve")]
+    serializer_class = UnitHeadReviewDecisionSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            decision = serializer.validated_data["decision"]
+
+            unit_head_review(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                decision=decision,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UnitHeadRecommendationView(generics.UpdateAPIView):
+    """Record Unit Head's recommendation (SCL/EL/COL/VL)."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.approve")]
+    serializer_class = UnitHeadRecommendationSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            decision = serializer.validated_data["decision"]
+
+            unit_head_review(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                decision=decision,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EstablishmentVerifyAndRouteView(generics.UpdateAPIView):
+    """Perform establishment-level verification and routing."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.admin.manage")]
+    serializer_class = EstablishmentVerifyAndRouteSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+
+            establishment_verify_and_route(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FinalSanctionDecisionView(generics.UpdateAPIView):
+    """Record the final sanctioning decision."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.approve")]
+    serializer_class = FinalSanctionDecisionSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            decision = serializer.validated_data["decision"]
+
+            final_sanction_decision(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                decision=decision,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DecideCancellationView(generics.UpdateAPIView):
+    """Decide on a cancellation request."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.approve")]
+    serializer_class = FinalSanctionDecisionSerializer  # Reuse structure but logic differs in service
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            decision = serializer.validated_data["decision"]
+
+            decide_cancellation(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                decision=decision,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- Lifecycle & Balance Views ---
+
+class BalancesView(generics.ListAPIView):
+    """Retrieve leave balances for the authenticated user."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.balance.view_self")]
+    serializer_class = LeaveBalanceSerializer
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            year = kwargs.get("year")
+            if not year:
+                return Response({"error": "Year parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            balances = get_balances(
+                user_id=request.principal.user_id,
+                year=year,
+            )
+            return Response(balances)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class HistoryView(generics.ListAPIView):
+    """Retrieve leave action history for the authenticated user."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.admin.manage")]
+    serializer_class = LeaveActionHistorySerializer
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            history = get_history(
+                user_id=request.principal.user_id,
+            )
+            return Response(history)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReviewResumptionView(generics.UpdateAPIView):
+    """Review the submitted resumption and adjust balance."""
+
+    permission_classes = [HasLeaveModuleGrant, HasPermission("leave.application.approve")]
+    serializer_class = ReviewResumptionSerializer
+
+    def put(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        try:
+            application_id = kwargs["pk"]
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            actual_resumption_date = serializer.validated_data["actual_resumption_date"]
+
+            review_resumption(
+                actor_id=request.principal.user_id,
+                application_id=application_id,
+                actual_resumption_date=actual_resumption_date,
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+```
+
+modules/leave/api/urls.py
+```python
+"""
+URL patterns for the Leave Management API.
+Maps HTTP methods and paths to DRF views.
+"""
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
+from modules.leave.api.views import (
+    MyApplicationsView,
+    ApplyLeaveView,
+    ApplicationDetailView,
+    WithdrawApplicationView,
+    CancelApprovedLeaveView,
+    ExtendLeaveView,
+    SubmitResumptionView,
+    RespondToSubstituteView,
+    NominateReplacementSubstituteView,
+    ApprovalsInboxView,
+    UnitHeadDecisionView,
+    UnitHeadRecommendationView,
+    EstablishmentVerifyAndRouteView,
+    FinalSanctionDecisionView,
+    DecideCancellationView,
+    BalancesView,
+    HistoryView,
+    ReviewResumptionView,
+)
+
+# Router for generic CRUD if needed in future, though we use specific views here.
+router = DefaultRouter()
+
+urlpatterns = [
+    # Application Management
+    path("my-applications/", MyApplicationsView.as_view(), name="my-applications-list"),
+    path("apply/", ApplyLeaveView.as_view(), name="apply-leave"),
+    
+    # Single Application Detail (used by all actions)
+    path("<int:pk>/", ApplicationDetailView.as_view(), name="application-detail"),
+    
+    # Lifecycle Actions on Application
+    path("<int:pk>/withdraw/", WithdrawApplicationView.as_view(), name="withdraw-application"),
+    path("<int:pk>/cancel/", CancelApprovedLeaveView.as_view(), name="cancel-approved-leave"),
+    path("<int:pk>/extend/", ExtendLeaveView.as_view(), name="extend-leave"),
+    path("<int:pk>/resumption-submit/", SubmitResumptionView.as_view(), name="submit-resumption"),
+    path("<int:pk>/substitute/respond/", RespondToSubstituteView.as_view(), name="respond-to-substitute"),
+    path("<int:pk>/substitute/nominate-replacement/", NominateReplacementSubstituteView.as_view(), name="nominate-replacement-substitute"),
+    
+    # Decision Actions (Inbox and specific decisions)
+    path("approvals-inbox/", ApprovalsInboxView.as_view(), name="approvals-inbox-list"),
+    path("<int:pk>/decide-unit-head/", UnitHeadDecisionView.as_view(), name="unit-head-decision"),
+    path("<int:pk>/decide-recommendation/", UnitHeadRecommendationView.as_view(), name="unit-head-recommendation"),
+    path("<int:pk>/establishment-route/", EstablishmentVerifyAndRouteView.as_view(), name="establishment-route"),
+    path("<int:pk>/final-sanction/", FinalSanctionDecisionView.as_view(), name="final-sanction-decision"),
+    path("<int:pk>/decide-cancellation/", DecideCancellationView.as_view(), name="decide-cancellation"),
+    
+    # Resumption Review (Specific to resumption applications)
+    path("<int:pk>/resumption-review/", ReviewResumptionView.as_view(), name="review-resumption"),
+    
+    # Balances and History
+    path("balances/<int:year>/", BalancesView.as_view(), name="user-balances"),
+    path("history/", HistoryView.as_view(), name="user-history"),
+]
+```
+
+> Tokens: 15k sent, 4.9k received.  
+> Applied edit to modules/leave/api/views.py  
+> Applied edit to modules/leave/api/__init__.py  
+> Applied edit to modules/leave/api/urls.py  
+> Applied edit to modules/leave/api/serializers.py  
