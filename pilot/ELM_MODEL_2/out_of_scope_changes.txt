@@ -1,1 +1,4 @@
 path/to/filename.js
+"- client/src/app/registry.ts"
+"- client/src/modules/leave/api.ts"
+"- client/src/modules/leave/routes.tsx"

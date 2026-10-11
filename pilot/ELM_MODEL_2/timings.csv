@@ -6,3 +6,4 @@ step3,"Services: apply, substitute, review and sanction",0,274,2
 step4,"Services: withdraw, cancel, extend, resume, inquiry",0,81,1
 step5,"REST API (serializers, views, urls)",0,68,4
 step6,"Register the module in settings and URLs",0,56,2
+step7,"Client wiring (api hooks, routes, module registry)",0,69,2

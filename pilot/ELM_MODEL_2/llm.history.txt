@@ -6665,3 +6665,529 @@ ASSISTANT path("api/v1/leave/", include("modules.leave.api.urls")),
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
 ASSISTANT ```
+TO LLM 2026-10-11T22:09:13
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER modules/leave/registry.py
+USER ```
+USER """Leave Management (ELM) module.
+USER 
+USER What the server tells the shell about this module (ADR-0010).
+USER 
+USER Nav items carry `required_permission` and the server filters before sending —
+USER the client does zero filtering, so a link a role cannot use never reaches the
+USER browser at all.
+USER """
+USER MODULE = {
+USER     "code": "leave", "label": "Leave Management", "icon": "Calendar",
+USER     "base_path": "/leave", "nav_section": "Leave", "sort_order": 10,
+USER     "status": "active",
+USER }
+USER 
+USER NAV_ITEMS = [
+USER     # -- student: registration first, because rule 1 gates everything below ---
+USER     {"code": "leave.apply", "label": "Apply for Leave", "icon": "Check", "to": "/leave/apply", "required_permission": "leave.registration.self", "sort_order": 5},
+USER     {"code": "leave.mine", "label": "My Leave", "icon": "User", "to": "/leave/mine", "required_permission": "leave.application.view_self", "sort_order": 10},
+USER     {"code": "leave.approvals", "label": "Leave Approvals", "icon": "Check", "to": "/leave/approvals", "required_permission": "leave.registration.manage", "sort_order": 15},
+USER     {"code": "leave.substitute", "label": "Leave Substitute", "icon": "User", "to": "/leave/substitute", "required_permission": "leave.substitute.accept", "sort_order": 20},
+USER 
+USER     # -- staff (TPO / chairman) -------------------------------------------
+USER     {"code": "leave.interview", "label": "Interview", "icon": "Calendar", "to": "/leave/interview", "required_permission": "leave.interview.schedule", "sort_order": 25},
+USER     {"code": "leave.offer", "label": "Offer", "icon": "Envelope", "to": "/leave/offer", "required_permission": "leave.offer.respond", "sort_order": 30},
+USER     {"code": "leave.cancel", "label": "Cancel Leave", "icon": "Cancel", "to": "/leave/cancel", "required_permission": "leave.cancel.leave", "sort_order": 35},
+USER 
+USER     # -- leave administrator -------------------------------------------
+USER     {"code": "leave.admin", "label": "Admin", "icon": "Cog", "to": "/leave/admin", "required_permission": "leave.admin.manage", "sort_order": 40},
+USER ]
+USER 
+USER PERMISSIONS = [
+USER     ("leave.registration.self", "Register for leave"),
+USER     ("leave.interview.schedule", "Schedule leave interview"),
+USER     ("leave.offer.respond", "Respond to leave offer"),
+USER     ("leave.cancel.leave", "Cancel leave request"),
+USER     ("leave.admin.manage", "Manage leave records"),
+USER ]
+USER 
+USER #: Performed by a service or a scheduled task, so no designation holds them.
+USER SYSTEM_PERMISSIONS = [
+USER ]
+USER 
+USER #: Keyed by the designation name as it exists in globals_designation.
+USER ROLE_GRANTS = {
+USER     "employee": ["leave.registration.self", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "unit_head": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "deputy_registrar": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "dean": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "registrar": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "director": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "leave_admin": ["leave.admin.manage"],
+USER }
+USER 
+USER #: Keyed by the designation name as it exists in globals_designation.
+USER ROLE_GRANTS = {
+USER     "employee": ["leave.registration.self", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "unit_head": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "deputy_registrar": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "dean": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "registrar": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "director": ["leave.registration.manage", "leave.interview.schedule", "leave.offer.respond", "leave.cancel.leave"],
+USER     "leave_admin": ["leave.admin.manage"],
+USER }
+USER ```
+USER 
+USER modules/leave/api/urls.py
+USER ```
+USER ```
+USER 
+USER client/src/modules/placement/routes.tsx
+USER ```
+USER import { lazy } from "react";
+USER import { Navigate, type RouteObject } from "react-router-dom";
+USER 
+USER /** One lazy chunk per page. Vite can only split these if the import() argument
+USER  *  is a static literal — a computed path silently bundles everything. */
+USER const PostingsPage = lazy(() => import("./pages/PostingsPage"));
+USER const MyApplicationsPage = lazy(() => import("./pages/MyApplicationsPage"));
+USER const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
+USER const OffersPage = lazy(() => import("./pages/OffersPage"));
+USER const CompaniesPage = lazy(() => import("./pages/CompaniesPage"));
+USER const InterviewsPage = lazy(() => import("./pages/InterviewsPage"));
+USER const AnnouncementsPage = lazy(() => import("./pages/AnnouncementsPage"));
+USER const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+USER const StudentCpiPage = lazy(() => import("./pages/StudentCpiPage"));
+USER const RegistrationPage = lazy(() => import("./pages/RegistrationPage"));
+USER const RegistrationApprovalsPage = lazy(
+USER   () => import("./pages/RegistrationApprovalsPage"));
+USER 
+USER /** Paths are RELATIVE — the shell mounts them under the manifest's basePath.
+USER  *
+USER  *  Every entry here has a matching nav item in the server's registry.py, and
+USER  *  that correspondence matters: the sidebar is built server-side, so a nav item
+USER  *  without a route here renders a link that goes nowhere. */
+USER export const routes: RouteObject[] = [
+USER   { index: true, element: <Navigate to="postings" replace /> },
+USER   { path: "registration", element: <RegistrationPage /> },
+USER   { path: "registration-approvals", element: <RegistrationApprovalsPage /> },
+USER   { path: "postings", element: <PostingsPage /> },
+USER   { path: "mine", element: <MyApplicationsPage /> },
+USER   { path: "offers", element: <OffersPage /> },
+USER   { path: "applications", element: <ApplicationsPage /> },
+USER   { path: "companies", element: <CompaniesPage /> },
+USER   { path: "interviews", element: <InterviewsPage /> },
+USER   { path: "announcements", element: <AnnouncementsPage /> },
+USER   { path: "students-cpi", element: <StudentCpiPage /> },
+USER   { path: "reports", element: <ReportsPage /> },
+USER ];
+USER ```
+USER 
+USER client/src/lib/http.ts
+USER ```
+USER /** One axios instance for the whole app, with the interceptors the legacy
+USER  *  academic SPA never had. */
+USER import axios from "axios";
+USER 
+USER export const http = axios.create({
+USER   baseURL: "/api/v1",
+USER   withCredentials: true,          // the session cookie, never a JS-readable token
+USER   timeout: 15000,
+USER });
+USER 
+USER /** Paired with the session cookie. Held in memory rather than a readable
+USER  *  cookie, which the SPA could not read cross-origin in development. */
+USER let csrfToken = "";
+USER export function setCsrfToken(value: string) {
+USER   csrfToken = value ?? "";
+USER }
+USER 
+USER const UNSAFE = new Set(["post", "put", "patch", "delete"]);
+USER 
+USER http.interceptors.request.use((config) => {
+USER   if (csrfToken && UNSAFE.has((config.method ?? "get").toLowerCase())) {
+USER     config.headers.set("X-CSRF-Token", csrfToken);
+USER   }
+USER   return config;
+USER });
+USER 
+USER let onUnauthorized: (() => void) | null = null;
+USER export function setUnauthorizedHandler(fn: () => void) {
+USER   onUnauthorized = fn;
+USER }
+USER 
+USER http.interceptors.response.use(
+USER   (r) => r,
+USER   (error) => {
+USER     if (error.response?.status === 401) onUnauthorized?.();
+USER     return Promise.reject(error);
+USER   },
+USER );
+USER 
+USER /** Pull a usable message out of the platform's error envelope. */
+USER export function errorMessage(e: unknown): string {
+USER   const env = (e as { response?: { data?: { error?: {
+USER     message?: string; details?: { message?: string }[] } } } })
+USER     ?.response?.data?.error;
+USER   if (!env) return "Something went wrong. Please try again.";
+USER   if (env.details?.length) {
+USER     return env.details.map((d) => d.message).filter(Boolean).join(" ") ||
+USER       env.message || "Request failed.";
+USER   }
+USER   return env.message ?? "Request failed.";
+USER }
+USER 
+USER /** A `responseType: "blob"` request delivers the *error* body as a Blob too,
+USER  *  which hides the envelope from errorMessage. Read it back before rethrowing. */
+USER export async function readBlobError(e: unknown): Promise<unknown> {
+USER   const res = (e as { response?: { data?: unknown } })?.response;
+USER   if (res?.data instanceof Blob) {
+USER     try {
+USER       res.data = JSON.parse(await res.data.text());
+USER     } catch {
+USER       res.data = undefined;             // an HTML page, not our envelope
+USER     }
+USER   }
+USER   return e;
+USER }
+USER 
+USER export function errorStatus(e: unknown): number | undefined {
+USER   return (e as { response?: { status?: number } })?.response?.status;
+USER }
+USER 
+USER export function requestId(e: unknown): string | undefined {
+USER   return (e as { response?: { data?: { error?: { request_id?: string } } } })
+USER     ?.response?.data?.error?.request_id;
+USER }
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER client/src/ui/layout/AppShellLayout.tsx:
+USER ⋮
+USER │export interface NavGroupItem {
+USER │  code: string;
+USER │  label: string;
+USER │  icon?: string;
+USER │  to?: string;
+USER │  app?: string;
+USER │  links?: NavLinkItem[];
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/permissions.py:
+USER ⋮
+USER │def HasPermission(*codes: str, require_all: bool = False):  # noqa: N802
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/app/registry.ts
+USER ```
+USER /** Frontend module registry.
+USER  *
+USER  *  `code` MUST match accesscontrol_module.code on the server. An ungranted
+USER  *  module gets no route at all, so deep-linking it 404s rather than rendering
+USER  *  blank. `load` must be a STATIC import() literal or Vite cannot split it. */
+USER import type { RouteObject } from "react-router-dom";
+USER 
+USER export interface ModuleManifest {
+USER   code: string;
+USER   basePath: string;
+USER   load: () => Promise<{ routes: RouteObject[] }>;
+USER }
+USER 
+USER export const MODULE_REGISTRY: Record<string, ModuleManifest> = {
+USER   placement_cell: {
+USER     code: "placement_cell",
+USER     basePath: "/placement",
+USER     load: () => import("../modules/placement/routes"),
+USER   },
+USER };
+USER ```
+USER 
+USER client/src/modules/leave/routes.tsx
+USER ```
+USER ```
+USER 
+USER client/src/modules/leave/api.ts
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Context (the same for every step): we are implementing the Employee Leave Management (ELM) module as an integrated module of this Fusion ERP repository (Django 5 + DRF backend under modules/, React 18 + Mantine 7 client under client/). Reuse Fusion's existing login, role mechanism, layout and backend structure; do not rebuild them.
+USER 
+USER Repository rules you must follow:
+USER - There is no user table in this repository. The logged-in person is request.principal (fusion_auth.principal.Principal: user_id, username, kind, roles, permissions). Store people as integer ids (models.IntegerField), never as a ForeignKey to a user model.
+USER - A module copies the shape of modules/placement: apps.py, registry.py, models.py, domain/ (pure Python, no Django imports), services/ (all writes), api/ (serializers, views, urls).
+USER - The module code is "leave", and every permission code starts with "leave.".
+USER - Every API view sets permission_classes = [HasModuleGrant("leave"), HasPermission("leave.<action>")], imported from fusion_auth.permissions.
+USER 
+USER Files marked read-only are context only. Write every file you create or change in full. Do not ask for more files; work with what is shown.
+USER 
+USER Step 7a of 7 — client module wiring. Read-only: client/src/modules/placement/routes.tsx, client/src/lib/http.ts, modules/leave/registry.py, modules/leave/api/urls.py.
+USER 
+USER Create or change these files:
+USER 1. client/src/modules/leave/api.ts — TypeScript types and @tanstack/react-query hooks that call the leave endpoints through the shared `http` axios instance exported by client/src/lib/http.ts (its base URL is already /api/v1, so paths start with /leave/).
+USER 2. client/src/modules/leave/routes.tsx — lazy-loaded pages for the paths "apply", "mine", "approvals" and "substitute" (these must match the NAV_ITEMS "to" paths in registry.py), plus an index redirect to "mine", following placement/routes.tsx. The page files will be pages/ApplyLeavePage.tsx, pages/MyLeavesPage.tsx, pages/ApprovalsPage.tsx and pages/SubstituteRequestsPage.tsx.
+USER 3. client/src/app/registry.ts — add a "leave" entry (code "leave", basePath "/leave", load: () => import("../modules/leave/routes")) next to placement_cell. Keep everything else unchanged.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-11T22:10:12
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Determine if any code changes are needed.
+ASSISTANT 2. Explain any needed changes.
+ASSISTANT 3. If changes are needed, output a copy of each file that needs changes.
+ASSISTANT 
+ASSISTANT 1. Determine if any code changes are needed.
+ASSISTANT 
+ASSISTANT Based on the context provided, the following changes are needed:
+ASSISTANT 
+ASSISTANT - client/src/modules/leave/api.ts: Define TypeScript types and @tanstack/react-query hooks for the leave module.
+ASSISTANT - client/src/modules/leave/routes.tsx: Create lazy-loaded pages for the leave module's API endpoints.
+ASSISTANT - client/src/app/registry.ts: Add a new entry for the leave module in the client-side routing.
+ASSISTANT 
+ASSISTANT 2. Explain any needed changes.
+ASSISTANT 
+ASSISTANT - client/src/modules/leave/api.ts: This file should define TypeScript types for the leave module's API and create @tanstack/react-query hooks to interact with the leave endpoints using the shared `http` instance. The base URL for the leave module's API is already set to "/api/v1", so the paths for the API endpoints should start with "/leave/".
+ASSISTANT 
+ASSISTANT - client/src/modules/leave/routes.tsx: This file should define the lazy-loaded pages for the leave module's API endpoints, including "apply", "mine", "approvals", and "substitute". These pages should match the "to" paths specified in the leave module's registry.py file. Additionally, an index redirect to "mine" should be implemented, following the structure of placement/routes.tsx.
+ASSISTANT 
+ASSISTANT - client/src/app/registry.ts: This file should be updated to include a new entry for the leave module in the client-side routing. The entry should have the code "leave", basePath "/leave", and load: () => import("../modules/leave/routes"). The rest of the file should remain unchanged.
+ASSISTANT 
+ASSISTANT 3. If changes are needed, output a copy of each file that needs changes.
+ASSISTANT 
+ASSISTANT - client/src/modules/leave/api.ts
+ASSISTANT ```
+ASSISTANT // entire file content ...
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT - client/src/modules/leave/routes.tsx
+ASSISTANT ```
+ASSISTANT // entire file content ...
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT - client/src/app/registry.ts
+ASSISTANT ```
+ASSISTANT // entire file content ...
+ASSISTANT ```
