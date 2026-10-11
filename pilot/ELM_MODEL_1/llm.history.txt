@@ -16335,3 +16335,707 @@ ASSISTANT     """Update balance based on actual resumption date."""
 ASSISTANT     # Real logic: Calculate consumed days and adjust
 ASSISTANT     pass
 ASSISTANT ```
+TO LLM 2026-10-11T21:01:11
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/lib/http.ts:
+USER ⋮
+USER │export function setUnauthorizedHandler(fn: () => void) {
+USER │  onUnauthorized = fn;
+USER ⋮
+USER │export function errorMessage(e: unknown): string {
+USER │  const env = (e as { response?: { data?: { error?: {
+USER │    message?: string; details?: { message?: string }[] } } } })
+USER │    ?.response?.data?.error;
+USER │  if (!env) return "Something went wrong. Please try again.";
+USER │  if (env.details?.length) {
+USER │    return env.details.map((d) => d.message).filter(Boolean).join(" ") ||
+USER │      env.message || "Request failed.";
+USER │  }
+USER │  return env.message ?? "Request failed.";
+USER ⋮
+USER │export async function readBlobError(e: unknown): Promise<unknown> {
+USER │  const res = (e as { response?: { data?: unknown } })?.response;
+USER │  if (res?.data instanceof Blob) {
+USER │    try {
+USER │      res.data = JSON.parse(await res.data.text());
+USER │    } catch {
+USER │      res.data = undefined;             // an HTML page, not our envelope
+USER │    }
+USER │  }
+USER │  return e;
+USER ⋮
+USER │export function errorStatus(e: unknown): number | undefined {
+USER │  return (e as { response?: { status?: number } })?.response?.status;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/recruiter/AcceptInvitePage.tsx:
+USER ⋮
+USER │                    <Alert color="red" variant="light"
+USER │                      icon={<FaExclamationTriangle />}>
+USER │                      <Text size="sm">{errorMessage(accept.error)}</Text>
+USER ⋮
+USER 
+USER client/src/ui/components/ErrorState.tsx:
+USER ⋮
+USER │export function ErrorState({ error }: { error: unknown }) {
+USER │  const rid = requestId(error);
+USER │  return (
+USER │    <Alert
+USER │      color="red" variant="light" icon={<FaExclamationTriangle />}
+USER │      title="Could not load this"
+USER │    >
+USER │      <Text size="sm">{errorMessage(error)}</Text>
+USER │      {rid && (
+USER │        // The one id support can grep. Always show it.
+USER │        <Text size="xs" c="dimmed" mt={6} ff="monospace">
+USER │          Reference: {rid}
+USER ⋮
+USER 
+USER client/src/ui/layout/AppShellLayout.tsx:
+USER ⋮
+USER │export interface NavGroupItem {
+USER │  code: string;
+USER │  label: string;
+USER │  icon?: string;
+USER │  to?: string;
+USER │  app?: string;
+USER │  links?: NavLinkItem[];
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/modules/leave/pages/MyLeavesPage.tsx
+USER ```
+USER import { useState } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Stack, Text,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaHistory, FaUserCheck } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { DataTable } from "../../../ui/components/DataTable";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import { HistoryDrawer } from "../components/HistoryDrawer";
+USER import { useMyApplications, useBalances, useHistory } from "../api/hooks";
+USER import type { LeaveApplication, LeaveBalance } from "../api/types";
+USER 
+USER export default function MyLeavesPage() {
+USER   const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+USER   const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
+USER   const { data: historyData, isPending: historyPending } = useHistory();
+USER   const [historyFor, setHistoryFor] = useState<number | null>(null);
+USER 
+USER   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+USER 
+USER   function withdraw(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "gray", title: "Withdrawn",
+USER       message: `Your application has been withdrawn.`,
+USER     });
+USER   }
+USER 
+USER   function cancel(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "blue", title: "Cancelled",
+USER       message: `Your approved leave has been cancelled.`,
+USER     });
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader
+USER         title="My Leaves"
+USER         subtitle="Track your leave balances and application history"
+USER       />
+USER       <Card padding="lg" mb="md">
+USER         <Text fw={600} mb="xs">Leave Balance ({balancesData?.year})</Text>
+USER         <Stack gap="sm">
+USER           <Group justify="space-between">
+USER             <Text>Earned Days: {balancesData?.earned_days ?? 0}</Text>
+USER             <Text>Used Days: {balancesData?.used_days ?? 0}</Text>
+USER           </Group>
+USER           <Group justify="space-between">
+USER             <Text>Remaining Days: {balancesData?.remaining_days ?? 0}</Text>
+USER             <Text>Carry Forward: {balancesData?.carry_forward_days ?? 0}</Text>
+USER           </Group>
+USER         </Stack>
+USER       </Card>
+USER 
+USER       <Card padding="lg">
+USER         <DataTable<LeaveApplication>
+USER           rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+USER           loading={appsPending}
+USER           rowKey={(r) => r.id}
+USER           minWidth={900}
+USER           columns={[
+USER             {
+USER               key: "leave_type", header: "Type",
+USER               render: (r) => r.leave_type.replace(/_/g, " "),
+USER             },
+USER             {
+USER               key: "start_date", header: "Start Date",
+USER               render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+USER             },
+USER             {
+USER               key: "end_date", header: "End Date",
+USER               render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+USER             },
+USER             { key: "status", header: "Status",
+USER               render: (r) => <StatusBadge status={r.status} /> },
+USER             {
+USER               key: "actions", header: "", align: "right",
+USER               render: (r) => (
+USER                 <Group justify="flex-end" gap="xs">
+USER                   <ActionIcon
+USER                     variant="subtle" color="gray" aria-label="History"
+USER                     onClick={() => setHistoryFor(r.id)}
+USER                   >
+USER                     <FaHistory size={12} />
+USER                   </ActionIcon>
+USER                   {r.status === "approved" && (
+USER                     <Button
+USER                       size="xs" variant="subtle" color="red"
+USER                       onClick={() => cancel(r)}
+USER                     >
+USER                       Cancel
+USER                     </Button>
+USER                   )}
+USER                   {r.status !== "approved" && r.status !== "cancelled" && (
+USER                     <Button
+USER                       size="xs" variant="subtle" color="gray"
+USER                       onClick={() => withdraw(r)}
+USER                     >
+USER                       Withdraw
+USER                     </Button>
+USER                   )}
+USER                 </Group>
+USER               ),
+USER             },
+USER           ]}
+USER           empty={{
+USER             icon: FaUserCheck,
+USER             title: "No leave applications found",
+USER             description: "Your leave applications will appear here.",
+USER           }}
+USER         />
+USER       </Card>
+USER 
+USER       <HistoryDrawer
+USER         applicationId={historyFor} onClose={() => setHistoryFor(null)}
+USER       />
+USER     </Container>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/modules/leave/pages/ApplyLeavePage.tsx
+USER ```
+USER import { useState, useEffect } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Input, NumberInput, Select, Text,
+USER   TextInput,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaPlus } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { useSubmitApplication } from "../api/hooks";
+USER import type { LeaveApplication } from "../api/types";
+USER 
+USER type LeaveCategory = "sick" | "personal" | "counseling" | "station";
+USER 
+USER export default function ApplyLeavePage() {
+USER   const submitMutation = useSubmitApplication();
+USER   const [formData, setFormData] = useState<Partial<LeaveApplication>>({
+USER     leave_type: "sick",
+USER     start_date: "",
+USER     end_date: "",
+USER     reason: "",
+USER     unit_head_recommendation: "",
+USER     final_sanction_decision: "",
+USER   });
+USER 
+USER   const [category, setCategory] = useState<LeaveCategory>("sick");
+USER   const [stationLeaveDetails, setStationLeaveDetails] = useState({
+USER     is_station_leave: false,
+USER     substitute_user_id: "",
+USER   });
+USER 
+USER   useEffect(() => {
+USER     if (category === "station") {
+USER       setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: true }));
+USER     } else {
+USER       setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: false }));
+USER     }
+USER   }, [category]);
+USER 
+USER   function handleSubmit() {
+USER     if (!formData.start_date || !formData.end_date || !formData.reason) {
+USER       notifications.show({
+USER         color: "red",
+USER         title: "Missing Information",
+USER         message: "Please fill in all required fields.",
+USER       });
+USER       return;
+USER     }
+USER 
+USER     submitMutation.mutate(formData, {
+USER       onSuccess: () => {
+USER         notifications.show({
+USER           color: "blue",
+USER           title: "Application Submitted",
+USER           message: "Your leave application has been submitted successfully.",
+USER         });
+USER       },
+USER       onError: (e) => {
+USER         notifications.show({
+USER           color: "red",
+USER           title: "Submission Failed",
+USER           message: errorMessage(e),
+USER         });
+USER       },
+USER     });
+USER   }
+USER 
+USER   if (submitMutation.isPending) {
+USER     return (
+USER       <Container size="xl">
+USER         <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
+USER         <Card padding="lg">
+USER           <Text c="dimmed" size="sm">Submitting...</Text>
+USER         </Card>
+USER       </Container>
+USER     );
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
+USER       <Card padding="lg">
+USER         <Group mb="md">
+USER           <Select
+USER             label="Leave Category"
+USER             value={category}
+USER             onChange={(value) => setCategory(value as LeaveCategory)}
+USER             data={[
+USER               { value: "sick", label: "Sick Leave" },
+USER               { value: "personal", label: "Personal Leave" },
+USER               { value: "counseling", label: "Counseling Leave" },
+USER               { value: "station", label: "Station Leave" },
+USER             ]}
+USER           />
+USER         </Group>
+USER 
+USER         <TextInput
+USER           label="Start Date"
+USER           type="date"
+USER           value={formData.start_date || ""}
+USER           onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+USER           required
+USER         />
+USER 
+USER         <TextInput
+USER           label="End Date"
+USER           type="date"
+USER           value={formData.end_date || ""}
+USER           onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+USER           required
+USER         />
+USER 
+USER         <TextInput
+USER           label="Reason"
+USER           value={formData.reason || ""}
+USER           onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+USER           placeholder="Briefly describe the reason for leave"
+USER           required
+USER         />
+USER 
+USER         {category === "station" && (
+USER           <Card padding="sm" radius="md">
+USER             <Text fw={600} mb="xs">Station Leave Details</Text>
+USER             <Group mb="xs">
+USER               <Input
+USER                 label="Substitute User ID"
+USER                 value={stationLeaveDetails.substitute_user_id || ""}
+USER                 onChange={(e) =>
+USER                   setStationLeaveDetails({
+USER                     ...stationLeaveDetails,
+USER                     substitute_user_id: e.target.value,
+USER                   })
+USER                 }
+USER                 placeholder="Enter user ID of the substitute"
+USER               />
+USER             </Group>
+USER           </Card>
+USER         )}
+USER 
+USER         <Button
+USER           type="button"
+USER           onClick={handleSubmit}
+USER           leftIcon={<FaPlus />}
+USER           loading={submitMutation.isPending}
+USER         >
+USER           Submit Application
+USER         </Button>
+USER       </Card>
+USER     </Container>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/modules/leave/pages/ApprovalsPage.tsx
+USER ```
+USER import { useState } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Stack, Text,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaCheck, FaTimes } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import { useApprovalsInbox, useUnitHeadDecision } from "../api/hooks";
+USER import type { LeaveApplication } from "../api/types";
+USER 
+USER export default function ApprovalsPage() {
+USER   const { data, isPending, error } = useApprovalsInbox();
+USER   const [decisionFor, setDecisionFor] = useState<number | null>(null);
+USER 
+USER   if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
+USER 
+USER   function approve(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "blue", title: "Approved",
+USER       message: `Your leave application has been approved.`,
+USER     });
+USER   }
+USER 
+USER   function reject(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "red", title: "Rejected",
+USER       message: `Your leave application has been rejected.`,
+USER     });
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader
+USER         title="Approvals Inbox"
+USER         subtitle="Requests awaiting your decision"
+USER       />
+USER       {data?.results.length === 0 ? (
+USER         <Card padding="lg">
+USER           <Text>No pending approvals</Text>
+USER         </Card>
+USER       ) : (
+USER         <Card padding="lg">
+USER           <Stack gap="md">
+USER             {data.results.map((app) => (
+USER               <Card key={app.id} padding="sm" radius="md">
+USER                 <Stack gap="xs">
+USER                   <Group justify="space-between">
+USER                     <Text fw={600}>{app.leave_type.replace(/_/g, " ")}</Text>
+USER                     <StatusBadge status={app.status} />
+USER                   </Group>
+USER                   <Text size="sm" c="dimmed">
+USER                     {new Date(app.start_date).toLocaleDateString()} - {new Date(app.end_date).toLocaleDateString()}
+USER                   </Text>
+USER                   <Text size="sm">{app.reason}</Text>
+USER                   <Group justify="flex-end" gap="xs" mt="xs">
+USER                     <Button
+USER                       color="blue" leftIcon={<FaCheck />}
+USER                       onClick={() => approve(app)}
+USER                     >
+USER                       Approve
+USER                     </Button>
+USER                     <Button
+USER                       color="red" leftIcon={<FaTimes />}
+USER                       onClick={() => reject(app)}
+USER                     >
+USER                       Reject
+USER                     </Button>
+USER                   </Group>
+USER                 </Stack>
+USER               </Card>
+USER             ))}
+USER           </Stack>
+USER         </Card>
+USER       )}
+USER     </Container>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+USER ```
+USER import { useState } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Stack, Text,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaCheck, FaTimes } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import { useRespondToSubstitute, useNominateReplacement } from "../api/hooks";
+USER 
+USER export default function SubstituteRequestsPage() {
+USER   const respondMutation = useRespondToSubstitute();
+USER   const nominateMutation = useNominateReplacement();
+USER   const [requestId, setRequestId] = useState<number | null>(null);
+USER 
+USER   if (respondMutation.isPending || nominateMutation.isPending) {
+USER     return (
+USER       <Container size="xl">
+USER         <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+USER         <Card padding="lg">
+USER           <Text>Processing...</Text>
+USER         </Card>
+USER       </Container>
+USER     );
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+USER       {respondMutation.isPending || nominateMutation.isPending ? (
+USER         <Card padding="lg">
+USER           <Text>Processing...</Text>
+USER         </Card>
+USER       ) : (
+USER         <>
+USER           <Card padding="lg" mb="md">
+USER             <Text fw={600}>Substitute Requests</Text>
+USER             <Text size="sm" c="dimmed">
+USER               Manage requests for substitute users.
+USER             </Text>
+USER           </Card>
+USER 
+USER           <Card padding="lg">
+USER             <Stack gap="md">
+USER               {/* Placeholder for actual request list */}
+USER               <Text>No active substitute requests</Text>
+USER             </Stack>
+USER           </Card>
+USER         </>
+USER       )}
+USER     </Container>
+USER   );
+USER }
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Fix pass (client). These are the TypeScript errors reported by `tsc --noEmit` after the previous steps. Fix them by editing the files shown. Do not delete functionality just to silence an error.
+USER 
+USER ```
+USER ### tsc --noEmit
+USER src/modules/leave/pages/ApplyLeavePage.tsx(3,3): error TS6133: 'ActionIcon' is declared but its value is never read.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(3,54): error TS6133: 'NumberInput' is declared but its value is never read.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(11,1): error TS6133: 'ErrorState' is declared but its value is never read.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(12,38): error TS2307: Cannot find module '../api/hooks' or its corresponding type declarations.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(13,39): error TS2307: Cannot find module '../api/types' or its corresponding type declarations.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(60,17): error TS7006: Parameter 'e' implicitly has an 'any' type.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(128,17): error TS2322: Type '{ label: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & ComponentProp<"input"> & Omit<Omit<DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, "ref">, "component" | keyof InputProps> & { ...; }'.
+USER   Property 'label' does not exist on type 'IntrinsicAttributes & InputProps & ComponentProp<"input"> & Omit<Omit<DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, "ref">, "component" | keyof InputProps> & { ...; }'.
+USER src/modules/leave/pages/ApplyLeavePage.tsx(145,11): error TS2322: Type '{ children: string; type: "button"; onClick: () => void; leftIcon: Element; loading: any; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER   Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER src/modules/leave/pages/ApprovalsPage.tsx(3,3): error TS6133: 'ActionIcon' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(8,1): error TS6133: 'errorMessage' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(12,29): error TS6133: 'useUnitHeadDecision' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(12,56): error TS2307: Cannot find module '../api/hooks' or its corresponding type declarations.
+USER src/modules/leave/pages/ApprovalsPage.tsx(13,39): error TS2307: Cannot find module '../api/types' or its corresponding type declarations.
+USER src/modules/leave/pages/ApprovalsPage.tsx(16,17): error TS6133: 'isPending' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(17,10): error TS6133: 'decisionFor' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(17,23): error TS6133: 'setDecisionFor' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(21,20): error TS6133: 'app' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(28,19): error TS6133: 'app' is declared but its value is never read.
+USER src/modules/leave/pages/ApprovalsPage.tsx(48,32): error TS7006: Parameter 'app' implicitly has an 'any' type.
+USER src/modules/leave/pages/ApprovalsPage.tsx(61,36): error TS2322: Type '{ children: string; color: "blue"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER   Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER src/modules/leave/pages/ApprovalsPage.tsx(67,35): error TS2322: Type '{ children: string; color: "red"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER   Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
+USER src/modules/leave/pages/MyLeavesPage.tsx(8,1): error TS6133: 'errorMessage' is declared but its value is never read.
+USER src/modules/leave/pages/MyLeavesPage.tsx(13,31): error TS2307: Cannot find module '../components/HistoryDrawer' or its corresponding type declarations.
+USER src/modules/leave/pages/MyLeavesPage.tsx(14,60): error TS2307: Cannot find module '../api/hooks' or its corresponding type declarations.
+USER src/modules/leave/pages/MyLeavesPage.tsx(15,33): error TS6196: 'LeaveBalance' is declared but never used.
+USER src/modules/leave/pages/MyLeavesPage.tsx(15,53): error TS2307: Cannot find module '../api/types' or its corresponding type declarations.
+USER src/modules/leave/pages/MyLeavesPage.tsx(19,42): error TS6133: 'balancesPending' is declared but its value is never read.
+USER src/modules/leave/pages/MyLeavesPage.tsx(20,9): error TS6198: All destructured elements are unused.
+USER src/modules/leave/pages/MyLeavesPage.tsx(25,21): error TS6133: 'app' is declared but its value is never read.
+USER src/modules/leave/pages/MyLeavesPage.tsx(32,19): error TS6133: 'app' is declared but its value is never read.
+USER src/modules/leave/pages/SubstituteRequestsPage.tsx(3,3): error TS6133: 'ActionIcon' is declared but its value is never read.
+USER src/modules/leave/pages/SubstituteRequestsPage.tsx(3,15): error TS6133: 'Button' is declared but its value is never read.
+USER src/modules/leave/```
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
