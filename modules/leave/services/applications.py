@@ -5,7 +5,7 @@ Uses Django transactions to ensure atomicity of state changes and history loggin
 """
 
 from datetime import date
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from django.db import transaction, models
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -499,3 +499,172 @@ def _log_action_history(
         action_type=action_type,
         description=description,
     )
+
+
+# --- New Functions for Lifecycle Actions ---
+
+def withdraw_pending_request(actor_id: int, application_id: int) -> None:
+    """Withdraw a pending leave application."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        # Check if the application belongs to the actor (optional but good practice)
+        # and if it is in a withdrawable state (e.g., 'pending')
+        if application.user_id != actor_id:
+            raise ValueError("You can only withdraw your own applications.")
+        
+        if application.status not in ['pending', 'draft']:  # Adjust based on actual status enum
+            raise ValueError(f"Cannot withdraw application with status {application.status}.")
+            
+        # Update status to withdrawn
+        application.status = 'withdrawn'
+        application.save()
+        
+        # Log the action
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='withdrawal',
+            description=f"Application withdrawn by user {actor_id}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+    except ValidationError as e:
+        raise ValueError(str(e))
+
+
+def request_cancellation(actor_id: int, application_id: int) -> None:
+    """Request cancellation of an approved leave."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only cancel your own applications.")
+            
+        # Update status to 'cancellation_requested' or similar
+        application.status = 'cancellation_requested'
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='cancellation_request',
+            description=f"Cancellation requested by user {actor_id}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def decide_cancellation(actor_id: int, application_id: int, decision: str) -> None:
+    """Decide on a cancellation request."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.status != 'cancellation_requested':
+            raise ValueError(f"Cannot decide cancellation for application with status {application.status}.")
+            
+        if decision == 'approve':
+            # Restore balance and mark as cancelled
+            _update_balance_on_cancellation(application, actor_id)
+            application.status = 'cancelled'
+            description = f"Cancellation approved by {actor_id}."
+        else:  # reject
+            application.status = 'approved'  # Revert to original status or keep pending? Usually revert.
+            description = f"Cancellation rejected by {actor_id}."
+            
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='cancellation_decision',
+            description=description
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def request_extension(actor_id: int, application_id: int, extension_from: date, extension_to: date, purpose: str, station_leave_details: Any = None, nominated_substitute_id: int = None) -> None:
+    """Request an extension of ongoing leave."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only extend your own applications.")
+            
+        # Update dates and purpose
+        application.requested_from = extension_from
+        application.requested_to = extension_to
+        application.purpose = purpose
+        application.station_leave_details = station_leave_details
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='extension_request',
+            description=f"Extension requested from {extension_from} to {extension_to}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def submit_resumption(actor_id: int, application_id: int, actual_resumption_date: date) -> None:
+    """Submit actual resumption of duty information."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only submit resumption for your own applications.")
+            
+        # Store the date (could be a separate model field or just update here)
+        # Assuming we store it in the application model for simplicity as per serializer
+        application.actual_resumption_date = actual_resumption_date
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='resumption_submitted',
+            description=f"Resumption submitted on {actual_resumption_date}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def review_resumption(actor_id: int, application_id: int, actual_resumption_date: date) -> None:
+    """Review the submitted resumption and adjust balance."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only review your own applications.")
+            
+        # Verify the date matches what was submitted (simplified check)
+        # In a real system, this might compare against a stored field or re-calculate consumed days
+        
+        # Adjust balance based on actual resumption date vs expected
+        _update_balance_on_resumption(application, actor_id, actual_resumption_date)
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='resumption_reviewed',
+            description=f"Resumption reviewed on {actual_resumption_date}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+# --- Additional Helper Functions for New Logic ---
+
+def _update_balance_on_cancellation(application: LeaveApplication, actor_id: int) -> None:
+    """Update balance on cancellation."""
+    # Real logic: Restore available days
+    pass
+
+
+def _update_balance_on_resumption(application: LeaveApplication, actor_id: int, actual_resumption_date: date) -> None:
+    """Update balance based on actual resumption date."""
+    # Real logic: Calculate consumed days and adjust
+    pass

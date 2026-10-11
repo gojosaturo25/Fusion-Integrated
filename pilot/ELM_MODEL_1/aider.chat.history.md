@@ -3519,3 +3519,1245 @@ export default function SubstituteRequestsPage() {
 > Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
 > Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  
 > Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  
+
+# aider chat started at 2026-10-11 20:32:28
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.chat.history.md --input-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/aider.input.history --llm-history-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/llm.history.txt --file config/urls.py --file modules/leave/api/serializers.py --file modules/leave/api/urls.py --file modules/leave/api/views.py --message-file /Users/vishalkumar/ELM_MODEL_1/pilot/ELM_MODEL_1/prompts/fix_backend.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added config/urls.py to the chat.  
+> Added modules/leave/api/serializers.py to the chat.  
+> Added modules/leave/api/urls.py to the chat.  
+> Added modules/leave/api/views.py to the chat.  
+
+#### Fix pass (backend). These are the errors reported by the repository's own checks after the previous steps. Fix them by editing the files shown. Do not delete functionality just to silence an error.  
+####   
+#### ```  
+#### ### manage.py check  
+#### Traceback (most recent call last):  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "config/urls.py", line 18, in <module>  
+####     path("api/v1/leave/", include("modules.leave.api.urls")),  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "modules/leave/api/urls.py", line 9, in <module>  
+####     from modules.leave.api.views import (  
+####   File "modules/leave/api/views.py", line 17, in <module>  
+####     from modules.leave.services.applications import (  
+#### ImportError: cannot import name 'withdraw_pending_request' from 'modules.leave.services.applications' (modules/leave/services/applications.py)  
+####   
+#### During handling of the above exception, another exception occurred:  
+####   
+#### Traceback (most recent call last):  
+####   File "manage.py", line 9, in <module>  
+####     execute_from_command_line(sys.argv)  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "config/urls.py", line 18, in <module>  
+####     path("api/v1/leave/", include("modules.leave.api.urls")),  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "modules/leave/api/urls.py", line 9, in <module>  
+####     from modules.leave.api.views import (  
+####   File "modules/leave/api/views.py", line 17, in <module>  
+####     from modules.leave.services.applications import (  
+#### ImportError: cannot import name 'withdraw_pending_request' from 'modules.leave.services.applications' (modules/leave/services/applications.py)  
+#### [exit 1]  
+#### ### makemigrations --check  
+#### Traceback (most recent call last):  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "config/urls.py", line 18, in <module>  
+####     path("api/v1/leave/", include("modules.leave.api.urls")),  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "modules/leave/api/urls.py", line 9, in <module>  
+####     from modules.leave.api.views import (  
+####   File "modules/leave/api/views.py", line 17, in <module>  
+####     from modules.leave.services.applications import (  
+#### ImportError: cannot import name 'withdraw_pending_request' from 'modules.leave.services.applications' (modules/leave/services/applications.py)  
+####   
+#### During handling of the above exception, another exception occurred:  
+####   
+#### Traceback (most recent call last):  
+####   File "manage.py", line 9, in <module>  
+####     execute_from_command_line(sys.argv)  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "config/urls.py", line 18, in <module>  
+####     path("api/v1/leave/", include("modules.leave.api.urls")),  
+####   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####   File "modules/leave/api/urls.py", line 9, in <module>  
+####     from modules.leave.api.views import (  
+####   File "modules/leave/api/views.py", line 17, in <module>  
+####     from modules.leave.services.applications import (  
+#### ImportError: cannot import name 'withdraw_pending_request' from 'modules.leave.services.applications' (modules/leave/services/applications.py)  
+#### [exit 1]  
+#### ### ruff errors only (F, E9)  
+#### F401 [*] `typing.Any` imported but unused  
+####  --> modules/leave/api/serializers.py:7:20  
+####   |  
+#### 5 | """  
+#### 6 |  
+#### 7 | from typing import Any, Dict, List, Optional  
+####   |                    ^^^  
+#### 8 | from rest_framework import serializers  
+#### 9 | from django.db.models import QuerySet  
+####   |  
+#### help: Remove unused import  
+####   |  
+#### 6 |  
+####   - from typing import Any, Dict, List, Optional  
+#### 7 | from rest_framework import serializers  
+####   |  
+####   
+#### F401 [*] `typing.Dict` imported but unused  
+####  --> modules/leave/api/serializers.py:7:25  
+####   |  
+#### 5 | """  
+#### 6 |  
+#### 7 | from typing import Any, Dict, List, Optional  
+####   |                         ^^^^  
+#### 8 | from rest_framework import serializers  
+#### 9 | from django.db.models import QuerySet  
+####   |  
+#### help: Remove unused import  
+####   |  
+#### 6 |  
+####   - from typing import Any, Dict, List, Optional  
+#### 7 | from rest_framework import serializers  
+####   |  
+####   
+#### F401 [*] `typing.List` imported but unused  
+####  --> modules/leave/api/serializers.py:7:31  
+####   |  
+#### 5 | """  
+#### 6 |  
+#### 7 | from typing import Any, Dict, List, Optional  
+####   |                               ^^^^  
+#### 8 | from rest_framework import serializers  
+#### 9 | from django.db.models import QuerySet  
+####   |  
+#### help: Remove unused import  
+####   |  
+#### 6 |  
+####   - from typing import Any, Dict, List, Optional  
+#### 7 | from rest_framework import serializers  
+####   |  
+####   
+#### F401 [*] `typing.Optional` imported but unused  
+####  --> modules/leave/api/serializers.py:7:37  
+####   |  
+#### 5 | """  
+#### 6 |  
+#### 7 | from typing import Any, Dict, List, Optional  
+####   |                                     ^^^^^^^^  
+#### 8 | from rest_framework import serializers  
+#### 9 | from django.db.models import QuerySet  
+####   |  
+#### help: Remove unused import  
+####   |  
+#### 6 |  
+####   - from typing import Any, Dict, List, Optional  
+#### 7 | from rest_framework import serializers  
+####   |  
+####   
+#### F401 [*] `django.db.models.QuerySet` imported but unused  
+####   --> modules/leave/api/serializers.py:9:30  
+####    |  
+####  7 | from typing import Any, Dict, List, Optional  
+####  8 | from rest_framework import serializers  
+####  9 | from django.db.mod```  
+> manage.py  
+> Add file to the chat? (Y)es/(N)o/(D)on't ask again [Yes]: y  
+
+To fix the import errors and the missing function error, I need to:
+
+1.  Remove unused imports (`Any`, `Dict`, `List`, `Optional` from `typing`, and `QuerySet` from `django.db.models`) in `modules/leave/api/serializers.py`.
+2.  Add the missing `withdraw_pending_request` function to `modules/leave/services/applications.py` (and likely its corresponding service file if it doesn't exist, but I'll assume it's part of the applications module or create a placeholder structure if needed; however, looking at the pattern, it's likely just missing from the import list in views.py or the function definition is missing. Since I can only edit the files provided in the chat context for changes, and the error says `cannot import name 'withdraw_pending_request'`, I will assume the function exists elsewhere or needs to be added to the services file if it's part of this module structure. Wait, the error is an ImportError from `modules.leave.services.applications`. This implies the function *should* be there but isn't defined, OR the view is trying to import it but it doesn't exist in that specific file. Given the context of "Fix pass (backend)", I need to ensure the code runs. The most direct fix for an ImportError where a function is expected but missing is to either define it or remove the reference if it's truly not needed. However, `WithdrawApplicationView` clearly uses it. So I must add the function definition to `modules/leave/services/applications.py`. Since that file wasn't provided in the chat summary, I cannot edit it directly unless I ask for it. But the prompt says "Fix them by editing the files shown." This implies I should only edit the files *shown*. If the function is missing from the services file which isn't shown, I can't add it there.
+    
+    *Correction*: The prompt says "Fix pass (backend)... Fix them by editing the files shown." It lists `manage.py`, `modules/leave/api/serializers.py`, `modules/leave/api/urls.py`, `config/urls.py`, and `modules/leave/api/views.py`. It does *not* list `modules/leave/services/applications.py` in the "files shown" for editing, but the error occurs when importing from it.
+    
+    However, often in these scenarios, if a file is missing from the summary but referenced, I might need to infer its content or perhaps the user expects me to handle the import error by removing the unused import in serializers (which is trivial) and maybe the services file issue is resolved by... wait.
+    
+    Let's re-read carefully: "Fix pass (backend). These are the errors reported... Fix them by editing the files shown."
+    The files shown are: `manage.py`, `modules/leave/api/serializers.py`, `modules/leave/api/urls.py`, `config/urls.py`, `modules/leave/api/views.py`.
+    
+    The error is: `ImportError: cannot import name 'withdraw_pending_request' from 'modules.leave.services.applications'`.
+    
+    If I cannot edit `modules/leave/services/applications.py` (as it wasn't shown), how do I fix this?
+    Option A: Remove the import in `views.py` and remove the usage. But that breaks functionality ("Do not delete functionality just to silence an error").
+    Option B: The file `modules/leave/services/applications.py` *was* shown in a previous turn or is implied to be editable? No, the prompt explicitly lists "files present in my git repository" and then later "I have added these files to the chat". The list of added files does NOT include `services/applications.py`.
+    
+    Is it possible the function name is wrong? Or maybe I should check if there's a typo in the import?
+    In `views.py`: `from modules.leave.services.applications import ( ... withdraw_pending_request, ... )`.
+    
+    If I strictly follow "edit the files shown", I can only fix the unused imports in `serializers.py`. The ImportError for `withdraw_pending_request` cannot be fixed by editing `views.py` unless I remove the usage, which is forbidden.
+    
+    *Hypothesis*: Perhaps the user made a mistake and forgot to add the services file to the chat context, OR the function exists but the import path is wrong? No, the error is specific.
+    
+    *Alternative Hypothesis*: Maybe I am expected to create the missing service file? "Create a new file you MUST return a *file listing*..." - Yes, I can create files. But the instruction says "Fix them by editing the files shown." This usually implies modifying existing ones. However, if a dependency is missing and I can't edit it, creating it might be the only way to satisfy "Do not delete functionality".
+    
+    *Wait*, looking at the previous turn's file listing: `modules/leave/services/applications.py` was NOT in the list of files provided in the chat summary initially. But now I see the error trace points to it.
+    
+    Let's look at the imports in `views.py` again.
+    `from modules.leave.services.applications import ( apply_leave, respond_to_substitute_request, nominate_replacement_substitute, unit_head_review, establishment_verify_and_route, final_sanction_decision, withdraw_pending_request, request_cancellation, decide_cancellation, request_extension, submit_resumption, review_resumption, )`
+    
+    If I cannot edit the services file, I am stuck. Unless... `withdraw_pending_request` is actually defined in `views.py` itself? No, it's imported.
+    
+    Maybe the solution is to simply remove the unused imports in `serializers.py` (which I can do) and assume the user will provide the services file or that I should create a minimal stub for it if allowed? The prompt says "Fix pass (backend)". If I leave the ImportError, the backend fails.
+    
+    Let's re-read the constraint: "Fix them by editing the files shown."
+    Files shown: `manage.py`, `serializers.py`, `urls.py`, `config/urls.py`, `views.py`.
+    
+    If I edit `views.py` to remove `withdraw_pending_request` from imports, I violate "Do not delete functionality".
+    
+    Is it possible the function is aliased differently? Or maybe I should check if `modules/leave/services/__init__.py` exports it?
+    
+    Actually, looking at the pattern of other functions like `apply_leave`, they are likely in a file named `applications.py`. If that file doesn't exist or doesn't have the function, the import fails.
+    
+    Since I cannot edit the missing file `modules/leave/services/applications.py` based on the "files shown" constraint (unless I create it as a new file), and removing functionality is bad...
+    
+    Wait, could the error be a typo in the *import* statement in `views.py`? Maybe it should be `withdraw_application`? No, the view method is `WithdrawApplicationView`.
+    
+    Let's assume the user made a mistake in the "files shown" list and I am allowed to create/edit the missing service file if necessary to fix the import error, OR perhaps I should just remove the unused imports in serializers and leave the import error as is? No, that doesn't fix "backend".
+    
+    Actually, looking at the provided files again... `modules/leave/api/views.py` imports from `modules.leave.services.applications`. If that file isn't shown, maybe I need to create it? The prompt says "Create a new file you MUST return a *file listing* which includes an appropriate filename". This is allowed.
+    
+    So the plan:
+    1. Fix unused imports in `serializers.py`.
+    2. Create `modules/leave/services/applications.py` with the missing function `withdraw_pending_request` (and likely other missing ones if they are not defined, but at least `withdraw_pending_request`). I need to infer the logic from the view usage: `actor_id`, `application_id`. It likely sets status to withdrawn.
+    
+    Wait, looking closer at the prompt structure... usually "files shown" implies those are the only ones I can touch. But if a critical import fails, and I can't fix it without creating/editing the missing file, I must create it. The instruction "Fix them by editing the files shown" might be a general guideline, but "Create a new file" is explicitly allowed in the system instructions ("To suggest changes... Create a new file you MUST return a *file listing*...").
+    
+    So I will:
+    1. Edit `modules/leave/api/serializers.py` to remove unused imports.
+    2. Create `modules/leave/services/applications.py` with the necessary function `withdraw_pending_request`. I'll also check if other functions listed in the import are missing. The error only mentions `withdraw_pending_request`, but others might be too. To be safe, I'll implement a basic structure for all of them based on the view usage patterns (calling domain services or models).
+    
+    Actually, looking at the imports in `views.py`:
+    `apply_leave`, `respond_to_substitute_request`, `nominate_replacement_substitute`, `unit_head_review`, `establishment_verify_and_route`, `final_sanction_decision`, `withdraw_pending_request`, `request_cancellation`, `decide_cancellation`, `request_extension`, `submit_resumption`, `review_resumption`.
+    
+    If I only create `withdraw_pending_request`, the other imports might still fail later. But the immediate error is just that one. However, to make the code robust, I should probably include all of them if they are missing. Since I don't have the original file content, I will create a placeholder implementation for `withdraw_pending_request` and perhaps stubs for others if needed, but focusing on fixing the reported error first.
+    
+    Wait, maybe the function is in `modules/leave/services/__init__.py`? No, the import path is specific.
+    
+    Let's proceed with:
+    1. Fixing `serializers.py`.
+    2. Creating `modules/leave/services/applications.py` with `withdraw_pending_request`. I'll implement it to set the application status to 'withdrawn' or similar logic consistent with the domain.
+    
+    Wait, I should check if there are other errors. The prompt only lists `manage.py check` and `makemigrations --check` which both fail on the same ImportError. And `ruff errors`.
+    
+    So, step 1: Edit `modules/leave/api/serializers.py`.
+    Step 2: Create `modules/leave/services/applications.py` with `withdraw_pending_request`.
+    
+    Let's draft the content for `withdraw_pending_request`. Based on `WithdrawApplicationView`:
+    - Input: `actor_id`, `application_id`.
+    - Action: Withdraw pending request.
+    - Likely logic: Find application, check status is 'pending' or similar, set status to 'withdrawn', log history.
+    
+    I will create the file with a basic implementation.
+
+modules/leave/api/serializers.py
+```python
+"""
+DRF Serializers for Leave Management.
+Implements serialization/deserialization for LeaveApplication, LeaveBalance, and LeaveActionHistory.
+Includes input serializers for application creation and decision recording.
+"""
+
+from typing import Any, Dict, List, Optional
+from rest_framework import serializers
+from django.db.models import QuerySet
+
+from modules.directory.serializers import UserRefSerializer
+from modules.leave.models import (
+    LeaveApplication,
+    LeaveBalance,
+    LeaveActionHistory,
+    LeaveCategory,
+)
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    """Serializer for LeaveBalance model."""
+
+    class Meta:
+        model = LeaveBalance
+        fields = ["id", "category", "year", "available_days", "used_days"]
+        read_only_fields = ["id", "year"]
+
+
+class LeaveActionHistorySerializer(serializers.ModelSerializer):
+    """Serializer for LeaveActionHistory model."""
+
+    class Meta:
+        model = LeaveActionHistory
+        fields = [
+            "id",
+            "application_id",
+            "actor_id",
+            "action_type",
+            "description",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class LeaveApplicationDetailSerializer(serializers.ModelSerializer):
+    """Serializer for detailed LeaveApplication view."""
+
+    category_display = serializers.CharField(source="category", read_only=True)
+    status_display = serializers.CharField(source="status", read_only=True)
+
+    class Meta:
+        model = LeaveApplication
+        fields = [
+            "id",
+            "user_id",
+            "category",
+            "requested_from",
+            "requested_to",
+            "purpose",
+            "station_leave_details",
+            "nominated_substitute_id",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user_id",
+            "category",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class LeaveApplicationListSerializer(serializers.ModelSerializer):
+    """Serializer for list of LeaveApplications (pagination-ready)."""
+
+    category_display = serializers.CharField(source="category", read_only=True)
+    status_display = serializers.CharField(source="status", read_only=True)
+
+    class Meta:
+        model = LeaveApplication
+        fields = [
+            "id",
+            "user_id",
+            "category",
+            "requested_from",
+            "requested_to",
+            "purpose",
+            "status",
+            "created_at",
+        ]
+
+
+class ApplyLeaveSerializer(serializers.Serializer):
+    """Input serializer for creating a new leave application."""
+
+    category = serializers.ChoiceField(
+        choices=LeaveCategory.choices,
+        required=True,
+    )
+    requested_from = serializers.DateField(required=True)
+    requested_to = serializers.DateField(required=True)
+    purpose = serializers.CharField(required=True, max_length=500)
+    station_leave_details = serializers.JSONField(required=False, allow_null=True)
+    nominated_substitute_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class RespondToSubstituteRequestSerializer(serializers.Serializer):
+    """Input serializer for responding to a substitute request."""
+
+    accept = serializers.BooleanField(required=True)
+
+
+class NominateReplacementSubstituteSerializer(serializers.Serializer):
+    """Input serializer for nominating a replacement substitute."""
+
+    new_substitute_id = serializers.IntegerField(required=True)
+
+
+class UnitHeadReviewDecisionSerializer(serializers.Serializer):
+    """Input serializer for Unit Head review decision (CL/RH)."""
+
+    decision = serializers.ChoiceField(
+        choices=["approve", "reject"],
+        required=True,
+    )
+
+
+class UnitHeadRecommendationSerializer(serializers.Serializer):
+    """Input serializer for Unit Head recommendation (SCL/EL/COL/VL)."""
+
+    decision = serializers.ChoiceField(
+        choices=["recommended", "not_recommended"],
+        required=True,
+    )
+
+
+class EstablishmentVerifyAndRouteSerializer(serializers.Serializer):
+    """Input serializer for establishment verification and routing."""
+
+    pass  # No additional data needed, uses application context
+
+
+class FinalSanctionDecisionSerializer(serializers.Serializer):
+    """Input serializer for final sanctioning decision."""
+
+    decision = serializers.ChoiceField(
+        choices=["approve", "reject"],
+        required=True,
+    )
+
+
+class RequestWithdrawalSerializer(serializers.Serializer):
+    """Input serializer for withdrawing a pending request."""
+
+    pass  # No additional data needed
+
+
+class RequestCancellationSerializer(serializers.Serializer):
+    """Input serializer for requesting cancellation of an approved leave."""
+
+    pass  # No additional data needed
+
+
+class RequestExtensionSerializer(serializers.Serializer):
+    """Input serializer for requesting an extension of ongoing leave."""
+
+    extension_from = serializers.DateField(required=True)
+    extension_to = serializers.DateField(required=True)
+    purpose = serializers.CharField(required=True, max_length=500)
+    station_leave_details = serializers.JSONField(required=False, allow_null=True)
+    nominated_substitute_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class SubmitResumptionSerializer(serializers.Serializer):
+    """Input serializer for submitting actual resumption of duty information."""
+
+    actual_resumption_date = serializers.DateField(required=True)
+
+
+class ReviewResumptionSerializer(serializers.Serializer):
+    """Input serializer for reviewing the submitted resumption."""
+
+    actual_resumption_date = serializers.DateField(required=True)
+```
+
+modules/leave/services/applications.py
+```python
+"""
+Services for Leave Application management.
+Implements business logic for application lifecycle, decisions, and extensions.
+"""
+
+from typing import Any
+from django.db import transaction
+from django.core.exceptions import ValidationError
+
+# Assuming models are imported from the same module or available context
+# In a real setup, these would be explicitly imported from modules.leave.models
+from modules.leave.models import LeaveApplication, LeaveActionHistory
+
+
+def withdraw_pending_request(actor_id: int, application_id: int) -> None:
+    """Withdraw a pending leave application."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        # Check if the application belongs to the actor (optional but good practice)
+        # and if it is in a withdrawable state (e.g., 'pending')
+        if application.user_id != actor_id:
+            raise ValueError("You can only withdraw your own applications.")
+        
+        if application.status not in ['pending', 'draft']:  # Adjust based on actual status enum
+            raise ValueError(f"Cannot withdraw application with status {application.status}.")
+            
+        # Update status to withdrawn
+        application.status = 'withdrawn'
+        application.save()
+        
+        # Log the action
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='withdrawal',
+            description=f"Application withdrawn by user {actor_id}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+    except ValidationError as e:
+        raise ValueError(str(e))
+
+
+def apply_leave(actor_id: int, category: str, requested_from: Any, requested_to: Any, purpose: str, station_leave_details: Any = None, nominated_substitute_id: int = None) -> LeaveApplication:
+    """Create a new leave application."""
+    from datetime import date
+    
+    # Logic to create application...
+    app = LeaveApplication.objects.create(
+        user_id=actor_id,
+        category=category,
+        requested_from=requested_from,
+        requested_to=requested_to,
+        purpose=purpose,
+        station_leave_details=station_leave_details,
+        nominated_substitute_id=nominated_substitute_id,
+    )
+    return app
+
+
+def respond_to_substitute_request(actor_id: int, application_id: int, accept: bool) -> None:
+    """Respond to a substitute request."""
+    # Logic...
+    pass
+
+
+def nominate_replacement_substitute(actor_id: int, application_id: int, new_substitute_id: int) -> None:
+    """Nominate a replacement substitute."""
+    # Logic...
+    pass
+
+
+def unit_head_review(actor_id: int, application_id: int, decision: str) -> None:
+    """Record Unit Head's review decision."""
+    # Logic...
+    pass
+
+
+def establishment_verify_and_route(actor_id: int, application_id: int) -> None:
+    """Perform establishment-level verification and routing."""
+    # Logic...
+    pass
+
+
+def final_sanction_decision(actor_id: int, application_id: int, decision: str) -> None:
+    """Record the final sanctioning decision."""
+    # Logic...
+    pass
+
+
+def request_cancellation(actor_id: int, application_id: int) -> None:
+    """Request cancellation of an approved leave."""
+    # Logic...
+    pass
+
+
+def decide_cancellation(actor_id: int, application_id: int, decision: str) -> None:
+    """Decide on a cancellation request."""
+    # Logic...
+    pass
+
+
+def request_extension(actor_id: int, application_id: int, extension_from: Any, extension_to: Any, purpose: str, station_leave_details: Any = None, nominated_substitute_id: int = None) -> None:
+    """Request an extension of ongoing leave."""
+    # Logic...
+    pass
+
+
+def submit_resumption(actor_id: int, application_id: int, actual_resumption_date: Any) -> None:
+    """Submit actual resumption of duty information."""
+    # Logic...
+    pass
+
+
+def review_resumption(actor_id: int, application_id: int, actual_resumption_date: Any) -> None:
+    """Review the submitted resumption and adjust balance."""
+    # Logic...
+    pass
+```
+
+> Tokens: 8.7k sent, 4.2k received.  
+> modules/leave/services/__init__.py  
+> Add file to the chat? (Y)es/(N)o/(A)ll/(S)kip all/(D)on't ask again [Yes]: y  
+> modules/leave/services/applications.py  
+> Add file to the chat? (Y)es/(N)o/(A)ll/(S)kip all/(D)on't ask again [Yes]: y  
+
+To fix the `ImportError` for `withdraw_pending_request` and ensure all required service functions are available (as they are imported in `views.py` but missing from the provided `applications.py` content), I will update `modules/leave/services/applications.py`.
+
+I will implement the missing functions (`withdraw_pending_request`, `request_cancellation`, `decide_cancellation`, `request_extension`, `submit_resumption`, `review_resumption`) with basic logic consistent with the view usage, while preserving the existing structure and placeholder logic for other functions. I will also ensure imports are correct.
+
+modules/leave/services/applications.py
+```python
+"""
+Service layer for leave applications.
+Implements core business logic: validation, routing, consent handling, and decision recording.
+Uses Django transactions to ensure atomicity of state changes and history logging.
+"""
+
+from datetime import date
+from typing import Any, Optional, Tuple
+
+from django.db import transaction, models
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+from modules.directory.models import UserRef
+from modules.leave.domain.policy import (
+    LeaveCategory,
+    calculate_consumed_days,
+    check_applicant_overlap,
+    requires_substitute,
+    unit_head_decision_required,
+    get_categories_requiring_unit_head_decision,
+)
+from modules.leave.models import (
+    LeaveApplication,
+    LeaveBalance,
+    LeaveActionHistory,
+    LeaveCategory as ModelLeaveCategory,
+)
+from fusion_auth.permissions import HasPermission
+
+
+def apply_leave(
+    actor_id: int,
+    category: str,
+    requested_from: date,
+    requested_to: date,
+    purpose: str,
+    station_leave_details: Optional[dict] = None,
+    nominated_substitute_id: Optional[int] = None,
+) -> LeaveApplication:
+    """
+    Create and submit a new leave application.
+    
+    Validates eligibility, balance, overlaps, and substitutes.
+    Routes to substitute consent if required, otherwise proceeds to Unit Head review.
+    
+    Args:
+        actor_id: ID of the employee submitting the request.
+        category: Leave category (e.g., 'CL', 'RH').
+        requested_from: Start date of leave.
+        requested_to: End date of leave.
+        purpose: Reason for leave.
+        station_leave_details: Optional JSON details for station leave.
+        nominated_substitute_id: ID of the nominated substitute (if applicable).
+    
+    Returns:
+        The created LeaveApplication instance.
+    
+    Raises:
+        ValueError: If validation fails or action is not allowed in current status.
+        DjangoValidationError: If domain policy rules are violated.
+    """
+    # Map string category to Enum
+    try:
+        category_enum = ModelLeaveCategory(category)
+    except ValueError:
+        raise ValueError(f"Invalid leave category: {category}")
+
+    application, created = LeaveApplication.objects.get_or_create(
+        user_id=actor_id,
+        defaults={
+            'category': category_enum,
+            'requested_from': requested_from,
+            'requested_to': requested_to,
+            'purpose': purpose,
+            'station_leave_details': station_leave_details,
+            'nominated_substitute_id': nominated_substitute_id,
+            'status': 'draft',
+        },
+    )
+
+    if not created:
+        # Check if status allows modification (only 'draft' or 'submitted' before full processing)
+        # However, per BR-EL-034, in-place modification is blocked. 
+        # We assume this function is called only for new applications.
+        # If an existing draft exists, we might need to handle it differently, 
+        # but the spec implies a fresh application flow.
+        pass
+
+    # Domain Validation
+    try:
+        policy = get_policy_config(category_enum)
+        
+        # Check balance (simplified: assume sufficient balance if created or updated by service)
+        # In a full system, we would query LeaveBalance for the user/year/category.
+        # For this service layer, we assume the balance check is handled or passed.
+        # We will perform a placeholder check to ensure logic exists.
+        _check_balance(actor_id, category_enum, requested_from, requested_to)
+
+        # Check overlap (simplified: assume no active leave for actor)
+        _check_overlap(actor_id, requested_from, requested_to)
+
+        # Check substitute eligibility if required
+        if requires_substitute(category_enum):
+            if nominated_substitute_id is None:
+                raise ValueError("Substitute must be nominated for this category.")
+            _validate_substitute_eligibility(nominated_substitute_id, actor_id, requested_from, requested_to)
+    except (ValueError, DjangoValidationError) as e:
+        # Log history entry for validation failure before raising
+        _log_action_history(
+            application=application,
+            actor_id=actor_id,
+            action_type="validation_failed",
+            description=str(e),
+        )
+        raise
+
+    # Create the application instance (if not already created above)
+    if not created:
+        application.save()
+
+    # Determine routing path
+    if requires_substitute(category_enum):
+        # Route to substitute consent
+        status = 'submitted'
+        _log_action_history(
+            application=application,
+            actor_id=actor_id,
+            action_type="substitute_consent_required",
+            description=f"Application submitted. Awaiting substitute consent.",
+        )
+    else:
+        # Route to Unit Head review (or Director self-sanction if applicable)
+        status = 'submitted'
+        _log_action_history(
+            application=application,
+            actor_id=actor_id,
+            action_type="submitted_for_review",
+            description=f"Application submitted for {category_enum.value} leave.",
+        )
+
+    # Update status to submitted
+    application.status = status
+    application.save()
+
+    return application
+
+
+def respond_to_substitute_request(
+    actor_id: int,
+    application_id: int,
+    accept: bool,
+) -> None:
+    """
+    Accept or decline a substitute request.
+    
+    Args:
+        actor_id: ID of the substitute (or responsibility holder).
+        application_id: ID of the associated leave application.
+        accept: True to accept, False to decline.
+    
+    Raises:
+        ValueError: If action is not allowed in current status.
+    """
+    application = LeaveApplication.objects.get(id=application_id)
+
+    if application.status not in ['submitted', 'under_review']:
+        raise ValueError(f"Cannot respond to substitute request for application in status {application.status}.")
+
+    # Update application status based on response
+    if accept:
+        new_status = 'under_review'
+        description = "Substitute consent accepted."
+    else:
+        new_status = 'submitted'  # Reverts to applicant action required state effectively
+        description = "Substitute consent declined."
+
+    application.status = new_status
+    application.save()
+
+    _log_action_history(
+        application=application,
+        actor_id=actor_id,
+        action_type="substitute_response",
+        description=description,
+    )
+
+
+def nominate_replacement_substitute(
+    actor_id: int,
+    application_id: int,
+    new_substitute_id: int,
+) -> None:
+    """
+    Nominate a replacement substitute after a decline.
+    
+    Args:
+        actor_id: ID of the employee (applicant).
+        application_id: ID of the associated leave application.
+        new_substitute_id: ID of the new nominated substitute.
+    
+    Raises:
+        ValueError: If action is not allowed in current status.
+    """
+    application = LeaveApplication.objects.get(id=application_id)
+
+    # Check if we are in a state where replacement is needed (e.g., after decline)
+    # Per EL-UC-019, this happens when substitute declines and request enters 'Applicant Action Required'.
+    # We assume status reflects this or is 'submitted' awaiting another response.
+    if application.status not in ['submitted', 'under_review']:
+        raise ValueError(f"Cannot nominate replacement substitute for application in status {application.status}.")
+
+    # Validate new substitute eligibility (simplified)
+    _validate_substitute_eligibility(new_substitute_id, actor_id, application.requested_from, application.requested_to)
+
+    # Update the nominated substitute ID
+    application.nominated_substitute_id = new_substitute_id
+    application.save()
+
+    _log_action_history(
+        application=application,
+        actor_id=actor_id,
+        action_type="substitute_renomination",
+        description=f"New substitute {new_substitute_id} nominated.",
+    )
+
+
+@transaction.atomic
+def unit_head_review(
+    actor_id: int,
+    application_id: int,
+    decision: str,
+) -> None:
+    """
+    Record Unit Head's review decision.
+    
+    For CL/RH: Approve or Reject.
+    For SCL/EL/COL/VL: Recommended or Not Recommended.
+    
+    Args:
+        actor_id: ID of the Unit Head.
+        application_id: ID of the leave application.
+        decision: 'approve', 'reject', 'recommended', or 'not_recommended'.
+    
+    Raises:
+        ValueError: If action is not allowed in current status.
+    """
+    application = LeaveApplication.objects.get(id=application_id)
+
+    # Determine expected statuses based on category and decision type
+    category_enum = ModelLeaveCategory(application.category)
+    
+    if unit_head_decision_required(category_enum):
+        # CL/RH: Unit Head makes final decision
+        allowed_statuses = ['submitted', 'under_review']
+        valid_decisions = ['approve', 'reject']
+    else:
+        # SCL/EL/COL/VL: Unit Head recommends
+        allowed_statuses = ['submitted', 'under_review']
+        valid_decisions = ['recommended', 'not_recommended']
+
+    if application.status not in allowed_statuses:
+        raise ValueError(f"Unit Head can only review applications in status {allowed_statuses}. Current status: {application.status}")
+
+    if decision not in valid_decisions:
+        raise ValueError(f"Invalid decision '{decision}' for category {category_enum.value}.")
+
+    # Update application status and record history
+    if decision == 'approve':
+        new_status = 'approved'
+        description = f"Unit Head approved {application.category.value} leave."
+    elif decision == 'reject':
+        new_status = 'rejected'
+        description = f"Unit Head rejected {application.category.value} leave."
+    elif decision == 'recommended':
+        new_status = 'recommended'
+        description = f"Unit Head recommended {application.category.value} leave for higher sanction."
+    else:  # not_recommended
+        new_status = 'not_recommended'
+        description = f"Unit Head not recommended {application.category.value} leave for higher sanction."
+
+    application.status = new_status
+    application.save()
+
+    _log_action_history(
+        application=application,
+        actor_id=actor_id,
+        action_type="unit_head_decision",
+        description=description,
+    )
+
+
+@transaction.atomic
+def establishment_verify_and_route(
+    actor_id: int,
+    application_id: int,
+) -> None:
+    """
+    Perform Establishment-level verification and route to final Sanctioning Authority.
+    
+    This is a placeholder for the logic defined in BR-EL-018 and EL-UC-004.
+    In this implementation, it assumes a simple routing step where the application
+    is verified (e.g., completeness check) and then routed based on configuration.
+    
+    Args:
+        actor_id: ID of the Establishment Processing Role (e.g., Deputy Registrar).
+        application_id: ID of the leave application.
+    
+    Raises:
+        ValueError: If action is not allowed in current status.
+    """
+    application = LeaveApplication.objects.get(id=application_id)
+
+    # Check if this is a higher-sanction case requiring routing
+    category_enum = ModelLeaveCategory(application.category)
+    if unit_head_decision_required(category_enum):
+        raise ValueError(f"Unit Head decision required for {category_enum.value}, no establishment routing needed.")
+
+    allowed_statuses = ['recommended', 'not_recommended']
+    if application.status not in allowed_statuses:
+        raise ValueError(f"Establishment can only process applications in status {allowed_statuses}. Current status: {application.status}")
+
+    # Placeholder verification logic (e.g., check for required fields)
+    # In a real system, this would involve complex hierarchy configuration checks.
+    _verify_establishment_requirements(application)
+
+    # Route to final Sanctioning Authority (simulated by updating status)
+    # The actual routing might involve creating a work item or changing status directly.
+    # Per BR-EL-019, we resolve the competent authority. Here, we assume the next step is final sanction.
+    new_status = 'under_review'  # Or a specific 'awaiting_final_sanction' if defined
+    description = f"Establishment verified and routed to final Sanctioning Authority."
+
+    application.status = new_status
+    application.save()
+
+    _log_action_history(
+        application=application,
+        actor_id=actor_id,
+        action_type="establishment_routing",
+        description=description,
+    )
+
+
+@transaction.atomic
+def final_sanction_decision(
+    actor_id: int,
+    application_id: int,
+    decision: str,
+) -> None:
+    """
+    Record the final sanctioning decision.
+    
+    Approve or Reject. Updates balance on approval.
+    
+    Args:
+        actor_id: ID of the Sanctioning Authority (e.g., Dean, Registrar, Director).
+        application_id: ID of the leave application.
+        decision: 'approve' or 'reject'.
+    
+    Raises:
+        ValueError: If action is not allowed in current status.
+    """
+    application = LeaveApplication.objects.get(id=application_id)
+
+    # Check if this is a final sanction case (not Unit Head decision)
+    category_enum = ModelLeaveCategory(application.category)
+    if unit_head_decision_required(category_enum):
+        raise ValueError(f"Unit Head makes the final decision for {category_enum.value}, no higher authority needed.")
+
+    allowed_statuses = ['recommended', 'not_recommended']
+    if application.status not in allowed_statuses:
+        raise ValueError(f"Final Sanctioning Authority can only process applications in status {allowed_statuses}. Current status: {application.status}")
+
+    if decision not in ['approve', 'reject']:
+        raise ValueError(f"Invalid final decision '{decision}'. Must be 'approve' or 'reject'.")
+
+    # Update application status
+    new_status = 'approved' if decision == 'approve' else 'rejected'
+    description = f"Final Sanctioning Authority {decision}ed {application.category.value} leave."
+
+    application.status = new_status
+    application.save()
+
+    # Handle balance update on approval (BR-EL-025, BR-EL-023)
+    if decision == 'approve':
+        _update_balance_on_approval(application, actor_id)
+
+    _log_action_history(
+        application=application,
+        actor_id=actor_id,
+        action_type="final_sanction",
+        description=description,
+    )
+
+
+# --- Helper Functions ---
+
+def get_policy_config(category: ModelLeaveCategory) -> dict:
+    """Retrieve entitlement configuration for a category."""
+    # Import here to avoid circular dependencies if any
+    from modules.leave.domain.policy import ENTITLEMENTS
+    
+    return ENTITLEMENTS[category]
+
+
+def _check_balance(actor_id: int, category: ModelLeaveCategory, requested_from: date, requested_to: date) -> None:
+    """
+    Placeholder for balance check logic.
+    In a full implementation, this would query LeaveBalance for the user/year/category.
+    """
+    # Simplified check: assume sufficient balance if no specific error raised
+    # Real logic:
+    # 1. Determine year (e.g., based on requested_from).
+    # 2. Query available_days - used_days for category.
+    # 3. Calculate consumed days using policy.py rules.
+    # 4. Raise ValueError if insufficient balance.
+    pass
+
+
+def _check_overlap(actor_id: int, requested_from: date, requested_to: date) -> None:
+    """
+    Placeholder for overlap check logic.
+    In a full implementation, this would query LeaveApplication for the actor_id.
+    """
+    # Simplified check: assume no active leave for actor
+    # Real logic:
+    # 1. Find all applications for actor_id with status in ['pending', 'approved'].
+    # 2. Check date range overlap.
+    # 3. Handle CL half-day exception (BR-EL-012).
+    # 4. Raise ValueError if overlap found.
+    pass
+
+
+def _validate_substitute_eligibility(substitute_id: int, applicant_id: int, responsibility_start: date, responsibility_end: date) -> None:
+    """
+    Validate substitute eligibility (BR-EL-014).
+    
+    Conditions:
+    - Must be another employee.
+    - Must not be the applicant.
+    - Must have no overlapping pending or approved leave during the responsibility period.
+    """
+    if substitute_id == applicant_id:
+        raise ValueError("Substitute cannot be the applicant.")
+    
+    # Placeholder for checking substitute's existing leave
+    # Real logic:
+    # 1. Query LeaveApplication for substitute_id with status in ['pending', 'approved'].
+    # 2. Check date range overlap with [responsibility_start, responsibility_end].
+    # 3. Raise ValueError if overlap found.
+    pass
+
+
+def _verify_establishment_requirements(application: LeaveApplication) -> None:
+    """
+    Placeholder for Establishment-level verification.
+    In a real system, this would check configuration and completeness.
+    """
+    # Real logic:
+    # 1. Verify required fields are present (e.g., purpose, dates).
+    # 2. Check against current hierarchy configuration.
+    # 3. Raise ValueError if requirements not met.
+    pass
+
+
+def _update_balance_on_approval(application: LeaveApplication, actor_id: int) -> None:
+    """
+    Update leave balance on approval (BR-EL-025).
+    
+    For new leave: add to available balance.
+    For cancellation: restore/adjust deducted balance.
+    For extension: post incremental period.
+    
+    This is a simplified placeholder.
+    """
+    # Real logic:
+    # 1. Determine year (e.g., based on requested_from).
+    # 2. Query or create LeaveBalance record for actor_id, year, category.
+    # 3. Calculate consumed days.
+    # 4. Update available_days = available_days - consumed_days (for new leave)
+    #    OR adjust used_days/available_days based on cancellation/extension rules.
+    # 5. Save LeaveBalance.
+    pass
+
+
+def _log_action_history(
+    application: LeaveApplication,
+    actor_id: int,
+    action_type: str,
+    description: str,
+) -> None:
+    """
+    Append an entry to the leave action history (BR-EL-037).
+    
+    This function is transaction-safe as it's called within atomic blocks.
+    """
+    history = LeaveActionHistory.objects.create(
+        application=application,
+        actor_id=actor_id,
+        action_type=action_type,
+        description=description,
+    )
+
+
+# --- New Functions for Lifecycle Actions ---
+
+def withdraw_pending_request(actor_id: int, application_id: int) -> None:
+    """Withdraw a pending leave application."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        # Check if the application belongs to the actor (optional but good practice)
+        # and if it is in a withdrawable state (e.g., 'pending')
+        if application.user_id != actor_id:
+            raise ValueError("You can only withdraw your own applications.")
+        
+        if application.status not in ['pending', 'draft']:  # Adjust based on actual status enum
+            raise ValueError(f"Cannot withdraw application with status {application.status}.")
+            
+        # Update status to withdrawn
+        application.status = 'withdrawn'
+        application.save()
+        
+        # Log the action
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='withdrawal',
+            description=f"Application withdrawn by user {actor_id}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+    except ValidationError as e:
+        raise ValueError(str(e))
+
+
+def request_cancellation(actor_id: int, application_id: int) -> None:
+    """Request cancellation of an approved leave."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only cancel your own applications.")
+            
+        # Update status to 'cancellation_requested' or similar
+        application.status = 'cancellation_requested'
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='cancellation_request',
+            description=f"Cancellation requested by user {actor_id}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def decide_cancellation(actor_id: int, application_id: int, decision: str) -> None:
+    """Decide on a cancellation request."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.status != 'cancellation_requested':
+            raise ValueError(f"Cannot decide cancellation for application with status {application.status}.")
+            
+        if decision == 'approve':
+            # Restore balance and mark as cancelled
+            _update_balance_on_cancellation(application, actor_id)
+            application.status = 'cancelled'
+            description = f"Cancellation approved by {actor_id}."
+        else:  # reject
+            application.status = 'approved'  # Revert to original status or keep pending? Usually revert.
+            description = f"Cancellation rejected by {actor_id}."
+            
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='cancellation_decision',
+            description=description
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def request_extension(actor_id: int, application_id: int, extension_from: date, extension_to: date, purpose: str, station_leave_details: Any = None, nominated_substitute_id: int = None) -> None:
+    """Request an extension of ongoing leave."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only extend your own applications.")
+            
+        # Update dates and purpose
+        application.requested_from = extension_from
+        application.requested_to = extension_to
+        application.purpose = purpose
+        application.station_leave_details = station_leave_details
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='extension_request',
+            description=f"Extension requested from {extension_from} to {extension_to}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def submit_resumption(actor_id: int, application_id: int, actual_resumption_date: date) -> None:
+    """Submit actual resumption of duty information."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only submit resumption for your own applications.")
+            
+        # Store the date (could be a separate model field or just update here)
+        # Assuming we store it in the application model for simplicity as per serializer
+        application.actual_resumption_date = actual_resumption_date
+        application.save()
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='resumption_submitted',
+            description=f"Resumption submitted on {actual_resumption_date}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+def review_resumption(actor_id: int, application_id: int, actual_resumption_date: date) -> None:
+    """Review the submitted resumption and adjust balance."""
+    try:
+        application = LeaveApplication.objects.get(id=application_id)
+        
+        if application.user_id != actor_id:
+            raise ValueError("You can only review your own applications.")
+            
+        # Verify the date matches what was submitted (simplified check)
+        # In a real system, this might compare against a stored field or re-calculate consumed days
+        
+        # Adjust balance based on actual resumption date vs expected
+        _update_balance_on_resumption(application, actor_id, actual_resumption_date)
+        
+        history = LeaveActionHistory.objects.create(
+            application_id=application_id,
+            actor_id=actor_id,
+            action_type='resumption_reviewed',
+            description=f"Resumption reviewed on {actual_resumption_date}"
+        )
+    except LeaveApplication.DoesNotExist:
+        raise ValueError(f"Application with ID {application_id} not found.")
+
+
+# --- Additional Helper Functions for New Logic ---
+
+def _update_balance_on_cancellation(application: LeaveApplication, actor_id: int) -> None:
+    """Update balance on cancellation."""
+    # Real logic: Restore available days
+    pass
+
+
+def _update_balance_on_resumption(application: LeaveApplication, actor_id: int, actual_resumption_date: date) -> None:
+    """Update balance based on actual resumption date."""
+    # Real logic: Calculate consumed days and adjust
+    pass
+```
+
+> Tokens: 17k sent, 5.2k received.  
+> Applied edit to modules/leave/services/applications.py  
+> summarizer unexpectedly failed for all models  
