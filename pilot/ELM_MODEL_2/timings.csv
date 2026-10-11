@@ -8,3 +8,4 @@ step5,"REST API (serializers, views, urls)",0,68,4
 step6,"Register the module in settings and URLs",0,56,2
 step7,"Client wiring (api hooks, routes, module registry)",0,69,2
 step8,"Client pages",124,610,4
+fix-backend,"Fix pass: backend check errors",0,89,2
