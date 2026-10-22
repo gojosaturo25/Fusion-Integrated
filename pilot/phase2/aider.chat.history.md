@@ -3138,3 +3138,258 @@ modules/leave/api/serializers.py
 > Applied edit to modules/leave/services/lifecycle.py  
 > Applied edit to modules/leave/api/views.py  
 > Applied edit to modules/leave/api/serializers.py  
+
+# aider chat started at 2026-10-22 23:21:23
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/services/lifecycle.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/models.py --read modules/leave/domain/policy.py --read modules/leave/services/applications.py --message-file pilot/phase2/prompts/004b-decision-services-retry.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/services/lifecycle.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/domain/policy.py to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added modules/leave/services/applications.py to the chat (read-only).  
+
+#### Task 004 hit the output token limit while copying the old file, which has now been emptied. Write the new file from scratch; it should be about 150 lines.  
+####   
+#### Review findings: the Phase-1 lifecycle.py duplicates functions from applications.py, lets any caller decide any request (no check that the caller is the assigned approver), never adds approved days to the balance correctly, and creates cancellation records in a "draft" status that no one can act on.  
+####   
+#### Replace the whole content of modules/leave/services/lifecycle.py with these functions, following the "Workflow" section of DESIGN.md. Import LeaveError, NotFound, log_action and route_to_approver from modules.leave.services.applications (read-only) instead of redefining anything.  
+####   
+#### - def decide(actor_id: int, application_id: int, decision: str, remark: str = "") -> LeaveApplication  
+####   Load the application with select_for_update; raise NotFound unless status is PENDING and assignee_id == actor_id.  
+####   Stage UNIT_HEAD: if policy.unit_head_is_final(category) the decision must be "approve" or "reject" (BR-EL-016) and is final; otherwise it must be "recommended" or "not_recommended" (BR-EL-017), stored in unit_head_recommendation, then move to ESTABLISHMENT (assignee establishment_id) if establishment_id is set, else SANCTION (assignee sanctioning_authority_id, or the applicant for self-sanction).  
+####   Stage ESTABLISHMENT: decision must be "verify"; move to SANCTION.  
+####   Stage SANCTION: decision must be "approve" or "reject"; final.  
+####   Any other decision raises LeaveError. Any other stage (for example SUBSTITUTE, while the substitute has not yet accepted) raises LeaveError("This request is not awaiting a decision.").  
+#### - def finalize(app, actor_id: int, approved: bool) -> None  
+####   Sets status, stage DONE, assignee None, decided_at = timezone.now(). On approval of a LEAVE request add app.days to the used field of LeaveBalance.objects.select_for_update().get(user_id=app.user_id, year=app.start_date.year, category=app.category) (the row always exists because apply_leave created it); on approval of a CANCELLATION request set the parent to CANCELLED and subtract the parent's days from that same balance row (BR-EL-023). Rejection changes no balance.  
+#### - def request_cancellation(actor_id: int, application_id: int, today) -> LeaveApplication  
+####   Only the owner, only an APPROVED LEAVE-kind request whose start_date is after today, and only if it has no PENDING cancellation; creates a CANCELLATION request copying category, dates, days and routing fields, parent = the leave, then calls route_to_approver.  
+####   
+#### Wrap writes in transaction.atomic and call log_action for every change. Write the whole file. Do not ask for more files.  
+####   
+#### Use exactly these imports at the top of lifecycle.py. They are the only names you need, and every one of them exists; do not import anything else (task 003 failed because it imported functions that do not exist):  
+####   
+#### from django.db import transaction  
+#### from django.utils import timezone  
+####   
+#### from modules.leave.domain import policy  
+#### from modules.leave.models import LeaveApplication, LeaveBalance, RequestKind, Stage, Status  
+#### from modules.leave.services.applications import LeaveError, NotFound, log_action, route_to_approver  
+
+modules/leave/services/lifecycle.py
+```python
+"""Leave decision and cancellation services (rewritten in Phase 2)."""
+
+from datetime import date
+from django.db import transaction
+from django.utils import timezone
+
+from modules.leave.domain import policy
+from modules.leave.models import LeaveApplication, LeaveBalance, RequestKind, Stage, Status
+from modules.leave.services.applications import LeaveError, NotFound, log_action, route_to_approver
+
+
+@transaction.atomic
+def decide(actor_id: int, application_id: int, decision: str, remark: str = "") -> LeaveApplication:
+    """
+    Process a decision at the current stage of a leave application.
+    
+    - Load application with select_for_update.
+    - Raise NotFound if not PENDING or actor is not assignee.
+    - Validate decision against stage and policy rules (BR-EL-016, BR-EL-017).
+    - Update recommendation field for UNIT_HEAD stage if applicable.
+    - Route to next approver if needed.
+    """
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+
+    # Check status and assignee ownership
+    if app.status != Status.PENDING.value:
+        raise NotFound(f"Cannot decide on application with status {app.status}.")
+
+    if app.assignee_id != actor_id:
+        raise NotFound(f"Only the assigned approver ({actor_id}) can decide this application.")
+
+    # Validate stage and decision rules
+    current_stage = app.stage
+
+    if current_stage == Stage.SUBSTITUTE.value:
+        raise LeaveError("This request is not awaiting a decision (substitute stage).")
+
+    if current_stage == Stage.UNIT_HEAD.value:
+        category = app.category
+        is_final = policy.unit_head_is_final(category)
+
+        if is_final:
+            # BR-EL-016: CL and RH are final at Unit Head
+            if decision not in ("approve", "reject"):
+                raise LeaveError(f"Unit Head must approve or reject for {category} leave.")
+        else:
+            # BR-EL-017: Others get a recommendation
+            if decision not in ("recommended", "not_recommended"):
+                raise LeaveError(f"Unit Head must recommend or not recommend for {category} leave.")
+
+            # Store recommendation
+            app.unit_head_recommendation = decision
+            # Route to next approver (Establishment or Sanctioning Authority)
+            route_to_approver(app)
+            return app  # Stage changed by route_to_approver, no further action needed here
+
+    elif current_stage == Stage.ESTABLISHMENT.value:
+        # BR-EL-018: Establishment verifies and moves to SANCTION
+        if decision != "verify":
+            raise LeaveError("Establishment must verify the application.")
+        
+        app.stage = Stage.SANCTION.value
+        app.assignee_id = app.sanctioning_authority_id or app.user_id  # Handle self-sanction case
+        app.save()
+        log_action(app, actor_id, "establishment_verify", remark)
+        return app
+
+    elif current_stage == Stage.SANCTION.value:
+        # BR-EL-019: Sanctioning Authority makes final decision
+        if decision not in ("approve", "reject"):
+            raise LeaveError("Sanctioning Authority must approve or reject.")
+        
+        app.status = Status.APPROVED.value if decision == "approve" else Status.REJECTED.value
+        app.stage = Stage.DONE.value
+        app.assignee_id = None
+        app.decided_at = timezone.now()
+        app.save()
+
+        log_action(app, actor_id, "sanction_decision", f"{decision.capitalize()}d by {actor_id}.")
+        
+        # Finalize the application (update balance)
+        finalize(app, actor_id, decision == "approve")
+
+    else:
+        raise LeaveError(f"Unknown stage: {current_stage}")
+
+    return app
+
+
+@transaction.atomic
+def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
+    """
+    Finalize a leave application after approval/rejection.
+    
+    - Set status to APPROVED/REJECTED, stage DONE, assignee None, decided_at.
+    - On LEAVE approval: add days to user's LeaveBalance.used for the start year.
+    - On CANCELLATION approval: set parent status to CANCELLED and subtract parent's days from balance.
+    - Rejection: no balance change.
+    """
+    app.status = Status.APPROVED.value if approved else Status.REJECTED.value
+    app.stage = Stage.DONE.value
+    app.assignee_id = None
+    app.decided_at = timezone.now()
+    app.save()
+
+    log_action(app, actor_id, "finalize", f"Application {app.kind} finalized as {'approved' if approved else 'rejected'}.")
+
+    # Handle balance updates based on kind and approval status
+    if app.kind == RequestKind.LEAVE.value and approved:
+        # BR-EL-021: Approval adds days to used balance
+        balance = LeaveBalance.objects.select_for_update().get(
+            user_id=app.user_id,
+            year=app.start_date.year,
+            category=app.category
+        )
+        old_used = balance.used
+        new_used = Decimal(str(old_used)) + Decimal(str(app.days))
+        balance.used = new_used
+        balance.save()
+    elif app.kind == RequestKind.CANCELLATION.value and approved:
+        # BR-EL-023: Cancellation of an approved LEAVE subtracts days from used
+        parent_app = LeaveApplication.objects.get(id=app.parent_id)
+        
+        # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
+        if parent_app.kind != RequestKind.LEAVE.value:
+            raise ValueError("Cannot cancel a cancellation request.")
+
+        balance = LeaveBalance.objects.select_for_update().get(
+            user_id=parent_app.user_id,
+            year=parent_app.start_date.year,
+            category=parent_app.category
+        )
+        
+        old_used = balance.used
+        new_used = Decimal(str(old_used)) - Decimal(str(parent_app.days))
+        # Ensure we don't go below zero (though logic should prevent this)
+        if new_used < 0:
+            new_used = Decimal("0")
+            
+        balance.used = new_used
+        balance.save()
+
+        # Mark parent as cancelled
+        parent_app.status = Status.CANCELLED.value
+        parent_app.save()
+
+
+@transaction.atomic
+def request_cancellation(actor_id: int, application_id: int, today: date) -> LeaveApplication:
+    """
+    Request cancellation of an approved leave.
+    
+    - Only the owner can request.
+    - Only applicable to APPROVED LEAVE-kind requests where start_date > today.
+    - Only if no PENDING cancellation already exists.
+    - Creates a CANCELLATION request with parent = original leave, then routes it.
+    """
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+
+    # Check ownership
+    if app.user_id != actor_id:
+        raise NotFound(f"Only the owner can request cancellation for this application.")
+
+    # Check kind and approval status
+    if app.kind != RequestKind.LEAVE.value:
+        raise NotFound("Can only cancel LEAVE requests.")
+
+    if app.status != Status.APPROVED.value:
+        raise NotFound(f"Can only cancel APPROVED leave requests. Current status: {app.status}.")
+
+    # Check start date is in the future relative to today
+    if app.start_date <= today:
+        raise NotFound("Can only cancel leave requests that have not started yet.")
+
+    # Check for existing pending cancellation
+    if LeaveApplication.objects.filter(
+        parent=app,
+        kind=RequestKind.CANCELLATION.value,
+        status=Status.PENDING.value
+    ).exists():
+        raise NotFound("A pending cancellation request already exists for this application.")
+
+    # Create the cancellation request
+    cancellation = LeaveApplication.objects.create(
+        user_id=actor_id,
+        kind=RequestKind.CANCELLATION.value,
+        parent=app,
+        category=app.category,
+        start_date=app.start_date,
+        end_date=app.end_date,
+        days=app.days,
+        purpose="Cancellation requested by applicant",
+        station_leave=app.station_leave,
+        station_address=app.station_address,
+        substitute_id=None,
+        unit_head_id=app.unit_head_id,
+        establishment_id=app.establishment_id,
+        sanctioning_authority_id=app.sanctioning_authority_id,
+        status=Status.PENDING.value,
+    )
+
+    # Route the cancellation request to the appropriate approver
+    route_to_approver(cancellation)
+
+    log_action(app, actor_id, "request_cancellation", f"Requested cancellation for application {application_id}.")
+
+    return cancellation
+```
+
+> Tokens: 9.3k sent, 1.8k received.  
+> Applied edit to modules/leave/services/lifecycle.py  
