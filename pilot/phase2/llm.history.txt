@@ -17332,3 +17332,1110 @@ ASSISTANT     log_action(app, actor_id, "request_cancellation", f"Requested canc
 ASSISTANT 
 ASSISTANT     return cancellation
 ASSISTANT ```
+TO LLM 2026-10-22T23:26:34
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER modules/leave/models.py
+USER ```
+USER from decimal import Decimal
+USER from django.db import models
+USER from core.db.mixins import TimeStampedModel, UserScopedModel
+USER 
+USER 
+USER class LeaveCategory(models.TextChoices):
+USER     CL = "CL", "Casual Leave"
+USER     RH = "RH", "Restricted Holiday"
+USER     SCL = "SCL", "Special Casual Leave"
+USER     EL = "EL", "Earned Leave"
+USER     COL = "COL", "Compensatory / Balance Controlled Leave"
+USER     VL = "VL", "Vacation Leave"
+USER 
+USER 
+USER class HalfDay(models.TextChoices):
+USER     NONE = "none", "None"
+USER     FIRST = "first", "First half-day"
+USER     SECOND = "second", "Second half-day"
+USER 
+USER 
+USER class Stage(models.TextChoices):
+USER     SUBSTITUTE = "substitute", "Substitute"
+USER     UNIT_HEAD = "unit_head", "Unit Head"
+USER     ESTABLISHMENT = "establishment", "Establishment"
+USER     SANCTION = "sanction", "Sanctioning Authority"
+USER     DONE = "done", "Done"
+USER 
+USER 
+USER class Status(models.TextChoices):
+USER     PENDING = "pending", "Pending"
+USER     APPROVED = "approved", "Approved"
+USER     REJECTED = "rejected", "Rejected"
+USER     WITHDRAWN = "withdrawn", "Withdrawn"
+USER     CANCELLED = "cancelled", "Cancelled"
+USER 
+USER 
+USER class SubstituteStatus(models.TextChoices):
+USER     NOT_REQUIRED = "not_required", "Not Required"
+USER     PENDING = "pending", "Pending"
+USER     ACCEPTED = "accepted", "Accepted"
+USER     DECLINED = "declined", "Declined"
+USER 
+USER 
+USER class RequestKind(models.TextChoices):
+USER     LEAVE = "leave", "Leave"
+USER     CANCELLATION = "cancellation", "Cancellation"
+USER 
+USER 
+USER class ReportingLine(TimeStampedModel):
+USER     """The reporting line for a leave application."""
+USER 
+USER     user_id = models.IntegerField(unique=True)
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Reporting Line"
+USER         verbose_name_plural = "Reporting Lines"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"Reporting line for user {self.user_id}"
+USER 
+USER 
+USER class LeaveApplication(UserScopedModel, TimeStampedModel):
+USER     """A leave application submitted by an employee."""
+USER 
+USER     kind = models.CharField(
+USER         max_length=10,
+USER         choices=RequestKind.choices,
+USER         default=RequestKind.LEAVE,
+USER         verbose_name="Request Kind",
+USER     )
+USER     parent = models.ForeignKey(
+USER         "self",
+USER         null=True,
+USER         blank=True,
+USER         on_delete=models.PROTECT,
+USER         related_name="cancellations",
+USER     )
+USER     category = models.CharField(
+USER         max_length=3,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     start_date = models.DateField("Start Date")
+USER     end_date = models.DateField("End Date")
+USER     half_day = models.CharField(
+USER         max_length=7,
+USER         choices=HalfDay.choices,
+USER         default=HalfDay.NONE,
+USER         verbose_name="Half Day",
+USER     )
+USER     days = models.DecimalField(max_digits=5, decimal_places=1)
+USER     purpose = models.TextField("Purpose / Reason")
+USER     station_leave = models.BooleanField(default=False, verbose_name="Station Leave")
+USER     station_address = models.TextField(blank=True, verbose_name="Station Address")
+USER     substitute_id = models.IntegerField(null=True, blank=True, verbose_name="Nominated Substitute ID")
+USER     substitute_status = models.CharField(
+USER         max_length=15,
+USER         choices=SubstituteStatus.choices,
+USER         default=SubstituteStatus.NOT_REQUIRED,
+USER         verbose_name="Substitute Status",
+USER     )
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER     unit_head_recommendation = models.CharField(
+USER         max_length=20, blank=True, verbose_name="Unit Head Recommendation"
+USER     )
+USER     stage = models.CharField(
+USER         max_length=15,
+USER         choices=Stage.choices,
+USER         default=Stage.SUBSTITUTE,
+USER         verbose_name="Stage",
+USER     )
+USER     status = models.CharField(
+USER         max_length=12,
+USER         choices=Status.choices,
+USER         default=Status.PENDING,
+USER         verbose_name="Status",
+USER     )
+USER     assignee_id = models.IntegerField(null=True, blank=True, db_index=True)
+USER     decided_at = models.DateTimeField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Application"
+USER         verbose_name_plural = "Leave Applications"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+USER 
+USER 
+USER class LeaveBalance(UserScopedModel, TimeStampedModel):
+USER     """Per-user, per-year, per-category leave balance."""
+USER 
+USER     category = models.CharField(
+USER         max_length=3,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     year = models.IntegerField("Year")
+USER     entitled = models.DecimalField(max_digits=5, decimal_places=1)
+USER     used = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Balance"
+USER         verbose_name_plural = "Leave Balances"
+USER         ordering = ["-year", "-category"]
+USER         unique_together = ["user_id", "year", "category"]
+USER 
+USER     @property
+USER     def available(self) -> Decimal:
+USER         """Calculate the available leave days."""
+USER         return self.entitled - self.used
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} balance for {self.year}"
+USER 
+USER 
+USER class LeaveAction(models.Model):
+USER     """Append-only history of actions taken on leave applications and balances."""
+USER 
+USER     application = models.ForeignKey(
+USER         LeaveApplication,
+USER         on_delete=models.CASCADE,
+USER         related_name="actions",
+USER     )
+USER     actor_id = models.IntegerField("Actor ID")
+USER     action = models.CharField(max_length=40)
+USER     remark = models.TextField(blank=True)
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Action"
+USER         verbose_name_plural = "Leave Actions"
+USER         ordering = ["created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.action} on {self.application.id} by {self.actor_id}"
+USER ```
+USER 
+USER modules/leave/domain/policy.py
+USER ```
+USER """
+USER Leave Policy Rules (BR-EL-001..015).
+USER Pure Python implementation without Django/DRF/Celery imports.
+USER """
+USER 
+USER from datetime import date, timedelta
+USER from decimal import Decimal
+USER from typing import Dict, Optional
+USER 
+USER 
+USER class PolicyError(Exception):
+USER     """Domain policy error."""
+USER     pass
+USER 
+USER 
+USER CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
+USER 
+USER ENTITLEMENT: Dict[str, tuple] = {
+USER     "CL": (Decimal("8"), True, True, False),  # BR-EL-002
+USER     "RH": (Decimal("2"), True, True, False),  # BR-EL-003
+USER     "SCL": (Decimal("15"), True, True, False),  # BR-EL-004
+USER     "EL": (Decimal("30"), False, True, True),  # BR-EL-005
+USER     "COL": (Decimal("20"), True, True, True),  # BR-EL-009
+USER     "VL": (Decimal("60"), True, False, False),  # BR-EL-006
+USER }
+USER 
+USER CONTINUOUS = {"EL", "COL", "VL"}
+USER 
+USER 
+USER def entitlement(category: str, kind: str) -> Optional[Decimal]:
+USER     """
+USER     Return the annual leave entitlement for a category and kind.
+USER     
+USER     - kind="faculty" returns faculty allowance (or None if not eligible).
+USER     - Any other kind (e.g., "staff", "employee", "") is treated as staff.
+USER     - Returns None if the category is not supported or the user kind is ineligible.
+USER     
+USER     BR-EL-001: Only supported categories allowed.
+USER     BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+USER     """
+USER     if category not in CATEGORIES:
+USER         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+USER     
+USER     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+USER     
+USER     is_faculty = kind == "faculty"
+USER     
+USER     if is_faculty:
+USER         if faculty_allowed:
+USER             return days_per_year
+USER         else:
+USER             return None  # EL is not for faculty
+USER     else:
+USER         # Any kind other than "faculty" is treated as staff
+USER         if staff_allowed:
+USER             return days_per_year
+USER         else:
+USER             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+USER 
+USER 
+USER def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+USER     """
+USER     Calculate the number of leave days consumed.
+USER     
+USER     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+USER     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+USER                CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+USER     
+USER     Note: Since no external calendar service is imported, we assume the input dates represent
+USER     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+USER     standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+USER     """
+USER     if start > end:
+USER         raise PolicyError("End date must be on or after start date")  # Generic validation
+USER     
+USER     if half_day != "none" and category not in ("CL",):
+USER         raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+USER     
+USER     if half_day != "none" and start != end:
+USER         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+USER     
+USER     category_upper = category.upper()
+USER     
+USER     if category_upper in CONTINUOUS:
+USER         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+USER         # No filtering for weekends/holidays.
+USER         days = Decimal(str((end - start).days + 1))
+USER     else:
+USER         # CL, RH, SCL: Count Monday to Friday only.
+USER         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+USER         days = Decimal("0")
+USER         current = start
+USER         while current <= end:
+USER             if current.weekday() < 5:  # Monday=0 to Friday=4
+USER                 days += Decimal("1")
+USER             current += timedelta(days=1)
+USER     
+USER     if half_day != "none":
+USER         # Apply half-day consumption (0.5 day) directly per BR-EL-010
+USER         return Decimal("0.5")
+USER     
+USER     return days
+USER 
+USER 
+USER def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool:
+USER     """
+USER     Check if two leave requests overlap.
+USER     
+USER     True when the date ranges intersect, except a single shared date where both halves are set and different.
+USER     BR-EL-012: Applicant non-overlap with half-day CL exception.
+USER     """
+USER     # Determine if ranges intersect
+USER     # Intersection exists if: start_a <= end_b AND start_b <= end_a
+USER     intersects = (a_start <= b_end) and (b_start <= a_end)
+USER     
+USER     if not intersects:
+USER         return False
+USER     
+USER     # Check for the half-day exception on the same date
+USER     # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
+USER     # If both are on the same day and have different halves, they do NOT overlap.
+USER     if a_start == b_start:
+USER         if a_half != "none" and b_half != "none":
+USER             # Both are half-days on the same day
+USER             if a_half != b_half:
+USER                 return False  # Different halves on same date -> non-overlapping
+USER     
+USER     return True
+USER 
+USER 
+USER def unit_head_is_final(category: str) -> bool:
+USER     """
+USER     Determine if Unit Head has final decision power.
+USER     
+USER     BR-EL-016: True for CL and RH.
+USER     BR-EL-017: Others only get a recommendation.
+USER     """
+USER     return category in ("CL", "RH")
+USER ```
+USER 
+USER modules/leave/services/applications.py
+USER ```
+USER from datetime import date
+USER from decimal import Decimal
+USER from typing import Optional
+USER 
+USER from django.db import transaction
+USER 
+USER from core.api.exceptions import BadRequestError, NotFoundError
+USER from modules.leave.domain import policy
+USER from modules.leave.models import (
+USER     LeaveAction, LeaveApplication, LeaveBalance, ReportingLine,
+USER     RequestKind, Stage, Status, SubstituteStatus,
+USER )
+USER 
+USER 
+USER class LeaveError(BadRequestError):
+USER     code = "leave_error"
+USER 
+USER 
+USER class NotFound(NotFoundError):
+USER     pass
+USER 
+USER 
+USER def log_action(app: LeaveApplication, actor_id: int, action: str, remark: str = "") -> None:
+USER     """Append an entry to the leave action history."""
+USER     LeaveAction.objects.create(
+USER         application=app,
+USER         actor_id=actor_id,
+USER         action=action,
+USER         remark=remark,
+USER     )
+USER 
+USER 
+USER def get_balance(user_id: int, kind: str, category: str, year: int) -> LeaveBalance:
+USER     """Get or create leave balance for a user.
+USER 
+USER     Raises LeaveError if the user is not eligible for the category/kind combination.
+USER     """
+USER     try:
+USER         entitlement = policy.entitlement(category, kind)
+USER     except policy.PolicyError as e:
+USER         raise LeaveError(str(e))
+USER 
+USER     if entitlement is None:
+USER         raise LeaveError(f"Not eligible for {category} leave as {kind}.")
+USER 
+USER     balance, created = LeaveBalance.objects.get_or_create(
+USER         user_id=user_id,
+USER         year=year,
+USER         category=category,
+USER         defaults={
+USER             "entitled": policy.ENTITLEMENT[category][0],
+USER             "used": Decimal("0"),
+USER         },
+USER     )
+USER 
+USER     if not created:
+USER         # Ensure entitled matches policy (in case of manual edits or data sync issues)
+USER         balance.entitled = policy.ENTITLEMENT[category][0]
+USER         balance.save()
+USER 
+USER     return balance
+USER 
+USER 
+USER def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id: Optional[int] = None) -> bool:
+USER     """Check if the user has an overlapping leave application.
+USER 
+USER     Considers PENDING or APPROVED LEAVE-kind applications.
+USER     Applies BR-EL-012 exception for CL half-days on single dates.
+USER     """
+USER     # Determine which categories count as "LEAVE" for overlap purposes (excluding CANCELLATION)
+USER     leave_categories = [cat[0] for cat in LeaveApplication._meta.get_field('category').choices if cat[0] != 'CANCELLATION']
+USER 
+USER     applications = LeaveApplication.objects.filter(
+USER         user_id=user_id,
+USER         kind=RequestKind.LEAVE.value,
+USER         category__in=leave_categories,
+USER         status__in=[Status.PENDING.value, Status.APPROVED.value],
+USER     )
+USER 
+USER     # Exclude the current application if provided
+USER     if exclude_id is not None:
+USER         applications = applications.exclude(id=exclude_id)
+USER 
+USER     for app in applications:
+USER         # Calculate overlap using policy logic
+USER         is_overlapping = policy.overlaps(app.start_date, app.end_date, app.half_day, start, end, half_day)
+USER         if is_overlapping:
+USER             return True
+USER 
+USER     return False
+USER 
+USER 
+USER def route_to_approver(app: LeaveApplication) -> None:
+USER     """Route the application to the appropriate approver based on hierarchy.
+USER 
+USER     - If unit_head_id == user_id (self-sanctioning authority): go to SANCTION.
+USER     - If no sanctioning_authority_id: self-sanction (SANCTION).
+USER     - Otherwise: route to UNIT_HEAD first, then ESTABLISHMENT, then SANCTION.
+USER     """
+USER     # Determine the initial assignee based on category and hierarchy
+USER     if app.unit_head_id == app.user_id:
+USER         # Self-sanctioning authority (e.g., Director)
+USER         app.stage = Stage.SANCTION.value
+USER         app.assignee_id = app.sanctioning_authority_id or app.user_id
+USER     else:
+USER         # Standard hierarchy: Unit Head -> Establishment -> Sanctioning Authority
+USER         # Per DESIGN.md, we route to UNIT_HEAD first for review/recommendation
+USER         app.stage = Stage.UNIT_HEAD.value
+USER         app.assignee_id = app.unit_head_id
+USER 
+USER     app.save()
+USER 
+USER 
+USER @transaction.atomic
+USER def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
+USER     """Create and submit a new leave application.
+USER 
+USER     Validates eligibility, balance, overlaps, and substitutes.
+USER     Routes the application to the appropriate approver.
+USER     """
+USER     category = data["category"]
+USER     start_date = data["start_date"]
+USER     end_date = data["end_date"]
+USER     half_day = data.get("half_day", "none")
+USER     purpose = data["purpose"]
+USER     station_leave = data.get("station_leave", False)
+USER     station_address = data.get("station_address", "")
+USER     substitute_id = data.get("substitute_id")
+USER 
+USER     # 1. Check eligibility (BR-EL-001, BR-EL-005, etc.)
+USER     try:
+USER         entitlement = policy.entitlement(category, kind)
+USER     except policy.PolicyError as e:
+USER         raise LeaveError(str(e))
+USER 
+USER     if entitlement is None:
+USER         raise LeaveError(f"Not eligible for {category} leave as {kind}.")
+USER 
+USER     # 2. Compute days (BR-EL-010, BR-EL-011)
+USER     try:
+USER         days = policy.count_days(category, start_date, end_date, half_day)
+USER     except policy.PolicyError as e:
+USER         raise LeaveError(str(e))
+USER 
+USER     if days <= 0:
+USER         raise LeaveError(f"Invalid leave duration: {days} days.")
+USER 
+USER     # 3. Check balance (BR-EL-025)
+USER     try:
+USER         balance = get_balance(user_id, kind, category, start_date.year)
+USER     except LeaveError as e:
+USER         raise LeaveError(str(e))
+USER 
+USER     if balance.available < days:
+USER         raise LeaveError(f"Insufficient leave balance. Available: {balance.available}, Required: {days}.")
+USER 
+USER     # 4. Check overlap (BR-EL-012)
+USER     if has_overlap(user_id, start_date, end_date, half_day):
+USER         raise LeaveError("Leave application overlaps with existing pending or approved leave.")
+USER 
+USER     # 5. Handle substitute logic (BR-EL-014)
+USER     if substitute_id is not None:
+USER         # Reject if substitute is the applicant
+USER         if substitute_id == user_id:
+USER             raise LeaveError("Substitute cannot be the applicant.")
+USER 
+USER         if has_overlap(substitute_id, start_date, end_date, half_day):
+USER             raise LeaveError("The substitute is on leave on these dates.")
+USER 
+USER         # Set stage to SUBSTITUTE
+USER         line = ReportingLine.objects.filter(user_id=user_id).first()
+USER         if line is None:
+USER             raise LeaveError("No reporting line configured.")
+USER 
+USER         app = LeaveApplication.objects.create(
+USER             user_id=user_id,
+USER             kind=RequestKind.LEAVE.value,
+USER             category=category,
+USER             start_date=start_date,
+USER             end_date=end_date,
+USER             half_day=half_day,
+USER             days=days,
+USER             purpose=purpose,
+USER             station_leave=station_leave,
+USER             station_address=station_address,
+USER             substitute_id=substitute_id,
+USER             unit_head_id=line.unit_head_id,
+USER             establishment_id=line.establishment_id,
+USER             sanctioning_authority_id=line.sanctioning_authority_id,
+USER             status=Status.PENDING,
+USER         )
+USER 
+USER         app.stage = Stage.SUBSTITUTE.value
+USER         app.assignee_id = substitute_id
+USER         app.substitute_status = SubstituteStatus.PENDING.value
+USER         app.save()
+USER     else:
+USER         # No substitute nominated
+USER         line = ReportingLine.objects.filter(user_id=user_id).first()
+USER         if line is None:
+USER             raise LeaveError("No reporting line configured.")
+USER 
+USER         app = LeaveApplication.objects.create(
+USER             user_id=user_id,
+USER             kind=RequestKind.LEAVE.value,
+USER             category=category,
+USER             start_date=start_date,
+USER             end_date=end_date,
+USER             half_day=half_day,
+USER             days=days,
+USER             purpose=purpose,
+USER             station_leave=station_leave,
+USER             station_address=station_address,
+USER             substitute_id=None,
+USER             unit_head_id=line.unit_head_id,
+USER             establishment_id=line.establishment_id,
+USER             sanctioning_authority_id=line.sanctioning_authority_id,
+USER             status=Status.PENDING,
+USER         )
+USER 
+USER         app.substitute_status = SubstituteStatus.NOT_REQUIRED.value
+USER         route_to_approver(app)
+USER 
+USER     # Log action
+USER     log_action(app, user_id, "apply", f"Leave application submitted for {category} leave.")
+USER 
+USER     return app
+USER 
+USER 
+USER @transaction.atomic
+USER def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:
+USER     """Accept or decline a substitute request.
+USER 
+USER     Only the current assignee (substitute) may respond.
+USER     """
+USER     app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+USER     if app is None:
+USER         raise NotFound()
+USER 
+USER     if app.assignee_id != actor_id:
+USER         raise NotFound(f"Only the assigned substitute can respond to this application.")
+USER 
+USER     if app.status != Status.PENDING.value or app.stage != Stage.SUBSTITUTE.value:
+USER         raise NotFound(f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}.")
+USER 
+USER     if accept:
+USER         description = "Substitute consent accepted."
+USER         app.substitute_status = SubstituteStatus.ACCEPTED.value
+USER         # Route to approver after acceptance
+USER         route_to_approver(app)
+USER     else:
+USER         description = "Substitute consent declined."
+USER         app.substitute_status = SubstituteStatus.DECLINED.value
+USER         app.assignee_id = None
+USER 
+USER     app.save()
+USER 
+USER     log_action(app, actor_id, "substitute_response", description)
+USER 
+USER     return app
+USER 
+USER 
+USER @transaction.atomic
+USER def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:
+USER     """Nominate a replacement substitute after a decline.
+USER 
+USER     Only the owner (applicant) may replace a declined substitute.
+USER     """
+USER     app = LeaveApplication.objects.select_for_update().get(id=application_id)
+USER 
+USER     if app.user_id != actor_id:
+USER         raise NotFound(f"Only the application owner can nominate a replacement substitute.")
+USER 
+USER     if app.status not in [Status.PENDING.value]:
+USER         raise NotFound(f"Can only replace a declined substitute. Current status: {app.status}.")
+USER 
+USER     if app.substitute_status != SubstituteStatus.DECLINED.value:
+USER         raise NotFound(f"Can only replace a declined substitute. Current status: {app.substitute_status}.")
+USER 
+USER     # Validate new substitute eligibility (simplified: not applicant, no overlap)
+USER     if substitute_id == actor_id:
+USER         raise LeaveError("Substitute cannot be the applicant.")
+USER 
+USER     # Check for existing pending/approved leave of the new substitute that overlaps
+USER     if has_overlap(substitute_id, app.start_date, app.end_date, app.half_day):
+USER         raise LeaveError("The substitute is on leave on these dates.")
+USER 
+USER     # Update the nominated substitute ID and status
+USER     app.substitute_id = substitute_id
+USER     app.substitute_status = SubstituteStatus.PENDING.value
+USER     app.stage = Stage.SUBSTITUTE.value
+USER     app.assignee_id = substitute_id
+USER     app.save()
+USER 
+USER     log_action(app, actor_id, "replace_substitute", f"New substitute {substitute_id} nominated.")
+USER 
+USER     return app
+USER 
+USER 
+USER @transaction.atomic
+USER def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
+USER     """Withdraw a pending leave request.
+USER 
+USER     Only the owner may withdraw a PENDING request.
+USER     """
+USER     app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+USER     if app is None:
+USER         raise NotFound()
+USER 
+USER     if app.user_id != actor_id:
+USER         raise NotFound(f"Only the application owner can withdraw this application.")
+USER 
+USER     if app.status != Status.PENDING.value:
+USER         raise NotFound(f"Cannot withdraw application in status {app.status}.")
+USER 
+USER     app.status = Status.WITHDRAWN.value
+USER     app.assignee_id = None
+USER     app.save()
+USER 
+USER     log_action(app, actor_id, "withdraw", f"Application withdrawn by user {actor_id}.")
+USER 
+USER     return app
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/api/views.py:
+USER ⋮
+USER │class ApplicationListView(_Scoped, generics.ListAPIView):
+USER │    # A recruiter is authorised by the company-scoped queryset, not by a code.
+USER │    permission_classes = [MODULE, ScopedCollection(P_VIEW_APPS, P_VIEW_SELF)]
+USER │
+USER ⋮
+USER │    def list(self, request, *args, **kwargs):
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/selectors.py
+USER ```
+USER ```
+USER 
+USER modules/leave/services/admin.py
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings: Phase-1 had no read layer, so list endpoints returned every user's applications, and there was no way to configure who a person's Unit Head or Sanctioning Authority is (EL-UC-014), so nothing could be routed.
+USER 
+USER Create two files.
+USER 
+USER modules/leave/selectors.py (reads only, no writes):
+USER - def my_applications(user_id: int) -> QuerySet  (that user's applications, newest first, prefetch "actions")
+USER - def inbox(user_id: int) -> QuerySet  (PENDING applications whose assignee_id == user_id)
+USER - def visible_application(user_id: int, application_id: int) -> LeaveApplication  (only if the user is the owner, the assignee or the substitute; otherwise raise NotFoundError from core.api.exceptions; selectors must not import services, which sit above them)
+USER - def get_reporting_line(user_id: int) -> ReportingLine | None
+USER 
+USER modules/leave/services/admin.py (writes, transaction.atomic):
+USER - def set_reporting_line(user_id: int, unit_head_id: int, establishment_id: int | None, sanctioning_authority_id: int | None) -> ReportingLine  (update_or_create by user_id; raise LeaveError if unit_head_id is missing)
+USER - def ensure_balances(user_id: int, kind: str, year: int) -> list  (for every category in policy.CATEGORIES that policy.entitlement allows for this kind, call get_balance from modules.leave.services.applications; return the balances ordered by category)
+USER 
+USER Write both files in full. Do not ask for more files.
+USER 
+USER Use exactly these imports. They are the only names you need, and every one of them exists; do not import anything else (task 003 failed because it imported functions that do not exist):
+USER 
+USER selectors.py:
+USER from django.db.models import Q, QuerySet
+USER 
+USER from core.api.exceptions import NotFoundError
+USER from modules.leave.models import LeaveApplication, ReportingLine, Status
+USER 
+USER services/admin.py:
+USER from django.db import transaction
+USER 
+USER from modules.leave.domain import policy
+USER from modules.leave.models import LeaveBalance, ReportingLine
+USER from modules.leave.services.applications import LeaveError, get_balance
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-22T23:29:21
+ASSISTANT modules/leave/selectors.py
+ASSISTANT ```python
+ASSISTANT from django.db.models import Q, QuerySet
+ASSISTANT 
+ASSISTANT from core.api.exceptions import NotFoundError
+ASSISTANT from modules.leave.models import LeaveApplication, ReportingLine, Status
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def my_applications(user_id: int) -> QuerySet:
+ASSISTANT     """Return the leave applications belonging to a specific user, ordered by creation date descending."""
+ASSISTANT     return LeaveApplication.objects.filter(user_id=user_id).order_by("-created_at")
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def inbox(user_id: int) -> QuerySet:
+ASSISTANT     """Return pending leave applications assigned to a specific user (the assignee)."""
+ASSISTANT     return LeaveApplication.objects.filter(
+ASSISTANT         Q(assignee_id=user_id) & Q(status=Status.PENDING.value)
+ASSISTANT     )
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def visible_application(user_id: int, application_id: int) -> LeaveApplication:
+ASSISTANT     """
+ASSISTANT     Return a leave application if the user is the owner, the assignee, or the nominated substitute.
+ASSISTANT     Raises NotFoundError otherwise.
+ASSISTANT     """
+ASSISTANT     app = LeaveApplication.objects.get(id=application_id)
+ASSISTANT 
+ASSISTANT     if app.user_id != user_id and app.assignee_id != user_id:
+ASSISTANT         # Check if the user is the nominated substitute
+ASSISTANT         if app.substitute_id != user_id:
+ASSISTANT             raise NotFoundError(f"Access denied to application {application_id}")
+ASSISTANT 
+ASSISTANT     return app
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def get_reporting_line(user_id: int) -> ReportingLine | None:
+ASSISTANT     """Return the reporting line for a user, or None if not configured."""
+ASSISTANT     try:
+ASSISTANT         return ReportingLine.objects.get(user_id=user_id)
+ASSISTANT     except ReportingLine.DoesNotExist:
+ASSISTANT         return None
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/services/admin.py
+ASSISTANT ```python
+ASSISTANT from django.db import transaction
+ASSISTANT 
+ASSISTANT from modules.leave.domain import policy
+ASSISTANT from modules.leave.models import LeaveBalance, ReportingLine
+ASSISTANT from modules.leave.services.applications import LeaveError, get_balance
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def set_reporting_line(user_id: int, unit_head_id: int, establishment_id=None, sanctioning_authority_id=None) -> ReportingLine:
+ASSISTANT     """
+ASSISTANT     Update or create the reporting line for a user.
+ASSISTANT     
+ASSISTANT     Raises LeaveError if unit_head_id is missing.
+ASSISTANT     """
+ASSISTANT     if unit_head_id is None:
+ASSISTANT         raise LeaveError("Unit head ID cannot be empty.")
+ASSISTANT 
+ASSISTANT     reporting_line, created = ReportingLine.objects.update_or_create(
+ASSISTANT         user_id=user_id,
+ASSISTANT         defaults={
+ASSISTANT             "unit_head_id": unit_head_id,
+ASSISTANT             "establishment_id": establishment_id,
+ASSISTANT             "sanctioning_authority_id": sanctioning_authority_id,
+ASSISTANT         }
+ASSISTANT     )
+ASSISTANT 
+ASSISTANT     return reporting_line
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @transaction.atomic
+ASSISTANT def ensure_balances(user_id: int, kind: str, year: int) -> list:
+ASSISTANT     """
+ASSISTANT     Ensure leave balances exist for all categories eligible for the given kind.
+ASSISTANT     
+ASSISTANT     Returns a list of LeaveBalance objects ordered by category name.
+ASSISTANT     """
+ASSISTANT     eligible_categories = []
+ASSISTANT     
+ASSISTANT     for category in policy.CATEGORIES:
+ASSISTANT         entitlement = policy.entitlement(category, kind)
+ASSISTANT         if entitlement is not None:
+ASSISTANT             eligible_categories.append(category)
+ASSISTANT 
+ASSISTANT     balances = []
+ASSISTANT     for category in eligible_categories:
+ASSISTANT         balance = get_balance(user_id, kind, category, year)
+ASSISTANT         balances.append(balance)
+ASSISTANT 
+ASSISTANT     return balances
+ASSISTANT ```

@@ -3393,3 +3393,150 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
 
 > Tokens: 9.3k sent, 1.8k received.  
 > Applied edit to modules/leave/services/lifecycle.py  
+
+# aider chat started at 2026-10-22 23:26:32
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/selectors.py --file modules/leave/services/admin.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/models.py --read modules/leave/domain/policy.py --read modules/leave/services/applications.py --message-file pilot/phase2/prompts/005-selectors-admin.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/selectors.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/services/admin.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/selectors.py to the chat.  
+> Added modules/leave/services/admin.py to the chat.  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added modules/leave/domain/policy.py to the chat (read-only).  
+> Added modules/leave/services/applications.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review findings: Phase-1 had no read layer, so list endpoints returned every user's applications, and there was no way to configure who a person's Unit Head or Sanctioning Authority is (EL-UC-014), so nothing could be routed.  
+####   
+#### Create two files.  
+####   
+#### modules/leave/selectors.py (reads only, no writes):  
+#### - def my_applications(user_id: int) -> QuerySet  (that user's applications, newest first, prefetch "actions")  
+#### - def inbox(user_id: int) -> QuerySet  (PENDING applications whose assignee_id == user_id)  
+#### - def visible_application(user_id: int, application_id: int) -> LeaveApplication  (only if the user is the owner, the assignee or the substitute; otherwise raise NotFoundError from core.api.exceptions; selectors must not import services, which sit above them)  
+#### - def get_reporting_line(user_id: int) -> ReportingLine | None  
+####   
+#### modules/leave/services/admin.py (writes, transaction.atomic):  
+#### - def set_reporting_line(user_id: int, unit_head_id: int, establishment_id: int | None, sanctioning_authority_id: int | None) -> ReportingLine  (update_or_create by user_id; raise LeaveError if unit_head_id is missing)  
+#### - def ensure_balances(user_id: int, kind: str, year: int) -> list  (for every category in policy.CATEGORIES that policy.entitlement allows for this kind, call get_balance from modules.leave.services.applications; return the balances ordered by category)  
+####   
+#### Write both files in full. Do not ask for more files.  
+####   
+#### Use exactly these imports. They are the only names you need, and every one of them exists; do not import anything else (task 003 failed because it imported functions that do not exist):  
+####   
+#### selectors.py:  
+#### from django.db.models import Q, QuerySet  
+####   
+#### from core.api.exceptions import NotFoundError  
+#### from modules.leave.models import LeaveApplication, ReportingLine, Status  
+####   
+#### services/admin.py:  
+#### from django.db import transaction  
+####   
+#### from modules.leave.domain import policy  
+#### from modules.leave.models import LeaveBalance, ReportingLine  
+#### from modules.leave.services.applications import LeaveError, get_balance  
+
+modules/leave/selectors.py
+```python
+from django.db.models import Q, QuerySet
+
+from core.api.exceptions import NotFoundError
+from modules.leave.models import LeaveApplication, ReportingLine, Status
+
+
+def my_applications(user_id: int) -> QuerySet:
+    """Return the leave applications belonging to a specific user, ordered by creation date descending."""
+    return LeaveApplication.objects.filter(user_id=user_id).order_by("-created_at")
+
+
+def inbox(user_id: int) -> QuerySet:
+    """Return pending leave applications assigned to a specific user (the assignee)."""
+    return LeaveApplication.objects.filter(
+        Q(assignee_id=user_id) & Q(status=Status.PENDING.value)
+    )
+
+
+def visible_application(user_id: int, application_id: int) -> LeaveApplication:
+    """
+    Return a leave application if the user is the owner, the assignee, or the nominated substitute.
+    Raises NotFoundError otherwise.
+    """
+    app = LeaveApplication.objects.get(id=application_id)
+
+    if app.user_id != user_id and app.assignee_id != user_id:
+        # Check if the user is the nominated substitute
+        if app.substitute_id != user_id:
+            raise NotFoundError(f"Access denied to application {application_id}")
+
+    return app
+
+
+def get_reporting_line(user_id: int) -> ReportingLine | None:
+    """Return the reporting line for a user, or None if not configured."""
+    try:
+        return ReportingLine.objects.get(user_id=user_id)
+    except ReportingLine.DoesNotExist:
+        return None
+```
+
+modules/leave/services/admin.py
+```python
+from django.db import transaction
+
+from modules.leave.domain import policy
+from modules.leave.models import LeaveBalance, ReportingLine
+from modules.leave.services.applications import LeaveError, get_balance
+
+
+@transaction.atomic
+def set_reporting_line(user_id: int, unit_head_id: int, establishment_id=None, sanctioning_authority_id=None) -> ReportingLine:
+    """
+    Update or create the reporting line for a user.
+    
+    Raises LeaveError if unit_head_id is missing.
+    """
+    if unit_head_id is None:
+        raise LeaveError("Unit head ID cannot be empty.")
+
+    reporting_line, created = ReportingLine.objects.update_or_create(
+        user_id=user_id,
+        defaults={
+            "unit_head_id": unit_head_id,
+            "establishment_id": establishment_id,
+            "sanctioning_authority_id": sanctioning_authority_id,
+        }
+    )
+
+    return reporting_line
+
+
+@transaction.atomic
+def ensure_balances(user_id: int, kind: str, year: int) -> list:
+    """
+    Ensure leave balances exist for all categories eligible for the given kind.
+    
+    Returns a list of LeaveBalance objects ordered by category name.
+    """
+    eligible_categories = []
+    
+    for category in policy.CATEGORIES:
+        entitlement = policy.entitlement(category, kind)
+        if entitlement is not None:
+            eligible_categories.append(category)
+
+    balances = []
+    for category in eligible_categories:
+        balance = get_balance(user_id, kind, category, year)
+        balances.append(balance)
+
+    return balances
+```
+
+> Tokens: 9.0k sent, 637 received.  
+> Applied edit to modules/leave/services/admin.py  
+> Applied edit to modules/leave/selectors.py  
