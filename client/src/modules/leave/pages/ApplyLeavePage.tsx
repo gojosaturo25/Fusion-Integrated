@@ -1,46 +1,43 @@
-import { useState, useEffect } from "react";
-import {
-  ActionIcon, Button, Card, Container, Group, Input, NumberInput, Select, Text,
-  TextInput,
-} from "@mantine/core";
+import { useState } from "react";
+import { Button, Card, Checkbox, Container, Group, NumberInput, Select, Stack, TextInput, Textarea } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { FaPlus } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 import { errorMessage } from "../../../lib/http";
 import { PageHeader } from "../../../ui/components/PageHeader";
-import { ErrorState } from "../../../ui/components/ErrorState";
-import { useSubmitApplication } from "../api/hooks";
-import type { LeaveApplication } from "../api/types";
-
-type LeaveCategory = "sick" | "personal" | "counseling" | "station";
+import { CATEGORY_LABELS, useApply, type HalfDay, type LeaveCategory } from "../api";
 
 export default function ApplyLeavePage() {
-  const submitMutation = useSubmitApplication();
-  const [formData, setFormData] = useState<Partial<LeaveApplication>>({
-    leave_type: "sick",
+  const navigate = useNavigate();
+  const submitMutation = useApply();
+  const [category, setCategory] = useState<LeaveCategory>("CL");
+  const [formData, setFormData] = useState({
     start_date: "",
     end_date: "",
-    reason: "",
-    unit_head_recommendation: "",
-    final_sanction_decision: "",
+    half_day: "none" as HalfDay,
+    purpose: "",
+    station_leave: false,
+    station_address: "",
+    substitute_id: "",
   });
 
-  const [category, setCategory] = useState<LeaveCategory>("sick");
-  const [stationLeaveDetails, setStationLeaveDetails] = useState({
-    is_station_leave: false,
-    substitute_user_id: "",
-  });
+  // Update half_day when category changes to CL and dates are equal
+  const isSingleDay = formData.start_date && formData.end_date && formData.start_date === formData.end_date;
+  const showHalfDaySelect = category === "CL" && isSingleDay;
 
-  useEffect(() => {
-    if (category === "station") {
-      setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: true }));
+  const handleCategoryChange = (value: LeaveCategory) => {
+    setCategory(value);
+    // Reset half_day when switching categories to ensure consistency
+    if (value === "CL") {
+      setFormData((prev) => ({ ...prev, half_day: "none" as HalfDay }));
     } else {
-      setStationLeaveDetails((prev) => ({ ...prev, is_station_leave: false }));
+      setFormData((prev) => ({ ...prev, half_day: "none" as HalfDay }));
     }
-  }, [category]);
+  };
 
-  function handleSubmit() {
-    if (!formData.start_date || !formData.end_date || !formData.reason) {
+  const handleSubmit = () => {
+    // Validation checks
+    if (!formData.start_date || !formData.end_date || !formData.purpose) {
       notifications.show({
         color: "red",
         title: "Missing Information",
@@ -49,104 +46,132 @@ export default function ApplyLeavePage() {
       return;
     }
 
-    submitMutation.mutate(formData, {
-      onSuccess: () => {
-        notifications.show({
-          color: "blue",
-          title: "Application Submitted",
-          message: "Your leave application has been submitted successfully.",
-        });
-      },
-      onError: (e) => {
+    // Additional validation for half_day: only allowed for CL when start_date === end_date
+    if (category === "CL" && isSingleDay) {
+      if (formData.half_day !== "none") {
         notifications.show({
           color: "red",
-          title: "Submission Failed",
-          message: errorMessage(e),
+          title: "Invalid Half-Day Selection",
+          message: "Half-day selection is only allowed for single-day Casual Leave.",
         });
-      },
-    });
-  }
+        return;
+      }
+    }
 
-  if (submitMutation.isPending) {
-    return (
-      <Container size="xl">
-        <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
-        <Card padding="lg">
-          <Text c="dimmed" size="sm">Submitting...</Text>
-        </Card>
-      </Container>
+    submitMutation.mutate(
+      {
+        category,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        half_day: formData.half_day,
+        purpose: formData.purpose,
+        station_leave: formData.station_leave,
+        station_address: formData.station_address || null,
+        substitute_id: formData.substitute_id ? Number(formData.substitute_id) : null,
+      },
+      {
+        onSuccess: () => {
+          notifications.show({
+            color: "green",
+            title: "Application Submitted",
+            message: "Your leave application has been submitted successfully.",
+          });
+          navigate("/leave/mine");
+        },
+        onError: (e) => {
+          notifications.show({
+            color: "red",
+            title: "Submission Failed",
+            message: errorMessage(e),
+          });
+        },
+      }
     );
-  }
+  };
 
   return (
     <Container size="xl">
       <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
       <Card padding="lg">
-        <Group mb="md">
-          <Select
-            label="Leave Category"
-            value={category}
-            onChange={(value) => setCategory(value as LeaveCategory)}
-            data={[
-              { value: "sick", label: "Sick Leave" },
-              { value: "personal", label: "Personal Leave" },
-              { value: "counseling", label: "Counseling Leave" },
-              { value: "station", label: "Station Leave" },
-            ]}
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-end">
+            <Select
+              label="Leave Category"
+              value={category}
+              onChange={handleCategoryChange}
+              data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+            />
+          </Group>
+
+          <TextInput
+            label="Start Date"
+            type="date"
+            value={formData.start_date || ""}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            required
           />
-        </Group>
 
-        <TextInput
-          label="Start Date"
-          type="date"
-          value={formData.start_date || ""}
-          onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-          required
-        />
+          <TextInput
+            label="End Date"
+            type="date"
+            value={formData.end_date || ""}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            required
+          />
 
-        <TextInput
-          label="End Date"
-          type="date"
-          value={formData.end_date || ""}
-          onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-          required
-        />
+          {showHalfDaySelect && (
+            <Select
+              label="Half Day"
+              value={formData.half_day}
+              onChange={(value) => setFormData({ ...formData, half_day: value as HalfDay })}
+              data={[
+                { value: "none", label: "Full day" },
+                { value: "first", label: "First half" },
+                { value: "second", label: "Second half" },
+              ]}
+            />
+          )}
 
-        <TextInput
-          label="Reason"
-          value={formData.reason || ""}
-          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-          placeholder="Briefly describe the reason for leave"
-          required
-        />
+          <Textarea
+            label="Purpose"
+            value={formData.purpose || ""}
+            onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+            placeholder="Briefly describe the reason for leave"
+            required
+          />
 
-        {category === "station" && (
-          <Card padding="sm" radius="md">
-            <Text fw={600} mb="xs">Station Leave Details</Text>
-            <Group mb="xs">
-              <Input
-                label="Substitute User ID"
-                value={stationLeaveDetails.substitute_user_id || ""}
-                onChange={(e) =>
-                  setStationLeaveDetails({
-                    ...stationLeaveDetails,
-                    substitute_user_id: e.target.value,
-                  })
-                }
-                placeholder="Enter user ID of the substitute"
-              />
-            </Group>
-          </Card>
-        )}
+          <Checkbox
+            label="I will leave the station"
+            checked={formData.station_leave}
+            onChange={(checked) => setFormData({ ...formData, station_leave: checked })}
+          />
 
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          leftIcon={<FaPlus />}
-          loading={submitMutation.isPending}
-        >
-          Submit Application
-        </Button>
+          {formData.station_leave && (
+            <Textarea
+              label="Station Address"
+              value={formData.station_address || ""}
+              onChange={(e) => setFormData({ ...formData, station_address: e.target.value })}
+              placeholder="Enter the address of the station you will be visiting"
+            />
+          )}
+
+          <NumberInput
+            label="Substitute (user id)"
+            value={formData.substitute_id || ""}
+            onChange={(value) => setFormData({ ...formData, substitute_id: value })}
+            placeholder="Enter user ID of the substitute"
+          />
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            leftSection={<span>Submit</span>}
+            loading={submitMutation.isPending}
+            disabled={!formData.start_date || !formData.end_date || !formData.purpose}
+          >
+            Submit Application
+          </Button>
+        </Stack>
       </Card>
     </Container>
   );

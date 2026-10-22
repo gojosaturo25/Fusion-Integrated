@@ -5710,3 +5710,220 @@ ROLE_GRANTS = {
 > Tokens: 6.4k sent, 955 received.  
 > Applied edit to modules/leave/api/urls.py  
 > Applied edit to modules/leave/registry.py  
+
+# aider chat started at 2026-10-23 00:06:39
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/ApplyLeavePage.tsx --read client/src/modules/leave/api.ts --read client/src/ui/components/PageHeader.tsx --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/011-client-apply-page.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ApplyLeavePage.tsx to the chat.  
+> Added client/src/ui/components/PageHeader.tsx to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+
+#### Review findings: the Phase-1 page imports "../api/hooks" and "../api/types", which do not exist (TypeScript fails), offers categories the institute does not have ("sick", "personal"), and never sends the request.  
+####   
+#### Replace the whole file with a default-exported ApplyLeavePage component (EL-UC-001). Start it with these imports. tsconfig has noUnusedLocals, so remove any imported name you end up not using, and do not import from any other path:  
+####   
+#### import { useState } from "react";  
+#### import { Button, Card, Checkbox, Container, Group, NumberInput, Select, Stack, TextInput, Textarea } from "@mantine/core";  
+#### import { notifications } from "@mantine/notifications";  
+#### import { useNavigate } from "react-router-dom";  
+####   
+#### import { errorMessage } from "../../../lib/http";  
+#### import { PageHeader } from "../../../ui/components/PageHeader";  
+#### import { CATEGORY_LABELS, useApply, type HalfDay, type LeaveCategory } from "../api";  
+####   
+#### Form (plain useState, no form library): category Select (data built from CATEGORY_LABELS, default "CL"); start_date and end_date as TextInput type="date"; half_day Select ("none" Full day, "first" First half, "second" Second half) shown only when category is "CL" and start_date equals end_date, otherwise sent as "none"; purpose Textarea (required); station_leave Checkbox ("I will leave the station"); station_address Textarea shown only when station_leave is checked; substitute_id NumberInput (optional, label "Substitute (user id)", empty means null).  
+#### Submit calls useApply().mutate({ category, start_date, end_date, half_day, purpose, station_leave, station_address, substitute_id }) and on success shows a notification and navigates to "/leave/mine". The submit Button has loading={apply.isPending} and is disabled until category, both dates and purpose are filled.  
+####   
+#### Fusion uses Mantine 7: use leftSection (not leftIcon), gap (not spacing), justify (not position), and the shared components in client/src/ui/components (read-only). DataTable needs the props rows, columns, loading, rowKey and empty ({ title, description }). Every mutation shows notifications.show({ color: "green", ... }) on success and notifications.show({ color: "red", title: "...", message: errorMessage(e) }) on error.  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+```tsx
+import { useState } from "react";
+import { Button, Card, Checkbox, Container, Group, NumberInput, Select, Stack, TextInput, Textarea } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useNavigate } from "react-router-dom";
+
+import { errorMessage } from "../../../lib/http";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { CATEGORY_LABELS, useApply, type HalfDay, type LeaveCategory } from "../api";
+
+export default function ApplyLeavePage() {
+  const navigate = useNavigate();
+  const submitMutation = useApply();
+  const [category, setCategory] = useState<LeaveCategory>("CL");
+  const [formData, setFormData] = useState({
+    start_date: "",
+    end_date: "",
+    half_day: "none" as HalfDay,
+    purpose: "",
+    station_leave: false,
+    station_address: "",
+    substitute_id: "",
+  });
+
+  // Update half_day when category changes to CL and dates are equal
+  const isSingleDay = formData.start_date && formData.end_date && formData.start_date === formData.end_date;
+  const showHalfDaySelect = category === "CL" && isSingleDay;
+
+  const handleCategoryChange = (value: LeaveCategory) => {
+    setCategory(value);
+    // Reset half_day when switching categories to ensure consistency
+    if (value === "CL") {
+      setFormData((prev) => ({ ...prev, half_day: "none" as HalfDay }));
+    } else {
+      setFormData((prev) => ({ ...prev, half_day: "none" as HalfDay }));
+    }
+  };
+
+  const handleSubmit = () => {
+    // Validation checks
+    if (!formData.start_date || !formData.end_date || !formData.purpose) {
+      notifications.show({
+        color: "red",
+        title: "Missing Information",
+        message: "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    // Additional validation for half_day: only allowed for CL when start_date === end_date
+    if (category === "CL" && isSingleDay) {
+      if (formData.half_day !== "none") {
+        notifications.show({
+          color: "red",
+          title: "Invalid Half-Day Selection",
+          message: "Half-day selection is only allowed for single-day Casual Leave.",
+        });
+        return;
+      }
+    }
+
+    submitMutation.mutate(
+      {
+        category,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        half_day: formData.half_day,
+        purpose: formData.purpose,
+        station_leave: formData.station_leave,
+        station_address: formData.station_address || null,
+        substitute_id: formData.substitute_id ? Number(formData.substitute_id) : null,
+      },
+      {
+        onSuccess: () => {
+          notifications.show({
+            color: "green",
+            title: "Application Submitted",
+            message: "Your leave application has been submitted successfully.",
+          });
+          navigate("/leave/mine");
+        },
+        onError: (e) => {
+          notifications.show({
+            color: "red",
+            title: "Submission Failed",
+            message: errorMessage(e),
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <Container size="xl">
+      <PageHeader title="Apply for Leave" subtitle="Submit a new leave request" />
+      <Card padding="lg">
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-end">
+            <Select
+              label="Leave Category"
+              value={category}
+              onChange={handleCategoryChange}
+              data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+            />
+          </Group>
+
+          <TextInput
+            label="Start Date"
+            type="date"
+            value={formData.start_date || ""}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            required
+          />
+
+          <TextInput
+            label="End Date"
+            type="date"
+            value={formData.end_date || ""}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            required
+          />
+
+          {showHalfDaySelect && (
+            <Select
+              label="Half Day"
+              value={formData.half_day}
+              onChange={(value) => setFormData({ ...formData, half_day: value as HalfDay })}
+              data={[
+                { value: "none", label: "Full day" },
+                { value: "first", label: "First half" },
+                { value: "second", label: "Second half" },
+              ]}
+            />
+          )}
+
+          <Textarea
+            label="Purpose"
+            value={formData.purpose || ""}
+            onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+            placeholder="Briefly describe the reason for leave"
+            required
+          />
+
+          <Checkbox
+            label="I will leave the station"
+            checked={formData.station_leave}
+            onChange={(checked) => setFormData({ ...formData, station_leave: checked })}
+          />
+
+          {formData.station_leave && (
+            <Textarea
+              label="Station Address"
+              value={formData.station_address || ""}
+              onChange={(e) => setFormData({ ...formData, station_address: e.target.value })}
+              placeholder="Enter the address of the station you will be visiting"
+            />
+          )}
+
+          <NumberInput
+            label="Substitute (user id)"
+            value={formData.substitute_id || ""}
+            onChange={(value) => setFormData({ ...formData, substitute_id: value })}
+            placeholder="Enter user ID of the substitute"
+          />
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            leftSection={<span>Submit</span>}
+            loading={submitMutation.isPending}
+            disabled={!formData.start_date || !formData.end_date || !formData.purpose}
+          >
+            Submit Application
+          </Button>
+        </Stack>
+      </Card>
+    </Container>
+  );
+}
+```
+
+> Tokens: 6.5k sent, 1.3k received.  
+> Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  
