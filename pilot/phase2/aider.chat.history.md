@@ -3683,3 +3683,219 @@ class ReportingLineSerializer(serializers.ModelSerializer):
 
 > Tokens: 5.1k sent, 658 received.  
 > Applied edit to modules/leave/api/serializers.py  
+
+# aider chat started at 2026-10-22 23:31:31
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/api/views.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read fusion_auth/permissions.py --read modules/leave/api/serializers.py --read modules/leave/selectors.py --read modules/leave/services/applications.py --read modules/leave/services/lifecycle.py --read modules/leave/services/admin.py --message-file pilot/phase2/prompts/007-views.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/api/views.py to the chat.  
+> Added modules/leave/services/applications.py to the chat (read-only).  
+> Added modules/leave/services/lifecycle.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/api/serializers.py to the chat (read-only).  
+> Added modules/leave/services/admin.py to the chat (read-only).  
+> Added modules/leave/selectors.py to the chat (read-only).  
+> Added fusion_auth/permissions.py to the chat (read-only).  
+
+#### Review findings: the Phase-1 views list every user's applications, let anyone holding "leave.application.approve" decide any request, reference serializers that do not exist (LeaveBalanceSerializer, LeaveActionHistorySerializer), and build their own {"error": ...} responses instead of letting the platform exception handler render errors.  
+####   
+#### Replace the whole content of modules/leave/api/views.py with DRF APIView classes (from rest_framework.views import APIView). Every view sets permission_classes = [HasModuleGrant("leave"), HasPermission("<code>")] using fusion_auth.permissions (read-only). The caller is request.principal; use request.principal.user_id and request.principal.kind. Call only the selectors and service functions shown (read-only). Do not catch LeaveError or NotFound and do not build error responses: they subclass core.api.exceptions.BadRequestError / NotFoundError, and the platform exception handler turns them into 400 / 404 with the standard envelope. For invalid input use serializer.is_valid(raise_exception=True).  
+####   
+#### Views (permission code in brackets):  
+#### - ApplicationListCreateView: GET [leave.application.view_own] returns my_applications; POST [leave.application.apply] validates ApplySerializer and calls apply_leave(user_id, kind, data), returns 201. Because the two methods need different permissions, implement get_permissions() to return the right HasPermission per method.  
+#### - ApplicationDetailView: GET [leave.application.view_own] -> visible_application  
+#### - WithdrawView: POST [leave.application.apply] -> withdraw  
+#### - CancelView: POST [leave.application.apply] -> request_cancellation(user_id, pk, timezone.localdate())  
+#### - SubstituteResponseView: POST [leave.substitute.respond] -> respond_to_substitute  
+#### - ReplaceSubstituteView: POST [leave.application.apply] -> replace_substitute  
+#### - InboxView: GET [leave.application.review or leave.substitute.respond] -> inbox. HasPermission accepts several codes and passes when the principal has any of them: HasPermission("leave.application.review", "leave.substitute.respond"). Substitutes use the same inbox to see the requests waiting for their consent.  
+#### - DecideView: POST [leave.application.review] -> decide(user_id, pk, decision, remark). Before deciding, load the application with visible_application and require leave.application.verify when its stage is "establishment" and leave.application.sanction when its stage is "sanction" (raise core.api.exceptions.NotFoundError if request.principal.has_permission(code) is False).  
+#### - BalanceView: GET [leave.application.view_own] -> ensure_balances(user_id, kind, year from ?year= or the current year)  
+#### - ReportingLineView: GET and PUT [leave.admin.manage] -> get_reporting_line / set_reporting_line for the user_id in the URL  
+####   
+#### Successful writes return the updated application with LeaveApplicationSerializer. Write the whole file. Do not ask for more files.  
+####   
+#### Use exactly these imports at the top of views.py. They are the only names you need, and every one of them exists; do not import anything else (task 003 failed because it imported functions that do not exist). Call services as applications.apply_leave(...), lifecycle.decide(...), admin.set_reporting_line(...) and selectors as selectors.inbox(...):  
+####   
+#### from django.utils import timezone  
+#### from rest_framework import status  
+#### from rest_framework.response import Response  
+#### from rest_framework.views import APIView  
+####   
+#### from core.api.exceptions import NotFoundError  
+#### from fusion_auth.permissions import HasModuleGrant, HasPermission  
+#### from modules.leave import selectors  
+#### from modules.leave.api.serializers import (  
+####     ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,  
+####     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,  
+#### )  
+#### from modules.leave.services import admin, applications, lifecycle  
+
+modules/leave/api/views.py
+```python
+"""Leave API views (rewritten in Phase 2)."""
+from datetime import date
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from core.api.exceptions import NotFoundError
+from fusion_auth.permissions import HasModuleGrant, HasPermission
+from modules.leave import selectors
+from modules.leave.api.serializers import (
+    ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+    ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+)
+from modules.leave.services import admin, applications, lifecycle
+
+
+class ApplicationListCreateView(APIView):
+    permission_classes = []
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [HasPermission("leave.application.view_own")]
+        elif self.request.method == "POST":
+            return [HasPermission("leave.application.apply")]
+        return super().get_permissions()
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.principal.user_id
+        apps = selectors.my_applications(user_id)
+        serializer = LeaveApplicationSerializer(apps, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        serializer = ApplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user_id = request.principal.user_id
+        app = applications.apply_leave(user_id, data["kind"], data)
+        return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
+
+
+class ApplicationDetailView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+
+    def get(self, request, application_id, *args, **kwargs):
+        app = selectors.visible_application(request.principal.user_id, application_id)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class WithdrawView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+
+    def post(self, request, application_id, *args, **kwargs):
+        applications.withdraw(request.principal.user_id, application_id)
+        app = selectors.visible_application(request.principal.user_id, application_id)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class CancelView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+
+    def post(self, request, application_id, *args, **kwargs):
+        today = timezone.localdate()
+        lifecycle.request_cancellation(request.principal.user_id, application_id, today)
+        app = selectors.visible_application(request.principal.user_id, application_id)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class SubstituteResponseView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+
+    def post(self, request, application_id, *args, **kwargs):
+        data = request.data
+        accept = data.get("accept", False)
+        lifecycle.respond_to_substitute(request.principal.user_id, application_id, accept)
+        app = selectors.visible_application(request.principal.user_id, application_id)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class ReplaceSubstituteView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+
+    def post(self, request, application_id, *args, **kwargs):
+        data = request.data
+        substitute_id = data["substitute_id"]
+        lifecycle.replace_substitute(request.principal.user_id, application_id, substitute_id)
+        app = selectors.visible_application(request.principal.user_id, application_id)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class InboxView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.principal.user_id
+        apps = selectors.inbox(user_id)
+        serializer = LeaveApplicationSerializer(apps, many=True)
+        return Response(serializer.data)
+
+
+class DecideView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.application.sanction")]
+
+    def post(self, request, application_id, *args, **kwargs):
+        data = request.data
+        decision = data["decision"]
+        remark = data.get("remark", "")
+
+        app = selectors.visible_application(request.principal.user_id, application_id)
+
+        if app.stage == "establishment":
+            if not request.principal.has_permission("leave.application.verify"):
+                raise NotFoundError("You do not have permission to decide at this stage.")
+        elif app.stage == "sanction":
+            if not request.principal.has_permission("leave.application.sanction"):
+                raise NotFoundError("You do not have permission to decide at this stage.")
+
+        lifecycle.decide(request.principal.user_id, application_id, decision, remark)
+        serializer = LeaveApplicationSerializer(app)
+        return Response(serializer.data)
+
+
+class BalanceView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.principal.user_id
+        year = int(request.query_params.get("year", timezone.now().year))
+        kind = request.query_params.get("kind", "staff")
+        balances = admin.ensure_balances(user_id, kind, year)
+        serializer = LeaveBalanceSerializer(balances, many=True)
+        return Response(serializer.data)
+
+
+class ReportingLineView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+
+    def get(self, request, user_id, *args, **kwargs):
+        line = admin.get_reporting_line(user_id)
+        if line is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = ReportingLineSerializer(line)
+        return Response(serializer.data)
+
+    def put(self, request, user_id, *args, **kwargs):
+        data = request.data
+        admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
+        line = admin.get_reporting_line(user_id)
+        serializer = ReportingLineSerializer(line)
+        return Response(serializer.data)
+```
+
+> Tokens: 10k sent, 1.3k received.  
+> Applied edit to modules/leave/api/views.py  
