@@ -4099,3 +4099,113 @@ modules/leave/services/lifecycle.py
 
 > Tokens: 8.3k sent, 1.2k received.  
 > Applied edit to modules/leave/services/lifecycle.py  
+
+# aider chat started at 2026-10-22 23:39:41
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/selectors.py --file modules/leave/services/admin.py --read modules/leave/models.py --message-file pilot/phase2/prompts/005b-selectors-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/selectors.py to the chat.  
+> Added modules/leave/services/admin.py to the chat.  
+> Added modules/leave/models.py to the chat (read-only).  
+
+#### Review of task 005. Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. selectors.visible_application uses LeaveApplication.objects.get(id=application_id), which raises DoesNotExist (HTTP 500) for an unknown id. Use:  
+####     app = LeaveApplication.objects.prefetch_related("actions").filter(id=application_id).first()  
+####     if app is None:  
+####         raise NotFoundError()  
+####   
+#### 2. my_applications and inbox return applications whose serializer also lists their actions, which makes one extra query per row. Add .prefetch_related("actions") to both querysets, and order inbox by "created_at" (oldest first, so the longest-waiting request is on top).  
+####   
+#### 3. In services/admin.py, LeaveBalance is imported but never used (ruff F401). Change the import line to `from modules.leave.models import ReportingLine`.  
+####   
+#### Do not change anything else.  
+
+To fix the issues described in task 005, I will make the following changes:
+
+1.  In `modules/leave/selectors.py`, update `visible_application` to use `prefetch_related("actions")` and handle the case where the application does not exist by raising `NotFoundError` instead of letting Django raise a `DoesNotExist` error.
+2.  In `modules/leave/selectors.py`, add `.prefetch_related("actions")` to both `my_applications` and `inbox` querysets, and change the ordering of `inbox` to `"created_at"` (oldest first).
+3.  In `modules/leave/services/admin.py`, remove the unused import of `LeaveBalance`.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/selectors.py
+```python
+<<<<<<< SEARCH
+def visible_application(user_id: int, application_id: int) -> LeaveApplication:
+    """
+    Return a leave application if the user is the owner, the assignee, or the nominated substitute.
+    Raises NotFoundError otherwise.
+    """
+    app = LeaveApplication.objects.get(id=application_id)
+
+    if app.user_id != user_id and app.assignee_id != user_id:
+        # Check if the user is the nominated substitute
+        if app.substitute_id != user_id:
+            raise NotFoundError(f"Access denied to application {application_id}")
+
+    return app
+=======
+def visible_application(user_id: int, application_id: int) -> LeaveApplication:
+    """
+    Return a leave application if the user is the owner, the assignee, or the nominated substitute.
+    Raises NotFoundError otherwise.
+    """
+    app = LeaveApplication.objects.prefetch_related("actions").filter(id=application_id).first()
+    if app is None:
+        raise NotFoundError()
+
+    if app.user_id != user_id and app.assignee_id != user_id:
+        # Check if the user is the nominated substitute
+        if app.substitute_id != user_id:
+            raise NotFoundError(f"Access denied to application {application_id}")
+
+    return app
+>>>>>>> REPLACE
+```
+
+modules/leave/selectors.py
+```python
+<<<<<<< SEARCH
+def my_applications(user_id: int) -> QuerySet:
+    """Return the leave applications belonging to a specific user, ordered by creation date descending."""
+    return LeaveApplication.objects.filter(user_id=user_id).order_by("-created_at")
+=======
+def my_applications(user_id: int) -> QuerySet:
+    """Return the leave applications belonging to a specific user, ordered by creation date descending."""
+    return LeaveApplication.objects.prefetch_related("actions").filter(user_id=user_id).order_by("-created_at")
+>>>>>>> REPLACE
+```
+
+modules/leave/selectors.py
+```python
+<<<<<<< SEARCH
+def inbox(user_id: int) -> QuerySet:
+    """Return pending leave applications assigned to a specific user (the assignee)."""
+    return LeaveApplication.objects.filter(
+        Q(assignee_id=user_id) & Q(status=Status.PENDING.value)
+    )
+=======
+def inbox(user_id: int) -> QuerySet:
+    """Return pending leave applications assigned to a specific user (the assignee)."""
+    return LeaveApplication.objects.prefetch_related("actions").filter(
+        Q(assignee_id=user_id) & Q(status=Status.PENDING.value)
+    ).order_by("created_at")
+>>>>>>> REPLACE
+```
+
+modules/leave/services/admin.py
+```python
+<<<<<<< SEARCH
+from modules.leave.models import LeaveBalance, ReportingLine
+=======
+from modules.leave.models import ReportingLine
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.1k sent, 723 received.  
+> Applied edit to modules/leave/services/admin.py  
+> Applied edit to modules/leave/selectors.py  

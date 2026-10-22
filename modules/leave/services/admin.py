@@ -1,7 +1,7 @@
 from django.db import transaction
 
 from modules.leave.domain import policy
-from modules.leave.models import LeaveBalance, ReportingLine
+from modules.leave.models import ReportingLine
 from modules.leave.services.applications import LeaveError, get_balance
 
 
