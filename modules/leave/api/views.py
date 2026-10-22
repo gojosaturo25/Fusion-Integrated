@@ -1,9 +1,5 @@
-"""Leave API views (rewritten in Phase 2)."""
-from datetime import date
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,13 +14,11 @@ from modules.leave.services import admin, applications, lifecycle
 
 
 class ApplicationListCreateView(APIView):
-    permission_classes = []
-
     def get_permissions(self):
         if self.request.method == "GET":
-            return [HasPermission("leave.application.view_own")]
+            return [HasModuleGrant("leave")(), HasPermission("leave.application.view_own")()]
         elif self.request.method == "POST":
-            return [HasPermission("leave.application.apply")]
+            return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
         return super().get_permissions()
 
     def get(self, request, *args, **kwargs):
@@ -39,15 +33,15 @@ class ApplicationListCreateView(APIView):
         data = serializer.validated_data
 
         user_id = request.principal.user_id
-        app = applications.apply_leave(user_id, data["kind"], data)
+        app = applications.apply_leave(user_id, request.principal.kind, data)
         return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
 
 
 class ApplicationDetailView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
 
-    def get(self, request, application_id, *args, **kwargs):
-        app = selectors.visible_application(request.principal.user_id, application_id)
+    def get(self, request, pk, *args, **kwargs):
+        app = selectors.visible_application(request.principal.user_id, pk)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -55,9 +49,9 @@ class ApplicationDetailView(APIView):
 class WithdrawView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
-    def post(self, request, application_id, *args, **kwargs):
-        applications.withdraw(request.principal.user_id, application_id)
-        app = selectors.visible_application(request.principal.user_id, application_id)
+    def post(self, request, pk, *args, **kwargs):
+        applications.withdraw(request.principal.user_id, pk)
+        app = selectors.visible_application(request.principal.user_id, pk)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -65,10 +59,9 @@ class WithdrawView(APIView):
 class CancelView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
-    def post(self, request, application_id, *args, **kwargs):
+    def post(self, request, pk, *args, **kwargs):
         today = timezone.localdate()
-        lifecycle.request_cancellation(request.principal.user_id, application_id, today)
-        app = selectors.visible_application(request.principal.user_id, application_id)
+        app = lifecycle.request_cancellation(request.principal.user_id, pk, today)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -76,11 +69,12 @@ class CancelView(APIView):
 class SubstituteResponseView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
 
-    def post(self, request, application_id, *args, **kwargs):
-        data = request.data
-        accept = data.get("accept", False)
-        lifecycle.respond_to_substitute(request.principal.user_id, application_id, accept)
-        app = selectors.visible_application(request.principal.user_id, application_id)
+    def post(self, request, pk, *args, **kwargs):
+        serializer = SubstituteResponseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        accept = data["accept"]
+        app = applications.respond_to_substitute(request.principal.user_id, pk, accept)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -88,11 +82,12 @@ class SubstituteResponseView(APIView):
 class ReplaceSubstituteView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
-    def post(self, request, application_id, *args, **kwargs):
-        data = request.data
+    def post(self, request, pk, *args, **kwargs):
+        serializer = ReplaceSubstituteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         substitute_id = data["substitute_id"]
-        lifecycle.replace_substitute(request.principal.user_id, application_id, substitute_id)
-        app = selectors.visible_application(request.principal.user_id, application_id)
+        app = applications.replace_substitute(request.principal.user_id, pk, substitute_id)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -108,14 +103,16 @@ class InboxView(APIView):
 
 
 class DecideView(APIView):
-    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.application.sanction")]
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
 
-    def post(self, request, application_id, *args, **kwargs):
-        data = request.data
+    def post(self, request, pk, *args, **kwargs):
+        serializer = DecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         decision = data["decision"]
         remark = data.get("remark", "")
 
-        app = selectors.visible_application(request.principal.user_id, application_id)
+        app = selectors.visible_application(request.principal.user_id, pk)
 
         if app.stage == "establishment":
             if not request.principal.has_permission("leave.application.verify"):
@@ -124,7 +121,7 @@ class DecideView(APIView):
             if not request.principal.has_permission("leave.application.sanction"):
                 raise NotFoundError("You do not have permission to decide at this stage.")
 
-        lifecycle.decide(request.principal.user_id, application_id, decision, remark)
+        app = lifecycle.decide(request.principal.user_id, pk, decision, remark)
         serializer = LeaveApplicationSerializer(app)
         return Response(serializer.data)
 
@@ -134,8 +131,8 @@ class BalanceView(APIView):
 
     def get(self, request, *args, **kwargs):
         user_id = request.principal.user_id
-        year = int(request.query_params.get("year", timezone.now().year))
-        kind = request.query_params.get("kind", "staff")
+        year = int(request.query_params.get("year", timezone.localdate().year))
+        kind = request.principal.kind
         balances = admin.ensure_balances(user_id, kind, year)
         serializer = LeaveBalanceSerializer(balances, many=True)
         return Response(serializer.data)
@@ -145,15 +142,16 @@ class ReportingLineView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
 
     def get(self, request, user_id, *args, **kwargs):
-        line = admin.get_reporting_line(user_id)
+        line = selectors.get_reporting_line(user_id)
         if line is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            raise NotFoundError()
         serializer = ReportingLineSerializer(line)
         return Response(serializer.data)
 
     def put(self, request, user_id, *args, **kwargs):
-        data = request.data
-        admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
-        line = admin.get_reporting_line(user_id)
+        serializer = ReportingLineSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        line = admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
         serializer = ReportingLineSerializer(line)
         return Response(serializer.data)
