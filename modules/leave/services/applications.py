@@ -67,13 +67,12 @@ def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id:
     Considers PENDING or APPROVED LEAVE-kind applications.
     Applies BR-EL-012 exception for CL half-days on single dates.
     """
-    from datetime import date as DateType
-    
     # Determine which categories count as "LEAVE" for overlap purposes (excluding CANCELLATION)
     leave_categories = [cat[0] for cat in LeaveApplication._meta.get_field('category').choices if cat[0] != 'CANCELLATION']
 
     applications = LeaveApplication.objects.filter(
         user_id=user_id,
+        kind=RequestKind.LEAVE.value,
         category__in=leave_categories,
         status__in=[Status.PENDING.value, Status.APPROVED.value],
     )
@@ -84,12 +83,9 @@ def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id:
 
     for app in applications:
         # Calculate overlap using policy logic
-        try:
-            is_overlapping = policy.overlaps(app.start_date, app.end_date, app.half_day, start, end, half_day)
-            if is_overlapping:
-                return True
-        except Exception:
-            continue
+        is_overlapping = policy.overlaps(app.start_date, app.end_date, app.half_day, start, end, half_day)
+        if is_overlapping:
+            return True
 
     return False
 
@@ -246,23 +242,22 @@ def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> L
 
     Only the current assignee (substitute) may respond.
     """
-    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+    app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+    if app is None:
+        raise NotFound()
 
     if app.assignee_id != actor_id:
         raise NotFound(f"Only the assigned substitute can respond to this application.")
 
-    if app.status not in [Status.PENDING.value, Stage.SUBSTITUTE.value]:  # Assuming 'pending' or 'submitted' states allow response
-        raise NotFound(f"Cannot respond to substitute request for application in status {app.status}.")
+    if app.status != Status.PENDING.value or app.stage != Stage.SUBSTITUTE.value:
+        raise NotFound(f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}.")
 
-    old_status = app.status
     if accept:
-        new_status = Status.PENDING.value  # Keep pending but mark substitute accepted
         description = "Substitute consent accepted."
         app.substitute_status = SubstituteStatus.ACCEPTED.value
         # Route to approver after acceptance
         route_to_approver(app)
     else:
-        new_status = Status.PENDING.value  # Revert to applicant action required state
         description = "Substitute consent declined."
         app.substitute_status = SubstituteStatus.DECLINED.value
         app.assignee_id = None
@@ -295,18 +290,8 @@ def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -
         raise LeaveError("Substitute cannot be the applicant.")
 
     # Check for existing pending/approved leave of the new substitute that overlaps
-    sub_apps = LeaveApplication.objects.filter(
-        user_id=substitute_id,
-        status__in=[Status.PENDING.value, Status.APPROVED.value],
-    )
-
-    for sub_app in sub_apps:
-        try:
-            is_overlapping = policy.overlaps(sub_app.start_date, sub_app.end_date, sub_app.half_day, app.start_date, app.end_date, app.half_day)
-            if is_overlapping:
-                raise LeaveError(f"New substitute {substitute_id} has an overlapping leave application.")
-        except Exception:
-            continue
+    if has_overlap(substitute_id, app.start_date, app.end_date, app.half_day):
+        raise LeaveError("The substitute is on leave on these dates.")
 
     # Update the nominated substitute ID and status
     app.substitute_id = substitute_id
@@ -325,15 +310,16 @@ def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
 
     Only the owner may withdraw a PENDING request.
     """
-    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+    app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+    if app is None:
+        raise NotFound()
 
     if app.user_id != actor_id:
         raise NotFound(f"Only the application owner can withdraw this application.")
 
-    if app.status not in [Status.PENDING.value]:
+    if app.status != Status.PENDING.value:
         raise NotFound(f"Cannot withdraw application in status {app.status}.")
 
-    old_status = app.status
     app.status = Status.WITHDRAWN.value
     app.assignee_id = None
     app.save()
