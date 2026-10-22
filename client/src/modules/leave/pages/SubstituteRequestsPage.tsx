@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { ActionIcon, Button, Card, Container, Group, Text } from "@mantine/core";
+import { Button, Card, Container, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
@@ -11,9 +10,9 @@ import { CATEGORY_LABELS, useInbox, useSubstituteResponse, type LeaveApplication
 
 export default function SubstituteRequestsPage() {
   const respondMutation = useSubstituteResponse();
-  const [requestId, setRequestId] = useState<number | null>(null);
+  const inboxData = useInbox();
 
-  if (respondMutation.isPending) {
+  if (inboxData.isPending) {
     return (
       <Container size="xl">
         <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
@@ -24,18 +23,16 @@ export default function SubstituteRequestsPage() {
     );
   }
 
-  const inboxData = useInbox();
-  
   if (inboxData.error) {
     return (
       <Container size="xl">
-        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <PageHeader title="Substitute Requests" subtitle="Colleagues who nominated you as their substitute" />
         <ErrorState error={inboxData.error} />
       </Container>
     );
   }
 
-  const applications = inboxData.data?.filter((app) => app.stage === "substitute") || [];
+  const applications = (inboxData.data ?? []).filter((app) => app.stage === "substitute");
 
   if (applications.length === 0) {
     return (
@@ -48,7 +45,7 @@ export default function SubstituteRequestsPage() {
     );
   }
 
-  const columns = [
+  const columns: Column<LeaveApplication>[] = [
     { key: "colleague", header: "Colleague", align: "left", render: (row) => row.user_id },
     { key: "category", header: "Category", align: "left", render: (row) => CATEGORY_LABELS[row.category] },
     { key: "dates", header: "Dates", align: "left", render: (row) => `${row.start_date} to ${row.end_date}` },
@@ -68,14 +65,14 @@ export default function SubstituteRequestsPage() {
 
   function handleAccept(id: number) {
     respondMutation.mutate({ id, accept: true }, {
-      onSuccess: () => notifications.show({ color: "green", title: "Substitute accepted" }),
+      onSuccess: () => notifications.show({ color: "green", title: "Accepted", message: "The request now goes to the approver." }),
       onError: (e) => notifications.show({ color: "red", title: "Error", message: errorMessage(e) }),
     });
   }
 
   function handleDecline(id: number) {
     respondMutation.mutate({ id, accept: false }, {
-      onSuccess: () => notifications.show({ color: "green", title: "Substitute declined" }),
+      onSuccess: () => notifications.show({ color: "gray", title: "Declined", message: "Your colleague will nominate someone else." }),
       onError: (e) => notifications.show({ color: "red", title: "Error", message: errorMessage(e) }),
     });
   }
@@ -83,13 +80,15 @@ export default function SubstituteRequestsPage() {
   return (
     <Container size="xl">
       <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
-      <DataTable
-        rows={applications}
-        columns={columns}
-        loading={respondMutation.isPending}
-        rowKey={(row: LeaveApplication) => row.id}
-        empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
-      />
+      <Card padding="lg">
+        <DataTable<LeaveApplication>
+          rows={applications}
+          columns={columns}
+          loading={inboxData.isPending}
+          rowKey={(row: LeaveApplication) => row.id}
+          empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
+        </DataTable>
+      </Card>
     </Container>
   );
 }

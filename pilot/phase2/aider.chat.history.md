@@ -7595,3 +7595,187 @@ export default function ApprovalsPage() {
 
 > Tokens: 7.0k sent, 1.2k received.  
 > Applied edit to client/src/modules/leave/pages/ApprovalsPage.tsx  
+
+# aider chat started at 2026-10-23 00:55:12
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/SubstituteRequestsPage.tsx --read client/src/ui/components/DataTable.tsx --message-file pilot/phase2/prompts/018e-substitute-page-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/SubstituteRequestsPage.tsx to the chat.  
+> Added client/src/ui/components/DataTable.tsx to the chat (read-only).  
+
+#### Review of SubstituteRequestsPage.tsx from task 014 (tsc reports 15 errors). React hooks must run in the same order on every render, but useInbox() is called after an early return. Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. Change the first two import lines to:  
+#### import { Button, Card, Container, Group } from "@mantine/core";  
+#### and delete `import { useState } from "react";` (requestId is never used).  
+#### 2. Change `import { DataTable } from "../../../ui/components/DataTable";` to `import { DataTable, type Column } from "../../../ui/components/DataTable";`.  
+#### 3. Replace everything from `  const respondMutation = useSubstituteResponse();` down to and including the closing `  }` of the `if (applications.length === 0) {` block with:  
+####   const respondMutation = useSubstituteResponse();  
+####   const inboxData = useInbox();  
+####   
+####   if (inboxData.error) {  
+####     return (  
+####       <Container size="xl">  
+####         <PageHeader title="Substitute Requests" subtitle="Colleagues who nominated you as their substitute" />  
+####         <ErrorState error={inboxData.error} />  
+####       </Container>  
+####     );  
+####   }  
+####   
+####   const applications = (inboxData.data ?? []).filter((app) => app.stage === "substitute");  
+#### 4. Change `  const columns = [` to `  const columns: Column<LeaveApplication>[] = [`.  
+#### 5. Both onSuccess notifications lack a message (TS2345). Use  
+####       onSuccess: () => notifications.show({ color: "green", title: "Accepted", message: "The request now goes to the approver." }),  
+####    in handleAccept and  
+####       onSuccess: () => notifications.show({ color: "gray", title: "Declined", message: "Your colleague will nominate someone else." }),  
+####    in handleDecline.  
+#### 6. Wrap the DataTable in a Card and make it typed: `<DataTable` becomes `<Card padding="lg"><DataTable<LeaveApplication>`, `loading={respondMutation.isPending}` becomes `loading={inboxData.isPending}`, and after the DataTable's closing `/>` add `</Card>`.  
+####   
+#### Do not change anything else.  
+
+To fix the TypeScript errors and reorganize the hooks calls as requested, I will perform the following changes to `client/src/modules/leave/pages/SubstituteRequestsPage.tsx`:
+
+1.  Update the imports to remove `useState` and add `Column`.
+2.  Move the hook calls (`useSubstituteResponse`, `useInbox`) before any early returns.
+3.  Fix the empty state message text.
+4.  Add the missing type annotation for `columns`.
+5.  Update the notification messages in `handleAccept` and `handleDecline`.
+6.  Wrap the `DataTable` in a `Card` and fix the `loading` prop to use `inboxData.isPending`.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+```typescript
+<<<<<<< SEARCH
+import { useState } from "react";
+import { ActionIcon, Button, Card, Container, Group, Text } from "@mantine/core";
+=======
+import { Button, Card, Container, Group } from "@mantine/core";
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+  const respondMutation = useSubstituteResponse();
+  const [requestId, setRequestId] = useState<number | null>(null);
+
+  if (respondMutation.isPending) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <Card padding="lg">
+          <Text>Processing...</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  const inboxData = useInbox();
+  
+  if (inboxData.error) {
+=======
+  const respondMutation = useSubstituteResponse();
+  const inboxData = useInbox();
+
+  if (inboxData.isPending) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <Card padding="lg">
+          <Text>Processing...</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  if (inboxData.error) {
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+  if (inboxData.error) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <ErrorState error={inboxData.error} />
+      </Container>
+    );
+  }
+
+  const applications = inboxData.data?.filter((app) => app.stage === "substitute") || [];
+=======
+  if (inboxData.error) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Colleagues who nominated you as their substitute" />
+        <ErrorState error={inboxData.error} />
+      </Container>
+    );
+  }
+
+  const applications = (inboxData.data ?? []).filter((app) => app.stage === "substitute");
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+  const columns = [
+=======
+  const columns: Column<LeaveApplication>[] = [
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute accepted" }),
+=======
+      onSuccess: () => notifications.show({ color: "green", title: "Accepted", message: "The request now goes to the approver." }),
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute declined" }),
+=======
+      onSuccess: () => notifications.show({ color: "gray", title: "Declined", message: "Your colleague will nominate someone else." }),
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+<<<<<<< SEARCH
+  return (
+    <Container size="xl">
+      <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+      <DataTable
+        rows={applications}
+        columns={columns}
+        loading={respondMutation.isPending}
+        rowKey={(row: LeaveApplication) => row.id}
+        empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
+      />
+    </Container>
+  );
+=======
+  return (
+    <Container size="xl">
+      <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+      <Card padding="lg">
+        <DataTable<LeaveApplication>
+          rows={applications}
+          columns={columns}
+          loading={inboxData.isPending}
+          rowKey={(row: LeaveApplication) => row.id}
+          empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
+        </DataTable>
+      </Card>
+    </Container>
+  );
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.4k sent, 1.0k received.  
+> Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
