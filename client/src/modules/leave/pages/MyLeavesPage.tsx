@@ -10,15 +10,19 @@ import { StatusBadge } from "../../../ui/components/StatusBadge";
 import {
   CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,
   type LeaveApplication,
+  type LeaveBalance,
 } from "../api";
 
 function ReplaceSubstitute({ id, substituteId, status }: { id: number; substituteId: number | null; status: string }) {
   const [subId, setSubId] = useState<string>("");
-  const mutate = useReplaceSubstitute(id);
+  const replace = useReplaceSubstitute();
 
   function handleSubmit() {
     if (!subId) return;
-    mutate.mutate({ substitute_id: parseInt(subId, 10) });
+    replace.mutate({ id, substitute_id: Number(subId) }, {
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute nominated", message: "Your new substitute has been asked to confirm." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not nominate", message: errorMessage(e) }),
+    });
   }
 
   return (
@@ -29,7 +33,7 @@ function ReplaceSubstitute({ id, substituteId, status }: { id: number; substitut
             size="xs"
             placeholder="User ID"
             value={subId}
-            onChange={setSubId}
+            onChange={(v) => setSubId(String(v))}
           />
           <Button size="xs" onClick={handleSubmit}>
             Nominate
@@ -46,8 +50,10 @@ function ReplaceSubstitute({ id, substituteId, status }: { id: number; substitut
 
 export default function MyLeavesPage() {
   const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
-  const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
-  const [historyFor, setHistoryFor] = useState<number | null>(null);
+  const { data: balancesData } = useBalances(new Date().getFullYear());
+  const withdrawMutation = useWithdraw();
+  const cancelMutation = useCancel();
+  const today = new Date().toISOString().slice(0, 10);
 
   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
 
@@ -73,8 +79,10 @@ export default function MyLeavesPage() {
         title="My Leaves"
         subtitle="Track your leave balances and application history"
       />
-      <SimpleGrid cols={1} gap="md" mb="md">
-        {balancesData?.results?.map((b: LeaveBalance) => (
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">
+        {(balancesData ?? []).map((b: LeaveBalance) => (
+<<<<<<< SEARCH
+          rows={(applicationsData?.results ?? []) as LeaveApplication[]}
           <Card padding="sm" key={b.id}>
             <Text fw={600} size="sm">{CATEGORY_LABELS[b.category]} ({b.year})</Text>
             <Group gap="xs" mt="xs">
@@ -137,7 +145,7 @@ export default function MyLeavesPage() {
                       Withdraw
                     </Button>
                   )}
-                  {r.status === "approved" && r.kind === "leave" && new Date(r.start_date) >= new Date() && (
+                  {r.status === "approved" && r.kind === "leave" && r.start_date > today && (
                     <Button
                       size="xs" variant="subtle" color="red"
                       onClick={() => cancel(r)}
