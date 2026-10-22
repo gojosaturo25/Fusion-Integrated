@@ -6567,3 +6567,161 @@ export function useDecide() {
 
 > Tokens: 4.9k sent, 1.6k received.  
 > Applied edit to client/src/modules/leave/api.ts  
+
+# aider chat started at 2026-10-23 00:21:23
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/ApplyLeavePage.tsx --read client/src/modules/leave/api.ts --message-file pilot/phase2/prompts/011b-client-apply-page-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ApplyLeavePage.tsx to the chat.  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+
+#### Review of ApplyLeavePage.tsx from task 011 (tsc reports 3 errors). Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. Select onChange receives (value: string | null), not LeaveCategory (TS2322). Use: onChange={(value) => value && handleCategoryChange(value as LeaveCategory)}  
+#### 2. Mantine 7 Checkbox onChange receives a ChangeEvent, not a boolean (TS2322). Use: onChange={(e) => setFormData({ ...formData, station_leave: e.currentTarget.checked })}  
+#### 3. NumberInput onChange receives string | number, but substitute_id is a string in the form state (TS2322). Use: onChange={(value) => setFormData({ ...formData, substitute_id: String(value) })}  
+#### 4. handleSubmit rejects every half-day choice for a single-day CL, which is the one case where half days are allowed (BR-EL-010). Delete the whole "Additional validation for half_day" if-block, and in the mutate payload send `half_day: showHalfDaySelect ? formData.half_day : "none"`.  
+#### 5. The payload sends `station_address: formData.station_address || null`, but the server rejects null. Send `station_address: formData.station_address`.  
+#### 6. The submit Button has `leftSection={<span>Submit</span>}`, which prints "Submit" twice. Remove that leftSection prop.  
+####   
+#### Do not change anything else.  
+
+To fix the TypeScript errors and logic issues in `ApplyLeavePage.tsx`, I will make the following changes:
+
+1.  Update the `Select`'s `onChange` handler to correctly handle string values from Mantine and cast them to `LeaveCategory`.
+2.  Update the `Checkbox`'s `onChange` handler to use `e.currentTarget.checked` instead of `checked`.
+3.  Update the `NumberInput`'s `onChange` handler to ensure the value is always a string.
+4.  Remove the incorrect validation logic for half-days and instead conditionally set the `half_day` in the mutation payload based on whether the half-day select is visible.
+5.  Change `station_address` from `|| null` to just using the form value directly, as the server rejects null.
+6.  Remove the `leftSection` prop from the submit button to prevent duplicate text.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+```typescript
+<<<<<<< SEARCH
+            <Select
+              label="Leave Category"
+              value={category}
+              onChange={handleCategoryChange}
+              data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+            />
+=======
+            <Select
+              label="Leave Category"
+              value={category}
+              onChange={(value) => value && handleCategoryChange(value as LeaveCategory)}
+              data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+            />
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+```typescript
+<<<<<<< SEARCH
+          <Checkbox
+            label="I will leave the station"
+            checked={formData.station_leave}
+            onChange={(checked) => setFormData({ ...formData, station_leave: checked })}
+          />
+=======
+          <Checkbox
+            label="I will leave the station"
+            checked={formData.station_leave}
+            onChange={(e) => setFormData({ ...formData, station_leave: e.currentTarget.checked })}
+          />
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+<<<<<<< SEARCH
+          <NumberInput
+            label="Substitute (user id)"
+            value={formData.substitute_id || ""}
+            onChange={(value) => setFormData({ ...formData, substitute_id: value })}
+            placeholder="Enter user ID of the substitute"
+          />
+=======
+          <NumberInput
+            label="Substitute (user id)"
+            value={formData.substitute_id || ""}
+            onChange={(value) => setFormData({ ...formData, substitute_id: String(value) })}
+            placeholder="Enter user ID of the substitute"
+          />
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+<<<<<<< SEARCH
+    // Additional validation for half_day: only allowed for CL when start_date === end_date
+    if (category === "CL" && isSingleDay) {
+      if (formData.half_day !== "none") {
+        notifications.show({
+          color: "red",
+          title: "Invalid Half-Day Selection",
+          message: "Half-day selection is only allowed for single-day Casual Leave.",
+        });
+        return;
+      }
+    }
+
+    submitMutation.mutate(
+=======
+    submitMutation.mutate(
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+<<<<<<< SEARCH
+      {
+        category,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        half_day: formData.half_day,
+        purpose: formData.purpose,
+        station_leave: formData.station_leave,
+        station_address: formData.station_address || null,
+        substitute_id: formData.substitute_id ? Number(formData.substitute_id) : null,
+      },
+=======
+      {
+        category,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        half_day: showHalfDaySelect ? formData.half_day : "none",
+        purpose: formData.purpose,
+        station_leave: formData.station_leave,
+        station_address: formData.station_address,
+        substitute_id: formData.substitute_id ? Number(formData.substitute_id) : null,
+      },
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/pages/ApplyLeavePage.tsx
+<<<<<<< SEARCH
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            leftSection={<span>Submit</span>}
+            loading={submitMutation.isPending}
+            disabled={!formData.start_date || !formData.end_date || !formData.purpose}
+          >
+            Submit Application
+          </Button>
+=======
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            loading={submitMutation.isPending}
+            disabled={!formData.start_date || !formData.end_date || !formData.purpose}
+          >
+            Submit Application
+          </Button>
+>>>>>>> REPLACE
+```
+
+> Tokens: 6.0k sent, 988 received.  
+> Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  

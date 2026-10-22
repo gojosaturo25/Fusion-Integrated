@@ -46,27 +46,15 @@ export default function ApplyLeavePage() {
       return;
     }
 
-    // Additional validation for half_day: only allowed for CL when start_date === end_date
-    if (category === "CL" && isSingleDay) {
-      if (formData.half_day !== "none") {
-        notifications.show({
-          color: "red",
-          title: "Invalid Half-Day Selection",
-          message: "Half-day selection is only allowed for single-day Casual Leave.",
-        });
-        return;
-      }
-    }
-
     submitMutation.mutate(
       {
         category,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        half_day: formData.half_day,
+        half_day: showHalfDaySelect ? formData.half_day : "none",
         purpose: formData.purpose,
         station_leave: formData.station_leave,
-        station_address: formData.station_address || null,
+        station_address: formData.station_address,
         substitute_id: formData.substitute_id ? Number(formData.substitute_id) : null,
       },
       {
@@ -98,7 +86,7 @@ export default function ApplyLeavePage() {
             <Select
               label="Leave Category"
               value={category}
-              onChange={handleCategoryChange}
+              onChange={(value) => value && handleCategoryChange(value as LeaveCategory)}
               data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
             />
           </Group>
@@ -143,7 +131,7 @@ export default function ApplyLeavePage() {
           <Checkbox
             label="I will leave the station"
             checked={formData.station_leave}
-            onChange={(checked) => setFormData({ ...formData, station_leave: checked })}
+            onChange={(e) => setFormData({ ...formData, station_leave: e.currentTarget.checked })}
           />
 
           {formData.station_leave && (
@@ -158,14 +146,13 @@ export default function ApplyLeavePage() {
           <NumberInput
             label="Substitute (user id)"
             value={formData.substitute_id || ""}
-            onChange={(value) => setFormData({ ...formData, substitute_id: value })}
+            onChange={(value) => setFormData({ ...formData, substitute_id: String(value) })}
             placeholder="Enter user ID of the substitute"
           />
 
           <Button
             type="button"
             onClick={handleSubmit}
-            leftSection={<span>Submit</span>}
             loading={submitMutation.isPending}
             disabled={!formData.start_date || !formData.end_date || !formData.purpose}
           >
