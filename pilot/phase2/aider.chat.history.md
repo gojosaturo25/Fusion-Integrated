@@ -4843,3 +4843,157 @@ ROLE_GRANTS = {
 > Tokens: 7.8k sent, 1.1k received.  
 > Applied edit to modules/leave/registry.py  
 > Applied edit to modules/leave/api/urls.py  
+
+# aider chat started at 2026-10-22 23:50:39
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/tests/__init__.py --file modules/leave/tests/test_policy.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/domain/policy.py --message-file pilot/phase2/prompts/009-policy-tests.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/tests/__init__.py  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/tests/test_policy.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/tests/__init__.py to the chat.  
+> Added modules/leave/tests/test_policy.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/domain/policy.py to the chat (read-only).  
+
+#### Phase 1 shipped no tests for the leave module. Write pytest unit tests for modules/leave/domain/policy.py (read-only). They are plain test functions: no Django, no database, no classes, no fixtures.  
+####   
+#### modules/leave/tests/__init__.py is an empty file.  
+####   
+#### modules/leave/tests/test_policy.py starts with exactly:  
+####   
+#### from datetime import date  
+#### from decimal import Decimal  
+####   
+#### import pytest  
+####   
+#### from modules.leave.domain import policy  
+####   
+#### FRI = date(2026, 11, 6)   # a Friday  
+#### MON = date(2026, 11, 9)   # the following Monday  
+####   
+#### Write one small test per rule, named after the business rule it checks:  
+#### - entitlement: CL for "staff" is Decimal("8"); EL for "faculty" is None (BR-EL-005); VL for "staff" is None (BR-EL-006); VL for "faculty" is Decimal("60"); any kind other than "faculty", for example "employee", is treated as staff (EL gives Decimal("30")).  
+#### - count_days: CL from FRI to MON is Decimal("2") because weekends are not counted; EL from FRI to MON is Decimal("4") because EL counts calendar days (BR-EL-011); CL on MON alone with half_day "first" is Decimal("0.5") (BR-EL-010); half_day "first" on EL raises policy.PolicyError; half_day "first" on a two-day CL raises policy.PolicyError; end before start raises policy.PolicyError.  
+#### - overlaps (BR-EL-012): FRI..FRI and MON..MON with no half days do not overlap; FRI..MON and MON..MON overlap; MON first half and MON second half do not overlap; MON first half and MON first half overlap.  
+#### - unit_head_is_final (BR-EL-016/017): True for "CL" and "RH", False for "EL".  
+####   
+#### Use pytest.raises(policy.PolicyError) for the error cases. Write both files in full. Do not ask for more files.  
+
+modules/leave/tests/__init__.py
+```
+# Empty package marker for leave tests
+```
+
+modules/leave/tests/test_policy.py
+```
+from datetime import date
+from decimal import Decimal
+
+import pytest
+
+from modules.leave.domain import policy
+
+FRI = date(2026, 11, 6)   # a Friday
+MON = date(2026, 11, 9)   # the following Monday
+
+
+def test_entitlement_cl_staff():
+    """CL for staff is Decimal("8") (BR-EL-002)."""
+    assert policy.entitlement("CL", "staff") == Decimal("8")
+
+
+def test_entitlement_el_faculty_none():
+    """EL for faculty is None (BR-EL-005)."""
+    assert policy.entitlement("EL", "faculty") is None
+
+
+def test_entitlement_vl_staff_none():
+    """VL for staff is None (BR-EL-006)."""
+    assert policy.entitlement("VL", "staff") is None
+
+
+def test_entitlement_vl_faculty():
+    """VL for faculty is Decimal("60")."""
+    assert policy.entitlement("VL", "faculty") == Decimal("60")
+
+
+def test_entitlement_any_kind_as_staff():
+    """Any kind other than 'faculty' (e.g., 'employee') is treated as staff. EL gives Decimal("30")."""
+    assert policy.entitlement("EL", "employee") == Decimal("30")
+    assert policy.entitlement("EL", "") == Decimal("30")
+
+
+def test_count_days_cl_fri_mon():
+    """CL from FRI to MON is Decimal("2") because weekends are not counted (BR-EL-011)."""
+    assert policy.count_days("CL", FRI, MON) == Decimal("2")
+
+
+def test_count_days_el_fri_mon():
+    """EL from FRI to MON is Decimal("4") because EL counts calendar days (BR-EL-011)."""
+    assert policy.count_days("EL", FRI, MON) == Decimal("4")
+
+
+def test_count_days_cl_mon_half_day_first():
+    """CL on MON alone with half_day 'first' is Decimal("0.5") (BR-EL-010)."""
+    assert policy.count_days("CL", MON, MON, "first") == Decimal("0.5")
+
+
+def test_count_days_el_mon_half_day_first_raises():
+    """half_day 'first' on EL raises policy.PolicyError."""
+    with pytest.raises(policy.PolicyError):
+        policy.count_days("EL", MON, MON, "first")
+
+
+def test_count_days_cl_two_day_half_day_first_raises():
+    """half_day 'first' on a two-day CL raises policy.PolicyError."""
+    with pytest.raises(policy.PolicyError):
+        policy.count_days("CL", FRI, MON, "first")
+
+
+def test_count_days_end_before_start_raises():
+    """end before start raises policy.PolicyError."""
+    with pytest.raises(policy.PolicyError):
+        policy.count_days("CL", MON, FRI)
+
+
+def test_overlaps_no_overlap_different_days():
+    """FRI..FRI and MON..MON with no half days do not overlap (BR-EL-012)."""
+    assert not policy.overlaps(FRI, FRI, "none", MON, MON, "none")
+
+
+def test_overlaps_overlap_shared_day():
+    """FRI..MON and MON..MON overlap (BR-EL-012)."""
+    assert policy.overlaps(FRI, MON, "none", MON, MON, "none")
+
+
+def test_overlaps_no_overlap_different_halves_same_day():
+    """MON first half and MON second half do not overlap (BR-EL-012)."""
+    assert not policy.overlaps(MON, MON, "first", MON, MON, "second")
+
+
+def test_overlaps_overlap_same_half_same_day():
+    """MON first half and MON first half overlap (BR-EL-012)."""
+    assert policy.overlaps(MON, MON, "first", MON, MON, "first")
+
+
+def test_unit_head_is_final_cl():
+    """unit_head_is_final is True for 'CL' (BR-EL-016)."""
+    assert policy.unit_head_is_final("CL") is True
+
+
+def test_unit_head_is_final_rh():
+    """unit_head_is_final is True for 'RH' (BR-EL-016)."""
+    assert policy.unit_head_is_final("RH") is True
+
+
+def test_unit_head_is_final_el_false():
+    """unit_head_is_final is False for 'EL' (BR-EL-017)."""
+    assert policy.unit_head_is_final("EL") is False
+```
+
+> Tokens: 5.2k sent, 949 received.  
+> Applied edit to modules/leave/tests/test_policy.py  
+> Applied edit to modules/leave/tests/__init__.py  
