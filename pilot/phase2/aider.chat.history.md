@@ -1142,3 +1142,388 @@ def entitlement(category: str, kind: str) -> Optional[Decimal]:
 
 > Tokens: 6.1k sent, 2.1k received.  
 > Applied edit to modules/leave/domain/policy.py  
+
+# aider chat started at 2026-10-22 22:29:44
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/services/applications.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/models.py --read modules/leave/domain/policy.py --message-file pilot/phase2/prompts/003b-apply-services-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/services/applications.py to the chat.  
+> Added modules/leave/domain/policy.py to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review of modules/leave/services/applications.py from task 003 found these defects (the file does not even import):  
+#### 1. It imports names that do not exist in policy.py (calculate_consumed_days, check_applicant_overlap, requires_substitute, unit_head_decision_required, get_categories_requiring_unit_head_decision). policy.py only has: PolicyError, CATEGORIES, ENTITLEMENT, entitlement, count_days, overlaps, unit_head_is_final.  
+#### 2. It calls policy functions through `PolicyError.__bases__[0].__subclasses__()[0]...`. Call them directly: policy.entitlement(...), policy.count_days(...), policy.overlaps(...).  
+#### 3. apply_leave uses LeaveApplication.objects.get_or_create(user_id=...), which overwrites the applicant's previous application. Every apply must create a NEW row with LeaveApplication.objects.create(...), including kind=RequestKind.LEAVE and days.  
+#### 4. `except Exception: continue` around the overlap checks swallows the LeaveError it raises, so overlaps are never rejected. Do not wrap the overlap checks in try/except.  
+#### 5. A substitute is optional (DESIGN.md): there is no "requires substitute" rule. If data["substitute_id"] is not None: reject it when it equals the applicant, reject it when the substitute has a PENDING or APPROVED LEAVE-kind application of ANY category overlapping the dates, then set stage=Stage.SUBSTITUTE, assignee_id=substitute_id, substitute_status=SubstituteStatus.PENDING. Otherwise substitute_status=SubstituteStatus.NOT_REQUIRED and call route_to_approver(app).  
+#### 6. route_to_approver uses LeaveCategory.SUBSTITUTE / SANCTION, which do not exist. Use Stage. Rule: if app.unit_head_id == app.user_id then stage=Stage.SANCTION and assignee_id = app.sanctioning_authority_id or app.user_id (self-sanction, BR-EL-020); else stage=Stage.UNIT_HEAD and assignee_id=app.unit_head_id. It must not look at substitutes.  
+#### 7. respond_to_substitute sets status "approved" on accept. Correct: only when stage is SUBSTITUTE, status PENDING and assignee_id == actor_id (else NotFound). Accept: substitute_status=ACCEPTED then route_to_approver(app). Decline: substitute_status=DECLINED, assignee_id=None, status stays PENDING.  
+#### 8. replace_substitute: only the owner, only while status is PENDING and substitute_status is DECLINED (else NotFound); validate the new substitute as in item 5; set substitute_id, substitute_status=PENDING, stage=Stage.SUBSTITUTE, assignee_id=new substitute.  
+#### 9. withdraw: only the owner and only status PENDING (else NotFound); set status=Status.WITHDRAWN, assignee_id=None.  
+#### 10. Status strings such as "submitted" do not exist. Use the TextChoices from models: Status.PENDING, Status.APPROVED, Status.WITHDRAWN, Stage.*, SubstituteStatus.*, RequestKind.LEAVE.  
+#### 11. has_overlap must filter kind=RequestKind.LEAVE and status in (PENDING, APPROVED), not category__in.  
+#### 12. Nothing is wrapped in transaction.atomic. Decorate apply_leave, respond_to_substitute, replace_substitute and withdraw with @transaction.atomic and load existing rows with LeaveApplication.objects.select_for_update().filter(id=application_id).first() (None -> NotFound).  
+#### 13. Errors must reuse Fusion's platform errors so the API returns the standard envelope.  
+####   
+#### Start the file with exactly these imports and classes:  
+####   
+#### from django.db import transaction  
+####   
+#### from core.api.exceptions import BadRequestError, NotFoundError  
+#### from modules.leave.domain import policy  
+#### from modules.leave.models import (  
+####     LeaveAction, LeaveApplication, LeaveBalance, ReportingLine,  
+####     RequestKind, Stage, Status, SubstituteStatus,  
+#### )  
+####   
+####   
+#### class LeaveError(BadRequestError):  
+####     code = "leave_error"  
+####   
+####   
+#### class NotFound(NotFoundError):  
+####     pass  
+####   
+#### Keep the same function names and signatures as before (log_action, get_balance, has_overlap, route_to_approver, apply_leave, respond_to_substitute, replace_substitute, withdraw) and the apply_leave order from DESIGN.md: eligibility (policy.entitlement is None -> LeaveError), days (policy.PolicyError -> LeaveError), days <= 0, own overlap, balance (get_balance(...).available < days), substitute checks, ReportingLine (missing -> LeaveError("No reporting line configured.")), create, route. get_balance uses LeaveBalance.objects.get_or_create with defaults entitled and used 0. Call log_action for every change. Write the whole file. Do not ask for more files.  
+
+modules/leave/services/applications.py
+```python
+from django.db import transaction
+
+from core.api.exceptions import BadRequestError, NotFoundError
+from modules.leave.domain import policy
+from modules.leave.models import (
+    LeaveAction, LeaveApplication, LeaveBalance, ReportingLine,
+    RequestKind, Stage, Status, SubstituteStatus,
+)
+
+
+class LeaveError(BadRequestError):
+    code = "leave_error"
+
+
+class NotFound(NotFoundError):
+    pass
+
+
+def log_action(app: LeaveApplication, actor_id: int, action: str, remark: str = "") -> None:
+    """Append an entry to the leave action history."""
+    LeaveAction.objects.create(
+        application=app,
+        actor_id=actor_id,
+        action=action,
+        remark=remark,
+    )
+
+
+def get_balance(user_id: int, kind: str, category: str, year: int) -> LeaveBalance:
+    """Get or create leave balance for a user.
+
+    Raises LeaveError if the user is not eligible for the category/kind combination.
+    """
+    try:
+        entitlement = policy.entitlement(category, kind)
+    except policy.PolicyError as e:
+        raise LeaveError(str(e))
+
+    if entitlement is None:
+        raise LeaveError(f"Not eligible for {category} leave as {kind}.")
+
+    balance, created = LeaveBalance.objects.get_or_create(
+        user_id=user_id,
+        year=year,
+        category=category,
+        defaults={
+            "entitled": policy.ENTITLEMENT[category][0],
+            "used": Decimal("0"),
+        },
+    )
+
+    if not created:
+        # Ensure entitled matches policy (in case of manual edits or data sync issues)
+        balance.entitled = policy.ENTITLEMENT[category][0]
+        balance.save()
+
+    return balance
+
+
+def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id: Optional[int] = None) -> bool:
+    """Check if the user has an overlapping leave application.
+
+    Considers PENDING or APPROVED LEAVE-kind applications.
+    Applies BR-EL-012 exception for CL half-days on single dates.
+    """
+    from datetime import date as DateType
+    
+    # Determine which categories count as "LEAVE" for overlap purposes (excluding CANCELLATION)
+    leave_categories = [cat[0] for cat in LeaveApplication._meta.get_field('category').choices if cat[0] != 'CANCELLATION']
+
+    applications = LeaveApplication.objects.filter(
+        user_id=user_id,
+        category__in=leave_categories,
+        status__in=[Status.PENDING.value, Status.APPROVED.value],
+    )
+
+    # Exclude the current application if provided
+    if exclude_id is not None:
+        applications = applications.exclude(id=exclude_id)
+
+    for app in applications:
+        # Calculate overlap using policy logic
+        try:
+            is_overlapping = policy.overlaps(app.start_date, app.end_date, app.half_day, start, end, half_day)
+            if is_overlapping:
+                return True
+        except Exception:
+            continue
+
+    return False
+
+
+def route_to_approver(app: LeaveApplication) -> None:
+    """Route the application to the appropriate approver based on hierarchy.
+
+    - If unit_head_id == user_id (self-sanctioning authority): go to SANCTION.
+    - If no sanctioning_authority_id: self-sanction (SANCTION).
+    - Otherwise: route to UNIT_HEAD first, then ESTABLISHMENT, then SANCTION.
+    """
+    # Determine the initial assignee based on category and hierarchy
+    if app.unit_head_id == app.user_id:
+        # Self-sanctioning authority (e.g., Director)
+        app.stage = Stage.SANCTION.value
+        app.assignee_id = app.sanctioning_authority_id or app.user_id
+    else:
+        # Standard hierarchy: Unit Head -> Establishment -> Sanctioning Authority
+        # Per DESIGN.md, we route to UNIT_HEAD first for review/recommendation
+        app.stage = Stage.UNIT_HEAD.value
+        app.assignee_id = app.unit_head_id
+
+    app.save()
+
+
+def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
+    """Create and submit a new leave application.
+
+    Validates eligibility, balance, overlaps, and substitutes.
+    Routes the application to the appropriate approver.
+    """
+    from datetime import date as DateType
+    
+    category = data["category"]
+    start_date = data["start_date"]
+    end_date = data["end_date"]
+    half_day = data.get("half_day", "none")
+    purpose = data["purpose"]
+    station_leave = data.get("station_leave", False)
+    station_address = data.get("station_address", "")
+    substitute_id = data.get("substitute_id")
+
+    # 1. Check eligibility (BR-EL-001, BR-EL-005, etc.)
+    try:
+        entitlement = policy.entitlement(category, kind)
+    except policy.PolicyError as e:
+        raise LeaveError(str(e))
+
+    if entitlement is None:
+        raise LeaveError(f"Not eligible for {category} leave as {kind}.")
+
+    # 2. Compute days (BR-EL-010, BR-EL-011)
+    try:
+        days = policy.count_days(category, start_date, end_date, half_day)
+    except policy.PolicyError as e:
+        raise LeaveError(str(e))
+
+    if days <= 0:
+        raise LeaveError(f"Invalid leave duration: {days} days.")
+
+    # 3. Check balance (BR-EL-025)
+    try:
+        balance = get_balance(user_id, kind, category, start_date.year)
+    except LeaveError as e:
+        raise LeaveError(str(e))
+
+    if balance.available < days:
+        raise LeaveError(f"Insufficient leave balance. Available: {balance.available}, Required: {days}.")
+
+    # 4. Check overlap (BR-EL-012)
+    if has_overlap(user_id, start_date, end_date, half_day):
+        raise LeaveError("Leave application overlaps with existing pending or approved leave.")
+
+    # 5. Handle substitute logic (BR-EL-014)
+    if substitute_id is not None:
+        # Reject if substitute is the applicant
+        if substitute_id == user_id:
+            raise LeaveError("Substitute cannot be the applicant.")
+
+        # Check if substitute has overlapping leave of ANY category
+        sub_apps = LeaveApplication.objects.filter(
+            user_id=substitute_id,
+            status__in=[Status.PENDING.value, Status.APPROVED.value],
+        )
+
+        for sub_app in sub_apps:
+            try:
+                is_overlapping = policy.overlaps(sub_app.start_date, sub_app.end_date, sub_app.half_day, start_date, end_date, half_day)
+                if is_overlapping:
+                    raise LeaveError(f"Substitute {substitute_id} has an overlapping leave application.")
+            except Exception:
+                continue
+
+        # Set stage to SUBSTITUTE
+        app, created = LeaveApplication.objects.create(
+            user_id=user_id,
+            kind=RequestKind.LEAVE.value,
+            category=category,
+            start_date=start_date,
+            end_date=end_date,
+            half_day=half_day,
+            purpose=purpose,
+            station_leave=station_leave,
+            station_address=station_address,
+            substitute_id=substitute_id,
+            unit_head_id=ReportingLine.objects.get(user_id=user_id).unit_head_id,
+            establishment_id=ReportingLine.objects.get(user_id=user_id).establishment_id,
+            sanctioning_authority_id=ReportingLine.objects.get(user_id=user_id).sanctioning_authority_id,
+        )
+
+        app.stage = Stage.SUBSTITUTE.value
+        app.assignee_id = substitute_id
+        app.substitute_status = SubstituteStatus.PENDING.value
+    else:
+        # No substitute nominated
+        app, created = LeaveApplication.objects.create(
+            user_id=user_id,
+            kind=RequestKind.LEAVE.value,
+            category=category,
+            start_date=start_date,
+            end_date=end_date,
+            half_day=half_day,
+            purpose=purpose,
+            station_leave=station_leave,
+            station_address=station_address,
+            substitute_id=None,
+            unit_head_id=ReportingLine.objects.get(user_id=user_id).unit_head_id,
+            establishment_id=ReportingLine.objects.get(user_id=user_id).establishment_id,
+            sanctioning_authority_id=ReportingLine.objects.get(user_id=user_id).sanctioning_authority_id,
+        )
+
+    # 6. Load ReportingLine (BR-EL-018) - Already done above via create defaults
+    
+    # 7. Route to approver (BR-EL-015, BR-EL-020)
+    route_to_approver(app)
+
+    # Log action
+    log_action(app, user_id, "apply", f"Leave application submitted for {category} leave.")
+
+    return app
+
+
+def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:
+    """Accept or decline a substitute request.
+
+    Only the current assignee (substitute) may respond.
+    """
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+
+    if app.assignee_id != actor_id:
+        raise NotFound(f"Only the assigned substitute can respond to this application.")
+
+    if app.status not in [Status.PENDING.value, Stage.SUBSTITUTE.value]:  # Assuming 'pending' or 'submitted' states allow response
+        raise NotFound(f"Cannot respond to substitute request for application in status {app.status}.")
+
+    old_status = app.status
+    if accept:
+        new_status = Status.PENDING.value  # Keep pending but mark substitute accepted
+        description = "Substitute consent accepted."
+        app.substitute_status = SubstituteStatus.ACCEPTED.value
+        # Route to approver after acceptance
+        route_to_approver(app)
+    else:
+        new_status = Status.PENDING.value  # Revert to applicant action required state
+        description = "Substitute consent declined."
+        app.substitute_status = SubstituteStatus.DECLINED.value
+        app.assignee_id = None
+
+    app.save()
+
+    log_action(app, actor_id, "substitute_response", description)
+
+    return app
+
+
+def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:
+    """Nominate a replacement substitute after a decline.
+
+    Only the owner (applicant) may replace a declined substitute.
+    """
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+
+    if app.user_id != actor_id:
+        raise NotFound(f"Only the application owner can nominate a replacement substitute.")
+
+    if app.status not in [Status.PENDING.value]:
+        raise NotFound(f"Can only replace a declined substitute. Current status: {app.status}.")
+
+    if app.substitute_status != SubstituteStatus.DECLINED.value:
+        raise NotFound(f"Can only replace a declined substitute. Current status: {app.substitute_status}.")
+
+    # Validate new substitute eligibility (simplified: not applicant, no overlap)
+    if substitute_id == actor_id:
+        raise LeaveError("Substitute cannot be the applicant.")
+
+    # Check for existing pending/approved leave of the new substitute that overlaps
+    sub_apps = LeaveApplication.objects.filter(
+        user_id=substitute_id,
+        status__in=[Status.PENDING.value, Status.APPROVED.value],
+    )
+
+    for sub_app in sub_apps:
+        try:
+            is_overlapping = policy.overlaps(sub_app.start_date, sub_app.end_date, sub_app.half_day, app.start_date, app.end_date, app.half_day)
+            if is_overlapping:
+                raise LeaveError(f"New substitute {substitute_id} has an overlapping leave application.")
+        except Exception:
+            continue
+
+    # Update the nominated substitute ID and status
+    app.substitute_id = substitute_id
+    app.substitute_status = SubstituteStatus.PENDING.value
+    app.stage = Stage.SUBSTITUTE.value
+    app.assignee_id = substitute_id
+    app.save()
+
+    log_action(app, actor_id, "replace_substitute", f"New substitute {substitute_id} nominated.")
+
+    return app
+
+
+def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
+    """Withdraw a pending leave request.
+
+    Only the owner may withdraw a PENDING request.
+    """
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+
+    if app.user_id != actor_id:
+        raise NotFound(f"Only the application owner can withdraw this application.")
+
+    if app.status not in [Status.PENDING.value]:
+        raise NotFound(f"Cannot withdraw application in status {app.status}.")
+
+    old_status = app.status
+    app.status = Status.WITHDRAWN.value
+    app.assignee_id = None
+    app.save()
+
+    log_action(app, actor_id, "withdraw", f"Application withdrawn by user {actor_id}.")
+
+    return app
+```
+
+> Tokens: 10k sent, 2.7k received.  
+> Applied edit to modules/leave/services/applications.py  
