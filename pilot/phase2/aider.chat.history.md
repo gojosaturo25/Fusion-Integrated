@@ -2996,3 +2996,99 @@ Since the file content provided matches the desired state for all points (1-5), 
 
 > Tokens: 11k sent, 2.5k received.  
 > Applied edit to modules/leave/services/applications.py  
+
+# aider chat started at 2026-10-22 23:16:18
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/services/applications.py --read modules/leave/models.py --message-file pilot/phase2/prompts/003e-atomic-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/services/applications.py to the chat.  
+> Added modules/leave/models.py to the chat (read-only).  
+
+#### Two items from the 003c task were not applied. Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. There is still no @transaction.atomic anywhere in the file, and select_for_update() raises TransactionManagementError outside a transaction. Add the line @transaction.atomic directly above each of these four lines:  
+#### def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:  
+#### def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:  
+#### def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:  
+#### def withdraw(actor_id: int, application_id: int) -> LeaveApplication:  
+####   
+#### 2. In apply_leave, the substitute overlap check is still a loop over sub_apps wrapped in `try: ... except Exception: continue`, which swallows the LeaveError it raises, so a substitute who is on leave is accepted. Replace the `sub_apps = LeaveApplication.objects.filter(...)` query and the whole `for sub_app in sub_apps:` loop inside apply_leave with:  
+####         if has_overlap(substitute_id, start_date, end_date, half_day):  
+####             raise LeaveError("The substitute is on leave on these dates.")  
+####   
+#### Do not change anything else.  
+
+To fix the issues with `@transaction.atomic` and the substitute overlap check logic, I will modify `modules/leave/services/applications.py`.
+
+1.  Add `@transaction.atomic` decorators to `apply_leave`, `respond_to_substitute`, `replace_substitute`, and `withdraw`.
+2.  Replace the flawed loop checking for substitute overlaps in `apply_leave` with a direct call to `has_overlap`.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/services/applications.py
+```python
+<<<<<<< SEARCH
+def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
+=======
+@transaction.atomic
+def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
+>>>>>>> REPLACE
+```
+
+modules/leave/services/applications.py
+```python
+<<<<<<< SEARCH
+        # Check if substitute has overlapping leave of ANY category
+        sub_apps = LeaveApplication.objects.filter(
+            user_id=substitute_id,
+            status__in=[Status.PENDING.value, Status.APPROVED.value],
+        )
+
+        for sub_app in sub_apps:
+            try:
+                is_overlapping = policy.overlaps(sub_app.start_date, sub_app.end_date, sub_app.half_day, start_date, end_date, half_day)
+                if is_overlapping:
+                    raise LeaveError(f"Substitute {substitute_id} has an overlapping leave application.")
+            except Exception:
+                continue
+=======
+        if has_overlap(substitute_id, start_date, end_date, half_day):
+            raise LeaveError("The substitute is on leave on these dates.")
+>>>>>>> REPLACE
+```
+
+modules/leave/services/applications.py
+```python
+<<<<<<< SEARCH
+def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:
+=======
+@transaction.atomic
+def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:
+>>>>>>> REPLACE
+```
+
+modules/leave/services/applications.py
+```python
+<<<<<<< SEARCH
+def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:
+=======
+@transaction.atomic
+def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:
+>>>>>>> REPLACE
+```
+
+modules/leave/services/applications.py
+```python
+<<<<<<< SEARCH
+def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
+=======
+@transaction.atomic
+def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
+>>>>>>> REPLACE
+```
+
+> Tokens: 7.1k sent, 527 received.  
+> Applied edit to modules/leave/services/applications.py  

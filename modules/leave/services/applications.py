@@ -111,6 +111,7 @@ def route_to_approver(app: LeaveApplication) -> None:
     app.save()
 
 
+@transaction.atomic
 def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
     """Create and submit a new leave application.
 
@@ -163,19 +164,8 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
         if substitute_id == user_id:
             raise LeaveError("Substitute cannot be the applicant.")
 
-        # Check if substitute has overlapping leave of ANY category
-        sub_apps = LeaveApplication.objects.filter(
-            user_id=substitute_id,
-            status__in=[Status.PENDING.value, Status.APPROVED.value],
-        )
-
-        for sub_app in sub_apps:
-            try:
-                is_overlapping = policy.overlaps(sub_app.start_date, sub_app.end_date, sub_app.half_day, start_date, end_date, half_day)
-                if is_overlapping:
-                    raise LeaveError(f"Substitute {substitute_id} has an overlapping leave application.")
-            except Exception:
-                continue
+        if has_overlap(substitute_id, start_date, end_date, half_day):
+            raise LeaveError("The substitute is on leave on these dates.")
 
         # Set stage to SUBSTITUTE
         line = ReportingLine.objects.filter(user_id=user_id).first()
@@ -237,6 +227,7 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
     return app
 
 
+@transaction.atomic
 def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> LeaveApplication:
     """Accept or decline a substitute request.
 
@@ -269,6 +260,7 @@ def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> L
     return app
 
 
+@transaction.atomic
 def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -> LeaveApplication:
     """Nominate a replacement substitute after a decline.
 
@@ -305,6 +297,7 @@ def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -
     return app
 
 
+@transaction.atomic
 def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
     """Withdraw a pending leave request.
 
