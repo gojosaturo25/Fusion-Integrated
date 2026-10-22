@@ -1,0 +1,1075 @@
+TO LLM 2026-10-22T21:41:15
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER LeaveError -> 400 {"detail": msg}; NotFound -> 404.
+USER ```
+USER 
+USER core/db/mixins.py
+USER ```
+USER from django.db import models
+USER 
+USER 
+USER class TimeStampedModel(models.Model):
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER     updated_at = models.DateTimeField(auto_now=True)
+USER 
+USER     class Meta:
+USER         abstract = True
+USER 
+USER 
+USER class UserScopedModel(models.Model):
+USER     """A row belonging to a person.
+USER 
+USER     `user_id` is the IAM user id. It is a plain integer and NOT a ForeignKey —
+USER     there is no user table in this database, and cross-boundary references must
+USER     stay unconstrained so a module can be extracted later without schema
+USER     surgery.
+USER     """
+USER 
+USER     user_id = models.IntegerField(db_index=True)
+USER 
+USER     class Meta:
+USER         abstract = True
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class EntitlementConfig:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/models.py
+USER ```
+USER from django.db import models
+USER from core.db.mixins import TimeStampedModel, UserScopedModel
+USER 
+USER 
+USER class LeaveCategory(models.TextChoices):
+USER     CL = "CL", "Casual Leave"
+USER     RH = "RH", "Restricted Holiday"
+USER     SCL = "SCL", "Special Casual Leave"
+USER     EL = "EL", "Earned Leave"
+USER     COL = "COL", "Compensatory / Balance Controlled Leave"
+USER     VL = "VL", "Vacation Leave"
+USER 
+USER 
+USER class LeaveApplication(UserScopedModel):
+USER     """A leave application submitted by an employee."""
+USER 
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     requested_from = models.DateField("Requested From")
+USER     requested_to = models.DateField("Requested To")
+USER     purpose = models.TextField("Purpose / Reason")
+USER     station_leave_details = models.JSONField(
+USER         null=True, blank=True, verbose_name="Station Leave Details"
+USER     )
+USER     nominated_substitute_id = models.IntegerField(
+USER         null=True, blank=True, verbose_name="Nominated Substitute ID",
+USER     )
+USER     status = models.CharField(
+USER         max_length=20,
+USER         choices=[
+USER             ("draft", "Draft"),
+USER             ("submitted", "Submitted"),
+USER             ("under_review", "Under Review"),
+USER             ("recommended", "Recommended"),
+USER             ("not_recommended", "Not Recommended"),
+USER             ("approved", "Approved"),
+USER             ("rejected", "Rejected"),
+USER             ("cancelled", "Cancelled"),
+USER             ("withdrawn", "Withdrawn"),
+USER         ],
+USER         default="draft",
+USER     )
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Application"
+USER         verbose_name_plural = "Leave Applications"
+USER         ordering = ["-requested_from"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} application ({self.requested_from} to {self.requested_to})"
+USER 
+USER 
+USER class LeaveBalance(UserScopedModel):
+USER     """Per-user, per-year, per-category leave balance."""
+USER 
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     year = models.IntegerField("Year")
+USER     available_days = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+USER     used_days = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Balance"
+USER         verbose_name_plural = "Leave Balances"
+USER         ordering = ["-year", "-category"]
+USER         unique_together = ["user_id", "year", "category"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} balance for {self.year}"
+USER 
+USER 
+USER class LeaveActionHistory(models.Model):
+USER     """Append-only history of actions taken on leave applications and balances."""
+USER 
+USER     application = models.ForeignKey(
+USER         LeaveApplication,
+USER         on_delete=models.CASCADE,
+USER         related_name="action_history",
+USER     )
+USER     actor_id = models.IntegerField("Actor ID")
+USER     action_type = models.CharField(max_length=50)
+USER     description = models.TextField()
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Action History"
+USER         verbose_name_plural = "Leave Action Histories"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.action_type} on {self.application.id} by {self.actor_id}"
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings on the Phase-1 modules/leave/models.py: the category field has max_length=2 but "SCL" and "COL" need 3; there is no workflow stage, no current assignee, no unit head / sanctioning authority on the request, no half-day field, no substitute consent state, and no reporting line, so requests cannot be routed to a specific approver.
+USER 
+USER Rewrite modules/leave/models.py so it matches the "models.py" section of DESIGN.md (read-only) exactly: the six TextChoices classes, ReportingLine, LeaveApplication, LeaveBalance (with the UniqueConstraint and the available property) and LeaveAction. Import TimeStampedModel and UserScopedModel from core.db.mixins (shown read-only); UserScopedModel already provides user_id. Use only django.db.models and decimal.Decimal. Give every model a short docstring and a __str__.
+USER 
+USER Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+TO LLM 2026-10-22T21:57:41
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER core/db/mixins.py
+USER ```
+USER from django.db import models
+USER 
+USER 
+USER class TimeStampedModel(models.Model):
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER     updated_at = models.DateTimeField(auto_now=True)
+USER 
+USER     class Meta:
+USER         abstract = True
+USER 
+USER 
+USER class UserScopedModel(models.Model):
+USER     """A row belonging to a person.
+USER 
+USER     `user_id` is the IAM user id. It is a plain integer and NOT a ForeignKey —
+USER     there is no user table in this database, and cross-boundary references must
+USER     stay unconstrained so a module can be extracted later without schema
+USER     surgery.
+USER     """
+USER 
+USER     user_id = models.IntegerField(db_index=True)
+USER 
+USER     class Meta:
+USER         abstract = True
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER LeaveError -> 400 {"detail": msg}; NotFound -> 404.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class EntitlementConfig:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/models.py
+USER ```
+USER from django.db import models
+USER from core.db.mixins import TimeStampedModel, UserScopedModel
+USER 
+USER 
+USER class LeaveCategory(models.TextChoices):
+USER     CL = "CL", "Casual Leave"
+USER     RH = "RH", "Restricted Holiday"
+USER     SCL = "SCL", "Special Casual Leave"
+USER     EL = "EL", "Earned Leave"
+USER     COL = "COL", "Compensatory / Balance Controlled Leave"
+USER     VL = "VL", "Vacation Leave"
+USER 
+USER 
+USER class LeaveApplication(UserScopedModel):
+USER     """A leave application submitted by an employee."""
+USER 
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     requested_from = models.DateField("Requested From")
+USER     requested_to = models.DateField("Requested To")
+USER     purpose = models.TextField("Purpose / Reason")
+USER     station_leave_details = models.JSONField(
+USER         null=True, blank=True, verbose_name="Station Leave Details"
+USER     )
+USER     nominated_substitute_id = models.IntegerField(
+USER         null=True, blank=True, verbose_name="Nominated Substitute ID",
+USER     )
+USER     status = models.CharField(
+USER         max_length=20,
+USER         choices=[
+USER             ("draft", "Draft"),
+USER             ("submitted", "Submitted"),
+USER             ("under_review", "Under Review"),
+USER             ("recommended", "Recommended"),
+USER             ("not_recommended", "Not Recommended"),
+USER             ("approved", "Approved"),
+USER             ("rejected", "Rejected"),
+USER             ("cancelled", "Cancelled"),
+USER             ("withdrawn", "Withdrawn"),
+USER         ],
+USER         default="draft",
+USER     )
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Application"
+USER         verbose_name_plural = "Leave Applications"
+USER         ordering = ["-requested_from"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} application ({self.requested_from} to {self.requested_to})"
+USER 
+USER 
+USER class LeaveBalance(UserScopedModel):
+USER     """Per-user, per-year, per-category leave balance."""
+USER 
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     year = models.IntegerField("Year")
+USER     available_days = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+USER     used_days = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Balance"
+USER         verbose_name_plural = "Leave Balances"
+USER         ordering = ["-year", "-category"]
+USER         unique_together = ["user_id", "year", "category"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} balance for {self.year}"
+USER 
+USER 
+USER class LeaveActionHistory(models.Model):
+USER     """Append-only history of actions taken on leave applications and balances."""
+USER 
+USER     application = models.ForeignKey(
+USER         LeaveApplication,
+USER         on_delete=models.CASCADE,
+USER         related_name="action_history",
+USER     )
+USER     actor_id = models.IntegerField("Actor ID")
+USER     action_type = models.CharField(max_length=50)
+USER     description = models.TextField()
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Action History"
+USER         verbose_name_plural = "Leave Action Histories"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.action_type} on {self.application.id} by {self.actor_id}"
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings on the Phase-1 modules/leave/models.py: the category field has max_length=2 but "SCL" and "COL" need 3; there is no workflow stage, no current assignee, no unit head / sanctioning authority on the request, no half-day field, no substitute consent state, and no reporting line, so requests cannot be routed to a specific approver.
+USER 
+USER Rewrite modules/leave/models.py so it matches the "models.py" section of DESIGN.md (read-only) exactly: the six TextChoices classes, ReportingLine, LeaveApplication, LeaveBalance (with the UniqueConstraint and the available property) and LeaveAction. Import TimeStampedModel and UserScopedModel from core.db.mixins (shown read-only); UserScopedModel already provides user_id. Use only django.db.models and decimal.Decimal. Give every model a short docstring and a __str__.
+USER 
+USER Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-22T22:01:21
+ASSISTANT modules/leave/models.py
+ASSISTANT ```python
+ASSISTANT from decimal import Decimal
+ASSISTANT from django.db import models
+ASSISTANT from core.db.mixins import TimeStampedModel, UserScopedModel
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class LeaveCategory(models.TextChoices):
+ASSISTANT     CL = "CL", "Casual Leave"
+ASSISTANT     RH = "RH", "Restricted Holiday"
+ASSISTANT     SCL = "SCL", "Special Casual Leave"
+ASSISTANT     EL = "EL", "Earned Leave"
+ASSISTANT     COL = "COL", "Compensatory / Balance Controlled Leave"
+ASSISTANT     VL = "VL", "Vacation Leave"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class HalfDay(models.TextChoices):
+ASSISTANT     NONE = "none", "None"
+ASSISTANT     FIRST = "first", "First half-day"
+ASSISTANT     SECOND = "second", "Second half-day"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class Stage(models.TextChoices):
+ASSISTANT     SUBSTITUTE = "substitute", "Substitute"
+ASSISTANT     UNIT_HEAD = "unit_head", "Unit Head"
+ASSISTANT     ESTABLISHMENT = "establishment", "Establishment"
+ASSISTANT     SANCTION = "sanction", "Sanctioning Authority"
+ASSISTANT     DONE = "done", "Done"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class Status(models.TextChoices):
+ASSISTANT     PENDING = "pending", "Pending"
+ASSISTANT     APPROVED = "approved", "Approved"
+ASSISTANT     REJECTED = "rejected", "Rejected"
+ASSISTANT     WITHDRAWN = "withdrawn", "Withdrawn"
+ASSISTANT     CANCELLED = "cancelled", "Cancelled"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class SubstituteStatus(models.TextChoices):
+ASSISTANT     NOT_REQUIRED = "not_required", "Not Required"
+ASSISTANT     PENDING = "pending", "Pending"
+ASSISTANT     ACCEPTED = "accepted", "Accepted"
+ASSISTANT     DECLINED = "declined", "Declined"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class RequestKind(models.TextChoices):
+ASSISTANT     LEAVE = "leave", "Leave"
+ASSISTANT     CANCELLATION = "cancellation", "Cancellation"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class ReportingLine(TimeStampedModel):
+ASSISTANT     """The reporting line for a leave application."""
+ASSISTANT 
+ASSISTANT     user_id = models.IntegerField(unique=True)
+ASSISTANT     unit_head_id = models.IntegerField()
+ASSISTANT     establishment_id = models.IntegerField(null=True, blank=True)
+ASSISTANT     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+ASSISTANT 
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Reporting Line"
+ASSISTANT         verbose_name_plural = "Reporting Lines"
+ASSISTANT         ordering = ["-created_at"]
+ASSISTANT 
+ASSISTANT     def __str__(self) -> str:
+ASSISTANT         return f"Reporting line for user {self.user_id}"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class LeaveApplication(UserScopedModel, TimeStampedModel):
+ASSISTANT     """A leave application submitted by an employee."""
+ASSISTANT 
+ASSISTANT     kind = models.CharField(
+ASSISTANT         max_length=10,
+ASSISTANT         choices=RequestKind.choices,
+ASSISTANT         verbose_name="Request Kind",
+ASSISTANT     )
+ASSISTANT     parent = models.ForeignKey(
+ASSISTANT         "self",
+ASSISTANT         null=True,
+ASSISTANT         blank=True,
+ASSISTANT         on_delete=models.PROTECT,
+ASSISTANT         related_name="cancellations",
+ASSISTANT     )
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=2,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT     start_date = models.DateField("Start Date")
+ASSISTANT     end_date = models.DateField("End Date")
+ASSISTANT     half_day = models.CharField(
+ASSISTANT         max_length=7,
+ASSISTANT         choices=HalfDay.choices,
+ASSISTANT         default=HalfDay.NONE,
+ASSISTANT         verbose_name="Half Day",
+ASSISTANT     )
+ASSISTANT     days = models.DecimalField(max_digits=5, decimal_places=1)
+ASSISTANT     purpose = models.TextField("Purpose / Reason")
+ASSISTANT     station_leave = models.BooleanField(default=False, verbose_name="Station Leave")
+ASSISTANT     station_address = models.TextField(blank=True, verbose_name="Station Address")
+ASSISTANT     substitute_id = models.IntegerField(null=True, blank=True, verbose_name="Nominated Substitute ID")
+ASSISTANT     substitute_status = models.CharField(
+ASSISTANT         max_length=15,
+ASSISTANT         choices=SubstituteStatus.choices,
+ASSISTANT         default=SubstituteStatus.NOT_REQUIRED,
+ASSISTANT         verbose_name="Substitute Status",
+ASSISTANT     )
+ASSISTANT     unit_head_id = models.IntegerField()
+ASSISTANT     establishment_id = models.IntegerField(null=True, blank=True)
+ASSISTANT     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+ASSISTANT     unit_head_recommendation = models.CharField(
+ASSISTANT         max_length=20, blank=True, verbose_name="Unit Head Recommendation"
+ASSISTANT     )
+ASSISTANT     stage = models.CharField(
+ASSISTANT         max_length=15,
+ASSISTANT         choices=Stage.choices,
+ASSISTANT         default=Stage.SUBSTITUTE,
+ASSISTANT         verbose_name="Stage",
+ASSISTANT     )
+ASSISTANT     status = models.CharField(
+ASSISTANT         max_length=12,
+ASSISTANT         choices=Status.choices,
+ASSISTANT         default=Status.PENDING,
+ASSISTANT         verbose_name="Status",
+ASSISTANT     )
+ASSISTANT     assignee_id = models.IntegerField(null=True, blank=True, db_index=True)
+ASSISTANT     decided_at = models.DateTimeField(null=True, blank=True)
+ASSISTANT 
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Leave Application"
+ASSISTANT         verbose_name_plural = "Leave Applications"
+ASSISTANT         ordering = ["-created_at"]
+ASSISTANT 
+ASSISTANT     def __str__(self) -> str:
+ASSISTANT         return f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class LeaveBalance(UserScopedModel, TimeStampedModel):
+ASSISTANT     """Per-user, per-year, per-category leave balance."""
+ASSISTANT 
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=2,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT     year = models.IntegerField("Year")
+ASSISTANT     entitled = models.DecimalField(max_digits=5, decimal_places=1)
+ASSISTANT     used = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
+ASSISTANT 
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Leave Balance"
+ASSISTANT         verbose_name_plural = "Leave Balances"
+ASSISTANT         ordering = ["-year", "-category"]
+ASSISTANT         unique_together = ["user_id", "year", "category"]
+ASSISTANT 
+ASSISTANT     @property
+ASSISTANT     def available(self) -> Decimal:
+ASSISTANT         """Calculate the available leave days."""
+ASSISTANT         return self.entitled - self.used
+ASSISTANT 
+ASSISTANT     def __str__(self) -> str:
+ASSISTANT         return f"{self.user_id}'s {self.category} balance for {self.year}"
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class LeaveAction(models.Model):
+ASSISTANT     """Append-only history of actions taken on leave applications and balances."""
+ASSISTANT 
+ASSISTANT     application = models.ForeignKey(
+ASSISTANT         LeaveApplication,
+ASSISTANT         on_delete=models.CASCADE,
+ASSISTANT         related_name="actions",
+ASSISTANT     )
+ASSISTANT     actor_id = models.IntegerField("Actor ID")
+ASSISTANT     action = models.CharField(max_length=40)
+ASSISTANT     remark = models.TextField(blank=True)
+ASSISTANT     created_at = models.DateTimeField(auto_now_add=True)
+ASSISTANT 
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Leave Action"
+ASSISTANT         verbose_name_plural = "Leave Actions"
+ASSISTANT         ordering = ["-created_at"]
+ASSISTANT 
+ASSISTANT     def __str__(self) -> str:
+ASSISTANT         return f"{self.action} on {self.application.id} by {self.actor_id}"
+ASSISTANT ```
