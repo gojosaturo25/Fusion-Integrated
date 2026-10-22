@@ -60,18 +60,7 @@ export default function ApprovalsPage() {
     }
   };
 
-  const columns = [
-    { key: "applicant", header: "Applicant" },
-    { key: "category", header: "Category" },
-    { key: "start_date", header: "Dates" },
-    { key: "days", header: "Days" },
-    { key: "purpose", header: "Purpose" },
-    { key: "stage", header: "Stage" },
-    { key: "unit_head_recommendation", header: "Unit Head recommendation" },
-    { key: "actions", header: "Actions" },
-  ];
-
-  const rowsData = data?.results || [];
+  const rows = (data ?? []).filter((a) => a.stage !== "substitute");
 
   return (
     <Container size="xl">

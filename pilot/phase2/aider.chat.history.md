@@ -8268,3 +8268,58 @@ import { DataTable, type Column } from "../../../ui/components/DataTable";
 
 > Tokens: 4.2k sent, 156 received.  
 > Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
+
+# aider chat started at 2026-10-23 01:26:03
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/ApprovalsPage.tsx --message-file pilot/phase2/prompts/018j-approvals-page-rows.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ApprovalsPage.tsx to the chat.  
+
+#### After task 018h tsc reports 4 errors in ApprovalsPage.tsx: `columns` and `rowsData` are declared but never used (and rowsData reads data?.results, which does not exist), while the DataTable uses `rows`, which is no longer declared (018h deleted the wrong line). Fix only this, with ONE SEARCH/REPLACE edit. Replace this whole block:  
+####   
+####   const columns = [  
+####     { key: "applicant", header: "Applicant" },  
+####     { key: "category", header: "Category" },  
+####     { key: "start_date", header: "Dates" },  
+####     { key: "days", header: "Days" },  
+####     { key: "purpose", header: "Purpose" },  
+####     { key: "stage", header: "Stage" },  
+####     { key: "unit_head_recommendation", header: "Unit Head recommendation" },  
+####     { key: "actions", header: "Actions" },  
+####   ];  
+####   
+####   const rowsData = data?.results || [];  
+####   
+#### with this single line:  
+####   
+####   const rows = (data ?? []).filter((a) => a.stage !== "substitute");  
+####   
+#### Do not change anything else.  
+
+To fix the TypeScript errors and align with the requested change, I will replace the unused `columns` and `rowsData` declarations with the new `rows` definition that filters out "substitute" stage applications. The `columns` array is already correctly defined in the `DataTable` component's JSX, so removing the redundant variable declaration resolves the issues.
+
+client/src/modules/leave/pages/ApprovalsPage.tsx
+```typescript
+<<<<<<< SEARCH
+  const columns = [
+    { key: "applicant", header: "Applicant" },
+    { key: "category", header: "Category" },
+    { key: "start_date", header: "Dates" },
+    { key: "days", header: "Days" },
+    { key: "purpose", header: "Purpose" },
+    { key: "stage", header: "Stage" },
+    { key: "unit_head_recommendation", header: "Unit Head recommendation" },
+    { key: "actions", header: "Actions" },
+  ];
+
+  const rowsData = data?.results || [];
+=======
+  const rows = (data ?? []).filter((a) => a.stage !== "substitute");
+>>>>>>> REPLACE
+```
+
+> Tokens: 4.4k sent, 243 received.  
+> Applied edit to client/src/modules/leave/pages/ApprovalsPage.tsx  
