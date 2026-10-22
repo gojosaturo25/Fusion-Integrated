@@ -69,6 +69,7 @@ class LeaveApplication(UserScopedModel, TimeStampedModel):
     kind = models.CharField(
         max_length=10,
         choices=RequestKind.choices,
+        default=RequestKind.LEAVE,
         verbose_name="Request Kind",
     )
     parent = models.ForeignKey(
@@ -79,7 +80,7 @@ class LeaveApplication(UserScopedModel, TimeStampedModel):
         related_name="cancellations",
     )
     category = models.CharField(
-        max_length=2,
+        max_length=3,
         choices=LeaveCategory.choices,
         verbose_name="Leave Category",
     )
@@ -136,7 +137,7 @@ class LeaveBalance(UserScopedModel, TimeStampedModel):
     """Per-user, per-year, per-category leave balance."""
 
     category = models.CharField(
-        max_length=2,
+        max_length=3,
         choices=LeaveCategory.choices,
         verbose_name="Leave Category",
     )
@@ -175,7 +176,7 @@ class LeaveAction(models.Model):
     class Meta:
         verbose_name = "Leave Action"
         verbose_name_plural = "Leave Actions"
-        ordering = ["-created_at"]
+        ordering = ["created_at"]
 
     def __str__(self) -> str:
         return f"{self.action} on {self.application.id} by {self.actor_id}"

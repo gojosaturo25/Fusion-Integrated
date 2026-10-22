@@ -2018,3 +2018,650 @@ ASSISTANT     BR-EL-017: Others only get a recommendation.
 ASSISTANT     """
 ASSISTANT     return category in ("CL", "RH")
 ASSISTANT ```
+TO LLM 2026-10-22T22:06:35
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.0.1-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-10-22
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER LeaveError -> 400 {"detail": msg}; NotFound -> 404.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER modules/accesscontrol/models.py:
+USER ⋮
+USER │class Module(TimeStampedModel):
+USER │    STATUS = [("planned", "Planned"), ("active", "Active"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class NavItem(TimeStampedModel):
+USER │    """A link inside a module. Hidden unless the caller holds
+USER │    `required_permission`, so two roles can share a module and still see
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/models/offers.py:
+USER ⋮
+USER │class PlacementRecord(TimeStampedModel, UserScopedModel):
+USER │    """Written when an offer is accepted (PC-BR-014).
+USER │
+USER │    The partial unique index is the backstop: even bypassing the service, a
+USER │    student cannot hold two active placements in one season.
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/models.py
+USER ```
+USER from decimal import Decimal
+USER from django.db import models
+USER from core.db.mixins import TimeStampedModel, UserScopedModel
+USER 
+USER 
+USER class LeaveCategory(models.TextChoices):
+USER     CL = "CL", "Casual Leave"
+USER     RH = "RH", "Restricted Holiday"
+USER     SCL = "SCL", "Special Casual Leave"
+USER     EL = "EL", "Earned Leave"
+USER     COL = "COL", "Compensatory / Balance Controlled Leave"
+USER     VL = "VL", "Vacation Leave"
+USER 
+USER 
+USER class HalfDay(models.TextChoices):
+USER     NONE = "none", "None"
+USER     FIRST = "first", "First half-day"
+USER     SECOND = "second", "Second half-day"
+USER 
+USER 
+USER class Stage(models.TextChoices):
+USER     SUBSTITUTE = "substitute", "Substitute"
+USER     UNIT_HEAD = "unit_head", "Unit Head"
+USER     ESTABLISHMENT = "establishment", "Establishment"
+USER     SANCTION = "sanction", "Sanctioning Authority"
+USER     DONE = "done", "Done"
+USER 
+USER 
+USER class Status(models.TextChoices):
+USER     PENDING = "pending", "Pending"
+USER     APPROVED = "approved", "Approved"
+USER     REJECTED = "rejected", "Rejected"
+USER     WITHDRAWN = "withdrawn", "Withdrawn"
+USER     CANCELLED = "cancelled", "Cancelled"
+USER 
+USER 
+USER class SubstituteStatus(models.TextChoices):
+USER     NOT_REQUIRED = "not_required", "Not Required"
+USER     PENDING = "pending", "Pending"
+USER     ACCEPTED = "accepted", "Accepted"
+USER     DECLINED = "declined", "Declined"
+USER 
+USER 
+USER class RequestKind(models.TextChoices):
+USER     LEAVE = "leave", "Leave"
+USER     CANCELLATION = "cancellation", "Cancellation"
+USER 
+USER 
+USER class ReportingLine(TimeStampedModel):
+USER     """The reporting line for a leave application."""
+USER 
+USER     user_id = models.IntegerField(unique=True)
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Reporting Line"
+USER         verbose_name_plural = "Reporting Lines"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"Reporting line for user {self.user_id}"
+USER 
+USER 
+USER class LeaveApplication(UserScopedModel, TimeStampedModel):
+USER     """A leave application submitted by an employee."""
+USER 
+USER     kind = models.CharField(
+USER         max_length=10,
+USER         choices=RequestKind.choices,
+USER         verbose_name="Request Kind",
+USER     )
+USER     parent = models.ForeignKey(
+USER         "self",
+USER         null=True,
+USER         blank=True,
+USER         on_delete=models.PROTECT,
+USER         related_name="cancellations",
+USER     )
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     start_date = models.DateField("Start Date")
+USER     end_date = models.DateField("End Date")
+USER     half_day = models.CharField(
+USER         max_length=7,
+USER         choices=HalfDay.choices,
+USER         default=HalfDay.NONE,
+USER         verbose_name="Half Day",
+USER     )
+USER     days = models.DecimalField(max_digits=5, decimal_places=1)
+USER     purpose = models.TextField("Purpose / Reason")
+USER     station_leave = models.BooleanField(default=False, verbose_name="Station Leave")
+USER     station_address = models.TextField(blank=True, verbose_name="Station Address")
+USER     substitute_id = models.IntegerField(null=True, blank=True, verbose_name="Nominated Substitute ID")
+USER     substitute_status = models.CharField(
+USER         max_length=15,
+USER         choices=SubstituteStatus.choices,
+USER         default=SubstituteStatus.NOT_REQUIRED,
+USER         verbose_name="Substitute Status",
+USER     )
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER     unit_head_recommendation = models.CharField(
+USER         max_length=20, blank=True, verbose_name="Unit Head Recommendation"
+USER     )
+USER     stage = models.CharField(
+USER         max_length=15,
+USER         choices=Stage.choices,
+USER         default=Stage.SUBSTITUTE,
+USER         verbose_name="Stage",
+USER     )
+USER     status = models.CharField(
+USER         max_length=12,
+USER         choices=Status.choices,
+USER         default=Status.PENDING,
+USER         verbose_name="Status",
+USER     )
+USER     assignee_id = models.IntegerField(null=True, blank=True, db_index=True)
+USER     decided_at = models.DateTimeField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Application"
+USER         verbose_name_plural = "Leave Applications"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+USER 
+USER 
+USER class LeaveBalance(UserScopedModel, TimeStampedModel):
+USER     """Per-user, per-year, per-category leave balance."""
+USER 
+USER     category = models.CharField(
+USER         max_length=2,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     year = models.IntegerField("Year")
+USER     entitled = models.DecimalField(max_digits=5, decimal_places=1)
+USER     used = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Balance"
+USER         verbose_name_plural = "Leave Balances"
+USER         ordering = ["-year", "-category"]
+USER         unique_together = ["user_id", "year", "category"]
+USER 
+USER     @property
+USER     def available(self) -> Decimal:
+USER         """Calculate the available leave days."""
+USER         return self.entitled - self.used
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} balance for {self.year}"
+USER 
+USER 
+USER class LeaveAction(models.Model):
+USER     """Append-only history of actions taken on leave applications and balances."""
+USER 
+USER     application = models.ForeignKey(
+USER         LeaveApplication,
+USER         on_delete=models.CASCADE,
+USER         related_name="actions",
+USER     )
+USER     actor_id = models.IntegerField("Actor ID")
+USER     action = models.CharField(max_length=40)
+USER     remark = models.TextField(blank=True)
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Action"
+USER         verbose_name_plural = "Leave Actions"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.action} on {self.application.id} by {self.actor_id}"
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review of the models.py written in task 001 found three defects. Fix only these, with SEARCH/REPLACE edits:
+USER 
+USER 1. Both `category = models.CharField(max_length=2, ...)` fields (in LeaveApplication and in LeaveBalance) must use max_length=3: "SCL" and "COL" are three characters and would be rejected by the database.
+USER 2. LeaveApplication.kind must have default=RequestKind.LEAVE (most requests are leave requests; DESIGN.md).
+USER 3. LeaveAction.Meta.ordering must be ["created_at"] (history reads oldest first; DESIGN.md).
+USER 
+USER Do not change anything else.
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-10-22T22:08:39
+ASSISTANT To fix the three defects found in `modules/leave/models.py`, I will perform the following changes:
+ASSISTANT 
+ASSISTANT 1.  Update `LeaveCategory` and `LeaveBalance.category` to use `max_length=3`.
+ASSISTANT 2.  Add `default=RequestKind.LEAVE` to `LeaveApplication.kind`.
+ASSISTANT 3.  Change `LeaveAction.Meta.ordering` from `["-created_at"]` to `["created_at"]` so history is read oldest first.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT modules/leave/models.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=2,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT =======
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=3,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/models.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=2,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT =======
+ASSISTANT     category = models.CharField(
+ASSISTANT         max_length=3,
+ASSISTANT         choices=LeaveCategory.choices,
+ASSISTANT         verbose_name="Leave Category",
+ASSISTANT     )
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/models.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     kind = models.CharField(
+ASSISTANT         max_length=10,
+ASSISTANT         choices=RequestKind.choices,
+ASSISTANT         verbose_name="Request Kind",
+ASSISTANT     )
+ASSISTANT =======
+ASSISTANT     kind = models.CharField(
+ASSISTANT         max_length=10,
+ASSISTANT         choices=RequestKind.choices,
+ASSISTANT         default=RequestKind.LEAVE,
+ASSISTANT         verbose_name="Request Kind",
+ASSISTANT     )
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/models.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Leave Action"
+ASSISTANT         verbose_name_plural = "Leave Actions"
+ASSISTANT         ordering = ["-created_at"]
+ASSISTANT =======
+ASSISTANT     class Meta:
+ASSISTANT         verbose_name = "Leave Action"
+ASSISTANT         verbose_name_plural = "Leave Actions"
+ASSISTANT         ordering = ["created_at"]
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```

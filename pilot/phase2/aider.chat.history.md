@@ -392,3 +392,99 @@ def unit_head_is_final(category: str) -> bool:
 
 > Tokens: 8.8k sent, 1.3k received.  
 > Applied edit to modules/leave/domain/policy.py  
+
+# aider chat started at 2026-10-22 22:06:33
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/models.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/001b-models-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/models.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review of the models.py written in task 001 found three defects. Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. Both `category = models.CharField(max_length=2, ...)` fields (in LeaveApplication and in LeaveBalance) must use max_length=3: "SCL" and "COL" are three characters and would be rejected by the database.  
+#### 2. LeaveApplication.kind must have default=RequestKind.LEAVE (most requests are leave requests; DESIGN.md).  
+#### 3. LeaveAction.Meta.ordering must be ["created_at"] (history reads oldest first; DESIGN.md).  
+####   
+#### Do not change anything else.  
+
+To fix the three defects found in `modules/leave/models.py`, I will perform the following changes:
+
+1.  Update `LeaveCategory` and `LeaveBalance.category` to use `max_length=3`.
+2.  Add `default=RequestKind.LEAVE` to `LeaveApplication.kind`.
+3.  Change `LeaveAction.Meta.ordering` from `["-created_at"]` to `["created_at"]` so history is read oldest first.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/models.py
+```python
+<<<<<<< SEARCH
+    category = models.CharField(
+        max_length=2,
+        choices=LeaveCategory.choices,
+        verbose_name="Leave Category",
+    )
+=======
+    category = models.CharField(
+        max_length=3,
+        choices=LeaveCategory.choices,
+        verbose_name="Leave Category",
+    )
+>>>>>>> REPLACE
+```
+
+modules/leave/models.py
+```python
+<<<<<<< SEARCH
+    category = models.CharField(
+        max_length=2,
+        choices=LeaveCategory.choices,
+        verbose_name="Leave Category",
+    )
+=======
+    category = models.CharField(
+        max_length=3,
+        choices=LeaveCategory.choices,
+        verbose_name="Leave Category",
+    )
+>>>>>>> REPLACE
+```
+
+modules/leave/models.py
+```python
+<<<<<<< SEARCH
+    kind = models.CharField(
+        max_length=10,
+        choices=RequestKind.choices,
+        verbose_name="Request Kind",
+    )
+=======
+    kind = models.CharField(
+        max_length=10,
+        choices=RequestKind.choices,
+        default=RequestKind.LEAVE,
+        verbose_name="Request Kind",
+    )
+>>>>>>> REPLACE
+```
+
+modules/leave/models.py
+```python
+<<<<<<< SEARCH
+    class Meta:
+        verbose_name = "Leave Action"
+        verbose_name_plural = "Leave Actions"
+        ordering = ["-created_at"]
+=======
+    class Meta:
+        verbose_name = "Leave Action"
+        verbose_name_plural = "Leave Actions"
+        ordering = ["created_at"]
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.8k sent, 409 received.  
+> Applied edit to modules/leave/models.py  
