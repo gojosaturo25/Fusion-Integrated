@@ -6862,3 +6862,197 @@ export default function SubstituteRequestsPage() {
 
 > Tokens: 7.1k sent, 889 received.  
 > Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
+
+# aider chat started at 2026-10-23 00:27:01
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/api/views.py --read modules/leave/api/serializers.py --message-file pilot/phase2/prompts/015-views-openapi.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/api/views.py to the chat.  
+> Added modules/leave/api/serializers.py to the chat (read-only).  
+
+#### Fusion's CI regenerates the OpenAPI schema with `manage.py spectacular --fail-on-warn` and `manage.py check --deploy --fail-level WARNING`. Both fail on views.py because every APIView triggers drf_spectacular.W002 ("unable to guess serializer"), and the two GET methods on applications/ and applications/<pk>/ collide on the operationId "v1_leave_applications_retrieve" (W001). The placement module solves this with @extend_schema. Fix only this, with SEARCH/REPLACE edits:  
+####   
+#### 1. Add the import line `from drf_spectacular.utils import OpenApiParameter, extend_schema` directly below `from django.utils import timezone`.  
+#### 2. Put these decorators directly above the class lines (or, where it says method, directly above that method's def line, indented like the def):  
+####    - ApplicationListCreateView.get (method): @extend_schema(operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True))  
+####    - ApplicationListCreateView.post (method): @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})  
+####    - class ApplicationDetailView: @extend_schema(responses=LeaveApplicationSerializer)  
+####    - class WithdrawView: @extend_schema(request=None, responses=LeaveApplicationSerializer)  
+####    - class CancelView: @extend_schema(request=None, responses=LeaveApplicationSerializer)  
+####    - class SubstituteResponseView: @extend_schema(request=SubstituteResponseSerializer, responses=LeaveApplicationSerializer)  
+####    - class ReplaceSubstituteView: @extend_schema(request=ReplaceSubstituteSerializer, responses=LeaveApplicationSerializer)  
+####    - class InboxView: @extend_schema(responses=LeaveApplicationSerializer(many=True))  
+####    - class DecideView: @extend_schema(request=DecisionSerializer, responses=LeaveApplicationSerializer)  
+####    - class BalanceView: @extend_schema(parameters=[OpenApiParameter("year", int, required=False)], responses=LeaveBalanceSerializer(many=True))  
+####    - class ReportingLineView: @extend_schema(request=ReportingLineSerializer, responses=ReportingLineSerializer)  
+####   
+#### Do not change anything else.  
+> manage.py  
+> Add file to the chat? (Y)es/(N)o/(D)on't ask again [Yes]: y  
+
+To fix the drf_spectacular warnings in `modules/leave/api/views.py`, I will:
+
+1.  Add the import for `OpenApiParameter` and `extend_schema` from `drf_spectacular.utils`.
+2.  Apply the specified `@extend_schema` decorators to each view method or class as requested.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+from django.utils import timezone
+from rest_framework import status
+=======
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import status
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+    def get(self, request, *args, **kwargs):
+        user_id = request.principal.user_id
+        apps = selectors.my_applications(user_id)
+        serializer = LeaveApplicationSerializer(apps, many=True)
+        return Response(serializer.data)
+=======
+    @extend_schema(operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True))
+    def get(self, request, *args, **kwargs):
+        user_id = request.principal.user_id
+        apps = selectors.my_applications(user_id)
+        serializer = LeaveApplicationSerializer(apps, many=True)
+        return Response(serializer.data)
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+    def post(self, request, *args, **kwargs):
+        serializer = ApplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+=======
+    @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})
+    def post(self, request, *args, **kwargs):
+        serializer = ApplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class ApplicationDetailView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+=======
+@extend_schema(responses=LeaveApplicationSerializer)
+class ApplicationDetailView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class WithdrawView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+=======
+@extend_schema(request=None, responses=LeaveApplicationSerializer)
+class WithdrawView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class CancelView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+=======
+@extend_schema(request=None, responses=LeaveApplicationSerializer)
+class CancelView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class SubstituteResponseView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+=======
+@extend_schema(request=SubstituteResponseSerializer, responses=LeaveApplicationSerializer)
+class SubstituteResponseView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class ReplaceSubstituteView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+=======
+@extend_schema(request=ReplaceSubstituteSerializer, responses=LeaveApplicationSerializer)
+class ReplaceSubstituteView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class InboxView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+=======
+@extend_schema(responses=LeaveApplicationSerializer(many=True))
+class InboxView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class DecideView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
+=======
+@extend_schema(request=DecisionSerializer, responses=LeaveApplicationSerializer)
+class DecideView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class BalanceView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+=======
+@extend_schema(parameters=[OpenApiParameter("year", int, required=False)], responses=LeaveBalanceSerializer(many=True))
+class BalanceView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+>>>>>>> REPLACE
+```
+
+modules/leave/api/views.py
+```python
+<<<<<<< SEARCH
+class ReportingLineView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+=======
+@extend_schema(request=ReportingLineSerializer, responses=ReportingLineSerializer)
+class ReportingLineView(APIView):
+    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.5k sent, 1.2k received.  
+> Applied edit to modules/leave/api/views.py  

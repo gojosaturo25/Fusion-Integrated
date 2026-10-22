@@ -1,4 +1,5 @@
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,12 +22,14 @@ class ApplicationListCreateView(APIView):
             return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
         return super().get_permissions()
 
+    @extend_schema(operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True))
     def get(self, request, *args, **kwargs):
         user_id = request.principal.user_id
         apps = selectors.my_applications(user_id)
         serializer = LeaveApplicationSerializer(apps, many=True)
         return Response(serializer.data)
 
+    @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})
     def post(self, request, *args, **kwargs):
         serializer = ApplySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -37,6 +40,7 @@ class ApplicationListCreateView(APIView):
         return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=LeaveApplicationSerializer)
 class ApplicationDetailView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
 
@@ -46,6 +50,7 @@ class ApplicationDetailView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=None, responses=LeaveApplicationSerializer)
 class WithdrawView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
@@ -56,6 +61,7 @@ class WithdrawView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=None, responses=LeaveApplicationSerializer)
 class CancelView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
@@ -66,6 +72,7 @@ class CancelView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=SubstituteResponseSerializer, responses=LeaveApplicationSerializer)
 class SubstituteResponseView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
 
@@ -79,6 +86,7 @@ class SubstituteResponseView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=ReplaceSubstituteSerializer, responses=LeaveApplicationSerializer)
 class ReplaceSubstituteView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
 
@@ -92,6 +100,7 @@ class ReplaceSubstituteView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(responses=LeaveApplicationSerializer(many=True))
 class InboxView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
 
@@ -102,6 +111,7 @@ class InboxView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=DecisionSerializer, responses=LeaveApplicationSerializer)
 class DecideView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
 
@@ -126,6 +136,7 @@ class DecideView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(parameters=[OpenApiParameter("year", int, required=False)], responses=LeaveBalanceSerializer(many=True))
 class BalanceView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
 
@@ -138,6 +149,7 @@ class BalanceView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(request=ReportingLineSerializer, responses=ReportingLineSerializer)
 class ReportingLineView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
 
