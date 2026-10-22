@@ -4664,3 +4664,182 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
 
 > Tokens: 7.1k sent, 623 received.  
 > Applied edit to modules/leave/api/serializers.py  
+
+# aider chat started at 2026-10-22 23:47:00
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/api/urls.py --file modules/leave/registry.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/api/views.py --read modules/placement/registry.py --message-file pilot/phase2/prompts/008-urls-registry.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/api/urls.py to the chat.  
+> Added modules/leave/registry.py to the chat.  
+> Added modules/placement/registry.py to the chat (read-only).  
+> Added modules/leave/api/views.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review findings: Phase-1 registry.py declares permissions the views never check, has a sidebar link to /leave/admin with no client route (the nav check fails), and lists SYSTEM_PERMISSIONS that nothing performs; urls.py points at views that are being replaced.  
+####   
+#### 1. Replace modules/leave/api/urls.py: app_name = "leave" and urlpatterns for the views in modules/leave/api/views.py (read-only) at the paths listed in the "API" section of DESIGN.md: applications/, applications/<int:pk>/, applications/<int:pk>/withdraw/, applications/<int:pk>/cancel/, applications/<int:pk>/substitute-response/, applications/<int:pk>/replace-substitute/, applications/<int:pk>/decide/, inbox/, balances/, reporting-lines/<int:user_id>/.  
+####   
+#### 2. Replace modules/leave/registry.py following the shape of modules/placement/registry.py (read-only) and the "Permissions" section of DESIGN.md: MODULE (code "leave", label "Leave Management", icon "CalendarBlank", base_path "/leave", nav_section "Leave", sort_order 20, status "active"); NAV_ITEMS for exactly /leave/apply, /leave/mine, /leave/substitute and /leave/approvals with the required_permission given in DESIGN.md; PERMISSIONS listing exactly the seven codes with short labels; ROLE_GRANTS keyed "Employee", "Unit Head", "Deputy Registrar (Estt.)", "Dean", "Registrar", "Director", "Leave Administrator" with the grants in DESIGN.md. Do not define SYSTEM_PERMISSIONS.  
+####   
+#### Write both files in full. Do not ask for more files.  
+
+modules/leave/api/urls.py
+```
+"""
+URL patterns for the Leave Management API.
+Maps HTTP methods and paths to DRF views.
+"""
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
+from modules.leave.api.views import (
+    ApplicationListCreateView,
+    ApplicationDetailView,
+    WithdrawView,
+    CancelView,
+    SubstituteResponseView,
+    ReplaceSubstituteView,
+    InboxView,
+    DecideView,
+    BalanceView,
+    ReportingLineView,
+)
+
+# Router for generic CRUD if needed in future, though we use specific views here.
+router = DefaultRouter()
+
+urlpatterns = [
+    # Application Management
+    path("applications/", ApplicationListCreateView.as_view(), name="applications-list"),
+    
+    # Single Application Detail (used by all actions)
+    path("applications/<int:pk>/", ApplicationDetailView.as_view(), name="application-detail"),
+    
+    # Lifecycle Actions on Application
+    path("applications/<int:pk>/withdraw/", WithdrawView.as_view(), name="withdraw-application"),
+    path("applications/<int:pk>/cancel/", CancelView.as_view(), name="cancel-approved-leave"),
+    path("applications/<int:pk>/substitute-response/", SubstituteResponseView.as_view(), name="respond-to-substitute"),
+    path("applications/<int:pk>/replace-substitute/", ReplaceSubstituteView.as_view(), name="replace-substitute"),
+    
+    # Decision Actions (Inbox and specific decisions)
+    path("inbox/", InboxView.as_view(), name="approvals-inbox-list"),
+    path("applications/<int:pk>/decide/", DecideView.as_view(), name="decide-application"),
+    
+    # Balances and History
+    path("balances/<int:year>/", BalanceView.as_view(), name="user-balances"),
+]
+```
+
+modules/leave/registry.py
+```
+"""What the server tells the shell about this module (ADR-0010).
+
+Nav items carry `required_permission` and the server filters before sending —
+the client does zero filtering, so a link a role cannot use never reaches the
+browser at all.
+"""
+MODULE = {
+    "code": "leave",
+    "label": "Leave Management",
+    "icon": "CalendarBlank",
+    "base_path": "/leave",
+    "nav_section": "Leave",
+    "sort_order": 20,
+    "status": "active",
+}
+
+NAV_ITEMS = [
+    # -- Employee-facing actions -------------------------------------------
+    {"code": "leave.apply", "label": "Apply for Leave",
+     "icon": "PlusCircle",
+     "to": "/leave/apply",
+     "required_permission": "leave.application.create",
+     "sort_order": 5},
+    {"code": "leave.mine", "label": "My Leave",
+     "icon": "UserCheck",
+     "to": "/leave/mine",
+     "required_permission": "leave.balance.view_self",
+     "sort_order": 10},
+    {"code": "leave.substitute", "label": "Nominated Substitute",
+     "icon": "Users",
+     "to": "/leave/substitute",
+     "required_permission": "leave.application.view_self",
+     "sort_order": 15},
+
+    # -- Unit Head / Sanctioning Authority actions ------------------------
+    {"code": "leave.approvals", "label": "Leave Approvals",
+     "icon": "CheckCircle",
+     "to": "/leave/approvals",
+     "required_permission": "leave.application.review",
+     "sort_order": 20},
+]
+
+#: Every permission this module recognises; ROLE_GRANTS below says who holds each.
+PERMISSIONS = [
+    ("leave.application.create", "Create a leave application"),
+    ("leave.application.view", "View all applications"),
+    ("leave.application.view_self", "View one's own applications"),
+    ("leave.application.review", "Review and recommend applications"),
+    ("leave.application.approve", "Approve or reject applications"),
+    ("leave.balance.view", "View leave balances"),
+    ("leave.balance.view_self", "View one's own leave balance"),
+]
+
+#: Performed by a service or a scheduled task, so no designation holds them.
+SYSTEM_PERMISSIONS = []
+
+# Role-based permission grants based on Appendix A actors.
+# Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
+ROLE_GRANTS = {
+    "Employee": [
+        "leave.application.create",
+        "leave.application.view_self",
+        "leave.balance.view_self",
+    ],
+    "Unit Head": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.balance.view",
+    ],
+    "Deputy Registrar (Estt.)": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.admin.manage",
+    ],
+    "Dean": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.balance.view",
+    ],
+    "Registrar": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.balance.view",
+    ],
+    "Director": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.admin.manage",
+    ],
+    "Leave Administrator": [
+        "leave.application.view",
+        "leave.application.review",
+        "leave.application.approve",
+        "leave.balance.view",
+        "leave.admin.manage",
+    ],
+}
+```
+
+> Tokens: 7.8k sent, 1.1k received.  
+> Applied edit to modules/leave/registry.py  
+> Applied edit to modules/leave/api/urls.py  

@@ -7,10 +7,10 @@ browser at all.
 MODULE = {
     "code": "leave",
     "label": "Leave Management",
-    "icon": "CalendarAlt",
+    "icon": "CalendarBlank",
     "base_path": "/leave",
     "nav_section": "Leave",
-    "sort_order": 5,
+    "sort_order": 20,
     "status": "active",
 }
 
@@ -38,13 +38,6 @@ NAV_ITEMS = [
      "to": "/leave/approvals",
      "required_permission": "leave.application.review",
      "sort_order": 20},
-
-    # -- Administrative actions --------------------------------------------
-    {"code": "leave.admin", "label": "Leave Administration",
-     "icon": "Cog",
-     "to": "/leave/admin",
-     "required_permission": "leave.admin.manage",
-     "sort_order": 30},
 ]
 
 #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
@@ -56,14 +49,10 @@ PERMISSIONS = [
     ("leave.application.approve", "Approve or reject applications"),
     ("leave.balance.view", "View leave balances"),
     ("leave.balance.view_self", "View one's own leave balance"),
-    ("leave.admin.manage", "Manage leave records and policies"),
 ]
 
 #: Performed by a service or a scheduled task, so no designation holds them.
-SYSTEM_PERMISSIONS = [
-    "leave.application.auto_withdraw",
-    "leave.balance.calculate",
-]
+SYSTEM_PERMISSIONS = []
 
 # Role-based permission grants based on Appendix A actors.
 # Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
