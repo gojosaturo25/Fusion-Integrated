@@ -36419,3 +36419,746 @@ ASSISTANT   });
 ASSISTANT }
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-10-23T00:46:50
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.0.1-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-10-23
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER client/src/ui/components/StatusBadge.tsx:
+USER ⋮
+USER │export function StatusBadge({ status }: { status: string }) {
+USER │  return (
+USER │    <Badge color={COLORS[status] ?? "gray"} variant="light" size="sm">
+USER │      {status.replace(/_/g, " ")}
+USER │    </Badge>
+USER │  );
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/api/views.py:
+USER ⋮
+USER │class ApplicationListView(_Scoped, generics.ListAPIView):
+USER │    # A recruiter is authorised by the company-scoped queryset, not by a code.
+USER │    permission_classes = [MODULE, ScopedCollection(P_VIEW_APPS, P_VIEW_SELF)]
+USER │
+USER ⋮
+USER │    def list(self, request, *args, **kwargs):
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/api/views.py
+USER ```
+USER from django.utils import timezone
+USER from drf_spectacular.utils import OpenApiParameter, extend_schema
+USER from rest_framework import status
+USER from rest_framework.response import Response
+USER from rest_framework.views import APIView
+USER 
+USER from core.api.exceptions import NotFoundError
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER from modules.leave import selectors
+USER from modules.leave.api.serializers import (
+USER     ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+USER     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+USER )
+USER from modules.leave.services import admin, applications, lifecycle
+USER 
+USER 
+USER class ApplicationListCreateView(APIView):
+USER     def get_permissions(self):
+USER         if self.request.method == "GET":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.view_own")()]
+USER         elif self.request.method == "POST":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
+USER         return super().get_permissions()
+USER 
+USER     @extend_schema(operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True))
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.my_applications(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER     @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})
+USER     def post(self, request, *args, **kwargs):
+USER         serializer = ApplySerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER 
+USER         user_id = request.principal.user_id
+USER         app = applications.apply_leave(user_id, request.principal.kind, data)
+USER         return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
+USER 
+USER 
+USER @extend_schema(responses=LeaveApplicationSerializer)
+USER class ApplicationDetailView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, pk, *args, **kwargs):
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=None, responses=LeaveApplicationSerializer)
+USER class WithdrawView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         applications.withdraw(request.principal.user_id, pk)
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=None, responses=LeaveApplicationSerializer)
+USER class CancelView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         today = timezone.localdate()
+USER         app = lifecycle.request_cancellation(request.principal.user_id, pk, today)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=SubstituteResponseSerializer, responses=LeaveApplicationSerializer)
+USER class SubstituteResponseView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = SubstituteResponseSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         accept = data["accept"]
+USER         app = applications.respond_to_substitute(request.principal.user_id, pk, accept)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=ReplaceSubstituteSerializer, responses=LeaveApplicationSerializer)
+USER class ReplaceSubstituteView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = ReplaceSubstituteSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         substitute_id = data["substitute_id"]
+USER         app = applications.replace_substitute(request.principal.user_id, pk, substitute_id)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(responses=LeaveApplicationSerializer(many=True))
+USER class InboxView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.inbox(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=DecisionSerializer, responses=LeaveApplicationSerializer)
+USER class DecideView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = DecisionSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         decision = data["decision"]
+USER         remark = data.get("remark", "")
+USER 
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER 
+USER         if app.stage == "establishment":
+USER             if not request.principal.has_permission("leave.application.verify"):
+USER                 raise NotFoundError("You do not have permission to decide at this stage.")
+USER         elif app.stage == "sanction":
+USER             if not request.principal.has_permission("leave.application.sanction"):
+USER                 raise NotFoundError("You do not have permission to decide at this stage.")
+USER 
+USER         app = lifecycle.decide(request.principal.user_id, pk, decision, remark)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(parameters=[OpenApiParameter("year", int, required=False)], responses=LeaveBalanceSerializer(many=True))
+USER class BalanceView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         year = int(request.query_params.get("year", timezone.localdate().year))
+USER         kind = request.principal.kind
+USER         balances = admin.ensure_balances(user_id, kind, year)
+USER         serializer = LeaveBalanceSerializer(balances, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=ReportingLineSerializer, responses=ReportingLineSerializer)
+USER class ReportingLineView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+USER 
+USER     def get(self, request, user_id, *args, **kwargs):
+USER         line = selectors.get_reporting_line(user_id)
+USER         if line is None:
+USER             raise NotFoundError()
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER 
+USER     def put(self, request, user_id, *args, **kwargs):
+USER         serializer = ReportingLineSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         line = admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER ```
+USER 
+USER modules/leave/api/serializers.py
+USER ```
+USER from rest_framework import serializers
+USER 
+USER from modules.leave.models import HalfDay, LeaveAction, LeaveApplication, LeaveBalance, LeaveCategory, ReportingLine
+USER 
+USER 
+USER class LeaveActionSerializer(serializers.ModelSerializer):
+USER     class Meta:
+USER         model = LeaveAction
+USER         fields = ["id", "actor_id", "action", "remark", "created_at"]
+USER 
+USER 
+USER class LeaveApplicationSerializer(serializers.ModelSerializer):
+USER     actions = LeaveActionSerializer(many=True, read_only=True)
+USER 
+USER     class Meta:
+USER         model = LeaveApplication
+USER         fields = [
+USER             "id",
+USER             "user_id",
+USER             "kind",
+USER             "parent",
+USER             "category",
+USER             "start_date",
+USER             "end_date",
+USER             "half_day",
+USER             "days",
+USER             "purpose",
+USER             "station_leave",
+USER             "station_address",
+USER             "substitute_id",
+USER             "substitute_status",
+USER             "unit_head_id",
+USER             "establishment_id",
+USER             "sanctioning_authority_id",
+USER             "unit_head_recommendation",
+USER             "stage",
+USER             "status",
+USER             "assignee_id",
+USER             "decided_at",
+USER             "created_at",
+USER             "actions",
+USER         ]
+USER         read_only_fields = (
+USER             "user_id",
+USER             "kind",
+USER             "parent",
+USER             "category",
+USER             "start_date",
+USER             "end_date",
+USER             "half_day",
+USER             "days",
+USER             "purpose",
+USER             "station_leave",
+USER             "station_address",
+USER             "substitute_id",
+USER             "substitute_status",
+USER             "unit_head_id",
+USER             "establishment_id",
+USER             "sanctioning_authority_id",
+USER             "unit_head_recommendation",
+USER             "stage",
+USER             "status",
+USER             "assignee_id",
+USER             "decided_at",
+USER             "created_at",
+USER             "actions",
+USER         )
+USER 
+USER 
+USER class ApplySerializer(serializers.Serializer):
+USER     category = serializers.ChoiceField(
+USER         choices=LeaveCategory.choices,
+USER         required=True,
+USER     )
+USER     start_date = serializers.DateField(required=True)
+USER     end_date = serializers.DateField(required=True)
+USER     half_day = serializers.ChoiceField(
+USER         choices=HalfDay.choices,
+USER         default=HalfDay.NONE,
+USER     )
+USER     purpose = serializers.CharField()
+USER     station_leave = serializers.BooleanField(default=False)
+USER     station_address = serializers.CharField(allow_blank=True, default="")
+USER     substitute_id = serializers.IntegerField(required=False, allow_null=True)
+USER 
+USER     def validate(self, attrs):
+USER         if attrs["end_date"] < attrs["start_date"]:
+USER             raise serializers.ValidationError("End date must be after start date.")
+USER         return attrs
+USER 
+USER 
+USER class DecisionSerializer(serializers.Serializer):
+USER     decision = serializers.ChoiceField(
+USER         choices=[("approve", "Approve"), ("reject", "Reject"), ("recommended", "Recommended"), ("not_recommended", "Not Recommended"), ("verify", "Verify")],
+USER         required=True,
+USER     )
+USER     remark = serializers.CharField(allow_blank=True, default="")
+USER 
+USER 
+USER class SubstituteResponseSerializer(serializers.Serializer):
+USER     accept = serializers.BooleanField()
+USER 
+USER 
+USER class ReplaceSubstituteSerializer(serializers.Serializer):
+USER     substitute_id = serializers.IntegerField(required=True)
+USER 
+USER 
+USER class LeaveBalanceSerializer(serializers.ModelSerializer):
+USER     available = serializers.DecimalField(
+USER         max_digits=5,
+USER         decimal_places=1,
+USER         read_only=True,
+USER     )
+USER 
+USER     class Meta:
+USER         model = LeaveBalance
+USER         fields = ["id", "category", "year", "entitled", "used", "available"]
+USER 
+USER 
+USER class ReportingLineSerializer(serializers.ModelSerializer):
+USER     class Meta:
+USER         model = ReportingLine
+USER         fields = ["user_id", "unit_head_id", "establishment_id", "sanctioning_authority_id"]
+USER 
+USER     def __init__(self, *args, **kwargs):
+USER         super().__init__(*args, **kwargs)
+USER         self.fields["user_id"].read_only = True
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER After task 015 the only remaining schema warning is: Encountered 2 components with identical names "Apply" and different identities modules.placement.api.serializers.ApplySerializer and modules.leave.api.serializers.ApplySerializer. drf-spectacular names components after the class, so rename the leave class. Fix only this, with SEARCH/REPLACE edits:
+USER 
+USER 1. In modules/leave/api/serializers.py rename `class ApplySerializer(serializers.Serializer):` to `class LeaveApplySerializer(serializers.Serializer):`.
+USER 2. In modules/leave/api/views.py replace every use of the name ApplySerializer (in the import list, in the @extend_schema(request=...) decorator and in the post method) with LeaveApplySerializer.
+USER 
+USER Do not change anything else.
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-10-23T00:47:56
+ASSISTANT To fix the drf-spectacular naming conflict between `modules.placement.api.serializers.ApplySerializer` and `modules.leave.api.serializers.ApplySerializer`, we will rename the serializer class in `modules/leave/api/serializers.py` to `LeaveApplySerializer` and update all references in `modules/leave/api/views.py`.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT modules/leave/api/serializers.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT class ApplySerializer(serializers.Serializer):
+ASSISTANT =======
+ASSISTANT class LeaveApplySerializer(serializers.Serializer):
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/api/views.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from modules.leave.api.serializers import (
+ASSISTANT     ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+ASSISTANT     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+ASSISTANT )
+ASSISTANT =======
+ASSISTANT from modules.leave.api.serializers import (
+ASSISTANT     LeaveApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+ASSISTANT     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+ASSISTANT )
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/api/views.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})
+ASSISTANT =======
+ASSISTANT     @extend_schema(request=LeaveApplySerializer, responses={201: LeaveApplicationSerializer})
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/api/views.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT         serializer = ApplySerializer(data=request.data)
+ASSISTANT =======
+ASSISTANT         serializer = LeaveApplySerializer(data=request.data)
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```

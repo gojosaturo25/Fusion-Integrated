@@ -8,7 +8,7 @@ from core.api.exceptions import NotFoundError
 from fusion_auth.permissions import HasModuleGrant, HasPermission
 from modules.leave import selectors
 from modules.leave.api.serializers import (
-    ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+    LeaveApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
 )
 from modules.leave.services import admin, applications, lifecycle
@@ -29,9 +29,9 @@ class ApplicationListCreateView(APIView):
         serializer = LeaveApplicationSerializer(apps, many=True)
         return Response(serializer.data)
 
-    @extend_schema(request=ApplySerializer, responses={201: LeaveApplicationSerializer})
+    @extend_schema(request=LeaveApplySerializer, responses={201: LeaveApplicationSerializer})
     def post(self, request, *args, **kwargs):
-        serializer = ApplySerializer(data=request.data)
+        serializer = LeaveApplySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 

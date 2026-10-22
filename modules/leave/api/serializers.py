@@ -67,7 +67,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
         )
 
 
-class ApplySerializer(serializers.Serializer):
+class LeaveApplySerializer(serializers.Serializer):
     category = serializers.ChoiceField(
         choices=LeaveCategory.choices,
         required=True,
