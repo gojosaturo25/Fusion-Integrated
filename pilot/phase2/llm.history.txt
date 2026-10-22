@@ -28655,3 +28655,789 @@ ASSISTANT         line = admin.set_reporting_line(user_id, data["unit_head_id"],
 ASSISTANT         serializer = ReportingLineSerializer(line)
 ASSISTANT         return Response(serializer.data)
 ASSISTANT ```
+TO LLM 2026-10-23T00:03:37
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+USER 
+USER modules/leave/api/views.py
+USER ```
+USER from django.utils import timezone
+USER from rest_framework import status
+USER from rest_framework.response import Response
+USER from rest_framework.views import APIView
+USER 
+USER from core.api.exceptions import NotFoundError
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER from modules.leave import selectors
+USER from modules.leave.api.serializers import (
+USER     ApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
+USER     ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+USER )
+USER from modules.leave.services import admin, applications, lifecycle
+USER 
+USER 
+USER class ApplicationListCreateView(APIView):
+USER     def get_permissions(self):
+USER         if self.request.method == "GET":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.view_own")()]
+USER         elif self.request.method == "POST":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
+USER         return super().get_permissions()
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.my_applications(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER     def post(self, request, *args, **kwargs):
+USER         serializer = ApplySerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER 
+USER         user_id = request.principal.user_id
+USER         app = applications.apply_leave(user_id, request.principal.kind, data)
+USER         return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
+USER 
+USER 
+USER class ApplicationDetailView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, pk, *args, **kwargs):
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class WithdrawView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         applications.withdraw(request.principal.user_id, pk)
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class CancelView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         today = timezone.localdate()
+USER         app = lifecycle.request_cancellation(request.principal.user_id, pk, today)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class SubstituteResponseView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = SubstituteResponseSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         accept = data["accept"]
+USER         app = applications.respond_to_substitute(request.principal.user_id, pk, accept)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class ReplaceSubstituteView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = ReplaceSubstituteSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         substitute_id = data["substitute_id"]
+USER         app = applications.replace_substitute(request.principal.user_id, pk, substitute_id)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class InboxView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.inbox(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class DecideView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = DecisionSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         decision = data["decision"]
+USER         remark = data.get("remark", "")
+USER 
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER 
+USER         if app.stage == "establishment":
+USER             if not request.principal.has_permission("leave.application.verify"):
+USER                 raise NotFoundError("You do not have permission to decide at this stage.")
+USER         elif app.stage == "sanction":
+USER             if not request.principal.has_permission("leave.application.sanction"):
+USER                 raise NotFoundError("You do not have permission to decide at this stage.")
+USER 
+USER         app = lifecycle.decide(request.principal.user_id, pk, decision, remark)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class BalanceView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         year = int(request.query_params.get("year", timezone.localdate().year))
+USER         kind = request.principal.kind
+USER         balances = admin.ensure_balances(user_id, kind, year)
+USER         serializer = LeaveBalanceSerializer(balances, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER class ReportingLineView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+USER 
+USER     def get(self, request, user_id, *args, **kwargs):
+USER         line = selectors.get_reporting_line(user_id)
+USER         if line is None:
+USER             raise NotFoundError()
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER 
+USER     def put(self, request, user_id, *args, **kwargs):
+USER         serializer = ReportingLineSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         line = admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/app/registry.ts:
+USER ⋮
+USER │export interface ModuleManifest {
+USER │  code: string;
+USER │  basePath: string;
+USER │  load: () => Promise<{ routes: RouteObject[] }>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/checks.py:
+USER ⋮
+USER │def check_auth_cookie_name(app_configs, **kwargs):
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/leave/api/serializers.py:
+USER ⋮
+USER │class LeaveActionSerializer(serializers.ModelSerializer):
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/placement/api/views.py:
+USER ⋮
+USER │class ApplicationListView(_Scoped, generics.ListAPIView):
+USER │    # A recruiter is authorised by the company-scoped queryset, not by a code.
+USER │    permission_classes = [MODULE, ScopedCollection(P_VIEW_APPS, P_VIEW_SELF)]
+USER │
+USER ⋮
+USER │    def list(self, request, *args, **kwargs):
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/registry.py
+USER ```
+USER """What the server tells the shell about this module (ADR-0010).
+USER 
+USER Nav items carry `required_permission` and the server filters before sending —
+USER the client does zero filtering, so a link a role cannot use never reaches the
+USER browser at all.
+USER """
+USER MODULE = {
+USER     "code": "leave",
+USER     "label": "Leave Management",
+USER     "icon": "CalendarBlank",
+USER     "base_path": "/leave",
+USER     "nav_section": "Leave",
+USER     "sort_order": 20,
+USER     "status": "active",
+USER }
+USER 
+USER NAV_ITEMS = [
+USER     # -- Employee-facing actions -------------------------------------------
+USER     {"code": "leave.apply", "label": "Apply for Leave",
+USER      "icon": "PlusCircle",
+USER      "to": "/leave/apply",
+USER      "required_permission": "leave.application.create",
+USER      "sort_order": 5},
+USER     {"code": "leave.mine", "label": "My Leave",
+USER      "icon": "UserCheck",
+USER      "to": "/leave/mine",
+USER      "required_permission": "leave.balance.view_self",
+USER      "sort_order": 10},
+USER     {"code": "leave.substitute", "label": "Nominated Substitute",
+USER      "icon": "Users",
+USER      "to": "/leave/substitute",
+USER      "required_permission": "leave.application.view_self",
+USER      "sort_order": 15},
+USER 
+USER     # -- Unit Head / Sanctioning Authority actions ------------------------
+USER     {"code": "leave.approvals", "label": "Leave Approvals",
+USER      "icon": "CheckCircle",
+USER      "to": "/leave/approvals",
+USER      "required_permission": "leave.application.review",
+USER      "sort_order": 20},
+USER ]
+USER 
+USER #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
+USER PERMISSIONS = [
+USER     ("leave.application.create", "Create a leave application"),
+USER     ("leave.application.view", "View all applications"),
+USER     ("leave.application.view_self", "View one's own applications"),
+USER     ("leave.application.review", "Review and recommend applications"),
+USER     ("leave.application.approve", "Approve or reject applications"),
+USER     ("leave.balance.view", "View leave balances"),
+USER     ("leave.balance.view_self", "View one's own leave balance"),
+USER ]
+USER 
+USER #: Performed by a service or a scheduled task, so no designation holds them.
+USER SYSTEM_PERMISSIONS = []
+USER 
+USER # Role-based permission grants based on Appendix A actors.
+USER # Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
+USER ROLE_GRANTS = {
+USER     "Employee": [
+USER         "leave.application.create",
+USER         "leave.application.view_self",
+USER         "leave.balance.view_self",
+USER     ],
+USER     "Unit Head": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Deputy Registrar (Estt.)": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.admin.manage",
+USER     ],
+USER     "Dean": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Registrar": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER     ],
+USER     "Director": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.admin.manage",
+USER     ],
+USER     "Leave Administrator": [
+USER         "leave.application.view",
+USER         "leave.application.review",
+USER         "leave.application.approve",
+USER         "leave.balance.view",
+USER         "leave.admin.manage",
+USER     ],
+USER }
+USER ```
+USER 
+USER modules/leave/api/urls.py
+USER ```
+USER """
+USER URL patterns for the Leave Management API.
+USER Maps HTTP methods and paths to DRF views.
+USER """
+USER 
+USER from django.urls import path, include
+USER from rest_framework.routers import DefaultRouter
+USER 
+USER from modules.leave.api.views import (
+USER     ApplicationListCreateView,
+USER     ApplicationDetailView,
+USER     WithdrawView,
+USER     CancelView,
+USER     SubstituteResponseView,
+USER     ReplaceSubstituteView,
+USER     InboxView,
+USER     DecideView,
+USER     BalanceView,
+USER     ReportingLineView,
+USER )
+USER 
+USER # Router for generic CRUD if needed in future, though we use specific views here.
+USER router = DefaultRouter()
+USER 
+USER urlpatterns = [
+USER     # Application Management
+USER     path("applications/", ApplicationListCreateView.as_view(), name="applications-list"),
+USER     
+USER     # Single Application Detail (used by all actions)
+USER     path("applications/<int:pk>/", ApplicationDetailView.as_view(), name="application-detail"),
+USER     
+USER     # Lifecycle Actions on Application
+USER     path("applications/<int:pk>/withdraw/", WithdrawView.as_view(), name="withdraw-application"),
+USER     path("applications/<int:pk>/cancel/", CancelView.as_view(), name="cancel-approved-leave"),
+USER     path("applications/<int:pk>/substitute-response/", SubstituteResponseView.as_view(), name="respond-to-substitute"),
+USER     path("applications/<int:pk>/replace-substitute/", ReplaceSubstituteView.as_view(), name="replace-substitute"),
+USER     
+USER     # Decision Actions (Inbox and specific decisions)
+USER     path("inbox/", InboxView.as_view(), name="approvals-inbox-list"),
+USER     path("applications/<int:pk>/decide/", DecideView.as_view(), name="decide-application"),
+USER     
+USER     # Balances and History
+USER     path("balances/<int:year>/", BalanceView.as_view(), name="user-balances"),
+USER ]
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review of task 008: urls.py has no route for ReportingLineView, routes balances at balances/<int:year>/ instead of balances/?year=, and imports include and DefaultRouter for nothing; registry.py still declares the Phase-1 permission codes (leave.application.create, leave.application.approve, leave.balance.view ...) that no view checks, so every nav link and grant points at a permission nobody enforces. Replace both files completely.
+USER 
+USER modules/leave/api/urls.py, exactly this shape:
+USER 
+USER from django.urls import path
+USER 
+USER from modules.leave.api import views
+USER 
+USER app_name = "leave"
+USER 
+USER urlpatterns = [
+USER     path("applications/", views.ApplicationListCreateView.as_view(), name="applications"),
+USER     path("applications/<int:pk>/", views.ApplicationDetailView.as_view(), name="application-detail"),
+USER     ... one path each for withdraw/, cancel/, substitute-response/, replace-substitute/ and decide/ under applications/<int:pk>/ ...
+USER     path("inbox/", views.InboxView.as_view(), name="inbox"),
+USER     path("balances/", views.BalanceView.as_view(), name="balances"),
+USER     path("reporting-lines/<int:user_id>/", views.ReportingLineView.as_view(), name="reporting-line"),
+USER ]
+USER 
+USER modules/leave/registry.py keeps the module docstring and this MODULE dict:
+USER MODULE = {"code": "leave", "label": "Leave Management", "icon": "CalendarBlank", "base_path": "/leave", "nav_section": "Leave", "sort_order": 20, "status": "active"}
+USER 
+USER NAV_ITEMS, a list of four dicts with keys code, label, icon, to, required_permission, sort_order:
+USER - leave.apply, "Apply for Leave", icon "PlusCircle", to "/leave/apply", required_permission "leave.application.apply", sort_order 5
+USER - leave.mine, "My Leaves", icon "ListChecks", to "/leave/mine", required_permission "leave.application.view_own", sort_order 10
+USER - leave.substitute, "Substitute Requests", icon "Users", to "/leave/substitute", required_permission "leave.substitute.respond", sort_order 15
+USER - leave.approvals, "Leave Approvals", icon "CheckCircle", to "/leave/approvals", required_permission "leave.application.review", sort_order 20
+USER 
+USER PERMISSIONS, a list of (code, label) tuples with exactly these seven codes and no others:
+USER leave.application.apply "Apply for leave and withdraw or cancel one's own requests"
+USER leave.application.view_own "See one's own requests and balances"
+USER leave.substitute.respond "Accept or decline being nominated as a substitute"
+USER leave.application.review "Decide requests assigned to oneself at the Unit Head stage"
+USER leave.application.verify "Verify requests at the Establishment stage"
+USER leave.application.sanction "Sanction or refuse requests at the Sanctioning Authority stage"
+USER leave.admin.manage "Maintain reporting lines"
+USER 
+USER SYSTEM_PERMISSIONS = []
+USER 
+USER ROLE_GRANTS, exactly:
+USER "Employee": apply, view_own, substitute.respond
+USER "Unit Head": review
+USER "Deputy Registrar (Estt.)": review, verify
+USER "Dean": review, sanction
+USER "Registrar": review, sanction
+USER "Director": review, sanction
+USER "Leave Administrator": admin.manage
+USER (write the full codes, for example "leave.application.apply").
+USER 
+USER Write both files in full. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-23T00:06:35
+ASSISTANT modules/leave/api/urls.py
+ASSISTANT ```python
+ASSISTANT from django.urls import path
+ASSISTANT 
+ASSISTANT from modules.leave.api import views
+ASSISTANT 
+ASSISTANT app_name = "leave"
+ASSISTANT 
+ASSISTANT urlpatterns = [
+ASSISTANT     path("applications/", views.ApplicationListCreateView.as_view(), name="applications"),
+ASSISTANT     path("applications/<int:pk>/", views.ApplicationDetailView.as_view(), name="application-detail"),
+ASSISTANT     path("applications/<int:pk>/withdraw/", views.WithdrawView.as_view(), name="withdraw-application"),
+ASSISTANT     path("applications/<int:pk>/cancel/", views.CancelView.as_view(), name="cancel-approved-leave"),
+ASSISTANT     path("applications/<int:pk>/substitute-response/", views.SubstituteResponseView.as_view(), name="respond-to-substitute"),
+ASSISTANT     path("applications/<int:pk>/replace-substitute/", views.ReplaceSubstituteView.as_view(), name="replace-substitute"),
+ASSISTANT     path("applications/<int:pk>/decide/", views.DecideView.as_view(), name="decide-application"),
+ASSISTANT     path("inbox/", views.InboxView.as_view(), name="inbox"),
+ASSISTANT     path("balances/", views.BalanceView.as_view(), name="balances"),
+ASSISTANT     path("reporting-lines/<int:user_id>/", views.ReportingLineView.as_view(), name="reporting-line"),
+ASSISTANT ]
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/registry.py
+ASSISTANT ```python
+ASSISTANT """What the server tells the shell about this module (ADR-0010).
+ASSISTANT 
+ASSISTANT Nav items carry `required_permission` and the server filters before sending —
+ASSISTANT the client does zero filtering, so a link a role cannot use never reaches the
+ASSISTANT browser at all.
+ASSISTANT """
+ASSISTANT MODULE = {
+ASSISTANT     "code": "leave",
+ASSISTANT     "label": "Leave Management",
+ASSISTANT     "icon": "CalendarBlank",
+ASSISTANT     "base_path": "/leave",
+ASSISTANT     "nav_section": "Leave",
+ASSISTANT     "sort_order": 20,
+ASSISTANT     "status": "active",
+ASSISTANT }
+ASSISTANT 
+ASSISTANT NAV_ITEMS = [
+ASSISTANT     # -- Employee-facing actions -------------------------------------------
+ASSISTANT     {"code": "leave.apply", "label": "Apply for Leave",
+ASSISTANT      "icon": "PlusCircle",
+ASSISTANT      "to": "/leave/apply",
+ASSISTANT      "required_permission": "leave.application.apply",
+ASSISTANT      "sort_order": 5},
+ASSISTANT     {"code": "leave.mine", "label": "My Leaves",
+ASSISTANT      "icon": "ListChecks",
+ASSISTANT      "to": "/leave/mine",
+ASSISTANT      "required_permission": "leave.application.view_own",
+ASSISTANT      "sort_order": 10},
+ASSISTANT     {"code": "leave.substitute", "label": "Substitute Requests",
+ASSISTANT      "icon": "Users",
+ASSISTANT      "to": "/leave/substitute",
+ASSISTANT      "required_permission": "leave.substitute.respond",
+ASSISTANT      "sort_order": 15},
+ASSISTANT     # -- Unit Head / Sanctioning Authority actions ------------------------
+ASSISTANT     {"code": "leave.approvals", "label": "Leave Approvals",
+ASSISTANT      "icon": "CheckCircle",
+ASSISTANT      "to": "/leave/approvals",
+ASSISTANT      "required_permission": "leave.application.review",
+ASSISTANT      "sort_order": 20},
+ASSISTANT ]
+ASSISTANT 
+ASSISTANT #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
+ASSISTANT PERMISSIONS = [
+ASSISTANT     ("leave.application.apply", "Apply for leave and withdraw or cancel one's own requests"),
+ASSISTANT     ("leave.application.view_own", "See one's own requests and balances"),
+ASSISTANT     ("leave.substitute.respond", "Accept or decline being nominated as a substitute"),
+ASSISTANT     ("leave.application.review", "Decide requests assigned to oneself at the Unit Head stage"),
+ASSISTANT     ("leave.application.verify", "Verify requests at the Establishment stage"),
+ASSISTANT     ("leave.application.sanction", "Sanction or refuse requests at the Sanctioning Authority stage"),
+ASSISTANT     ("leave.admin.manage", "Maintain reporting lines"),
+ASSISTANT ]
+ASSISTANT 
+ASSISTANT #: Performed by a service or a scheduled task, so no designation holds them.
+ASSISTANT SYSTEM_PERMISSIONS = []
+ASSISTANT 
+ASSISTANT # Role-based permission grants based on Appendix A actors.
+ASSISTANT # Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
+ASSISTANT ROLE_GRANTS = {
+ASSISTANT     "Employee": [
+ASSISTANT         "leave.application.apply",
+ASSISTANT         "leave.application.view_own",
+ASSISTANT         "leave.substitute.respond",
+ASSISTANT     ],
+ASSISTANT     "Unit Head": [
+ASSISTANT         "leave.application.review",
+ASSISTANT     ],
+ASSISTANT     "Deputy Registrar (Estt.)": [
+ASSISTANT         "leave.application.review",
+ASSISTANT         "leave.application.verify",
+ASSISTANT     ],
+ASSISTANT     "Dean": [
+ASSISTANT         "leave.application.review",
+ASSISTANT         "leave.application.sanction",
+ASSISTANT     ],
+ASSISTANT     "Registrar": [
+ASSISTANT         "leave.application.review",
+ASSISTANT         "leave.application.sanction",
+ASSISTANT     ],
+ASSISTANT     "Director": [
+ASSISTANT         "leave.application.review",
+ASSISTANT         "leave.application.sanction",
+ASSISTANT     ],
+ASSISTANT     "Leave Administrator": [
+ASSISTANT         "leave.admin.manage",
+ASSISTANT     ],
+ASSISTANT }
+ASSISTANT ```

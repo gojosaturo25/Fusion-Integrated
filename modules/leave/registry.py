@@ -19,19 +19,18 @@ NAV_ITEMS = [
     {"code": "leave.apply", "label": "Apply for Leave",
      "icon": "PlusCircle",
      "to": "/leave/apply",
-     "required_permission": "leave.application.create",
+     "required_permission": "leave.application.apply",
      "sort_order": 5},
-    {"code": "leave.mine", "label": "My Leave",
-     "icon": "UserCheck",
+    {"code": "leave.mine", "label": "My Leaves",
+     "icon": "ListChecks",
      "to": "/leave/mine",
-     "required_permission": "leave.balance.view_self",
+     "required_permission": "leave.application.view_own",
      "sort_order": 10},
-    {"code": "leave.substitute", "label": "Nominated Substitute",
+    {"code": "leave.substitute", "label": "Substitute Requests",
      "icon": "Users",
      "to": "/leave/substitute",
-     "required_permission": "leave.application.view_self",
+     "required_permission": "leave.substitute.respond",
      "sort_order": 15},
-
     # -- Unit Head / Sanctioning Authority actions ------------------------
     {"code": "leave.approvals", "label": "Leave Approvals",
      "icon": "CheckCircle",
@@ -42,13 +41,13 @@ NAV_ITEMS = [
 
 #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
 PERMISSIONS = [
-    ("leave.application.create", "Create a leave application"),
-    ("leave.application.view", "View all applications"),
-    ("leave.application.view_self", "View one's own applications"),
-    ("leave.application.review", "Review and recommend applications"),
-    ("leave.application.approve", "Approve or reject applications"),
-    ("leave.balance.view", "View leave balances"),
-    ("leave.balance.view_self", "View one's own leave balance"),
+    ("leave.application.apply", "Apply for leave and withdraw or cancel one's own requests"),
+    ("leave.application.view_own", "See one's own requests and balances"),
+    ("leave.substitute.respond", "Accept or decline being nominated as a substitute"),
+    ("leave.application.review", "Decide requests assigned to oneself at the Unit Head stage"),
+    ("leave.application.verify", "Verify requests at the Establishment stage"),
+    ("leave.application.sanction", "Sanction or refuse requests at the Sanctioning Authority stage"),
+    ("leave.admin.manage", "Maintain reporting lines"),
 ]
 
 #: Performed by a service or a scheduled task, so no designation holds them.
@@ -58,45 +57,30 @@ SYSTEM_PERMISSIONS = []
 # Key: Actor name (as used in the registry/role mapping), Value: List of permission codes.
 ROLE_GRANTS = {
     "Employee": [
-        "leave.application.create",
-        "leave.application.view_self",
-        "leave.balance.view_self",
+        "leave.application.apply",
+        "leave.application.view_own",
+        "leave.substitute.respond",
     ],
     "Unit Head": [
-        "leave.application.view",
         "leave.application.review",
-        "leave.application.approve",
-        "leave.balance.view",
     ],
     "Deputy Registrar (Estt.)": [
-        "leave.application.view",
         "leave.application.review",
-        "leave.application.approve",
-        "leave.admin.manage",
+        "leave.application.verify",
     ],
     "Dean": [
-        "leave.application.view",
         "leave.application.review",
-        "leave.application.approve",
-        "leave.balance.view",
+        "leave.application.sanction",
     ],
     "Registrar": [
-        "leave.application.view",
         "leave.application.review",
-        "leave.application.approve",
-        "leave.balance.view",
+        "leave.application.sanction",
     ],
     "Director": [
-        "leave.application.view",
         "leave.application.review",
-        "leave.application.approve",
-        "leave.admin.manage",
+        "leave.application.sanction",
     ],
     "Leave Administrator": [
-        "leave.application.view",
-        "leave.application.review",
-        "leave.application.approve",
-        "leave.balance.view",
         "leave.admin.manage",
     ],
 }
