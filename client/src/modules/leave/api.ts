@@ -1,153 +1,218 @@
-import { http } from "../../lib/http";
-import type { ApplicationStatus } from "../placement/api/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-/** Leave application data structure matching the backend serializer. */
+import { http } from "../../lib/http";
+
+/** Leave category types as per DESIGN.md */
+export type LeaveCategory = "CL" | "RH" | "SCL" | "EL" | "COL" | "VL";
+
+/** Half day options as per DESIGN.md */
+export type HalfDay = "none" | "first" | "second";
+
+/** Stage types as per DESIGN.md */
+export type Stage = "substitute" | "unit_head" | "establishment" | "sanction" | "done";
+
+/** Status types as per DESIGN.md */
+export type Status = "pending" | "approved" | "rejected" | "withdrawn" | "cancelled";
+
+/** Substitute status types as per DESIGN.md */
+export type SubstituteStatus = "not_required" | "pending" | "accepted" | "declined";
+
+/** Decision types for the decide endpoint as per serializers.py */
+export type Decision = "approve" | "reject" | "recommended" | "not_recommended" | "verify";
+
+/** Leave action data structure matching LeaveActionSerializer */
+export interface LeaveAction {
+  id: number;
+  actor_id: number;
+  action: string;
+  remark: string | null;
+  created_at: string;
+}
+
+/** Leave application data structure matching LeaveApplicationSerializer.
+ * Note: days is a string because DRF sends DecimalField values as strings. */
 export interface LeaveApplication {
   id: number;
-  applicant_id: number;
-  leave_type: string;
+  user_id: number;
+  kind: "leave" | "cancellation";
+  parent: LeaveApplication | null;
+  category: LeaveCategory;
   start_date: string; // ISO date string
   end_date: string;   // ISO date string
-  reason: string;
-  status: ApplicationStatus;
+  half_day: HalfDay;
+  days: string;       // String representation of Decimal
+  purpose: string;
+  station_leave: boolean;
+  station_address: string | null;
+  substitute_id: number | null;
+  substitute_status: SubstituteStatus;
+  unit_head_id: number | null;
+  establishment_id: number | null;
+  sanctioning_authority_id: number | null;
+  unit_head_recommendation: string | null;
+  stage: Stage;
+  status: Status;
+  assignee_id: number | null;
+  decided_at: string | null;
   created_at: string;
   updated_at: string;
-  unit_head_recommendation?: string | null;
-  final_sanction_decision?: string | null;
+  actions: LeaveAction[];
 }
 
-/** Leave balance data structure. */
+/** Leave balance data structure matching LeaveBalanceSerializer.
+ * Note: entitled, used, and available are strings because DRF sends DecimalField values as strings. */
 export interface LeaveBalance {
+  id: number;
+  category: LeaveCategory;
   year: number;
-  earned_days: number;
-  used_days: number;
-  remaining_days: number;
-  carry_forward_days: number;
+  entitled: string; // String representation of Decimal
+  used: string;     // String representation of Decimal
+  available: string; // String representation of Decimal (entitled - used)
 }
 
-/** Response envelope for list views. */
-export interface ListResponse<T> {
-  results: T[];
-  count: number;
-  next: string | null;
-  previous: string | null;
+/** Input type for applying a leave as per ApplySerializer */
+export interface ApplyInput {
+  category: LeaveCategory;
+  start_date: string;
+  end_date: string;
+  half_day: HalfDay;
+  purpose: string;
+  station_leave: boolean;
+  station_address: string | null;
+  substitute_id: number | null;
 }
 
-/** Error response structure. */
-export interface ErrorResponse {
-  error?: {
-    message?: string;
-    details?: Array<{ message: string }>;
-    request_id?: string;
-  };
+/** Label mapping for leave categories */
+export const CATEGORY_LABELS: Record<LeaveCategory, string> = {
+  CL: "Casual Leave",
+  RH: "Restricted Holiday",
+  SCL: "Special Casual Leave",
+  EL: "Earned Leave",
+  COL: "Commuted Leave",
+  VL: "Vacation Leave",
+};
+
+/** Helper to normalize list responses from the API. */
+function asList<T>(data: T[] | { results: T[] }): T[] {
+  return Array.isArray(data) ? data : data.results;
 }
 
-// --- Hooks ---
+// --- Queries ---
 
 /** Fetch all leave applications for the current user. */
 export function useMyApplications() {
-  const data = http.get<ListResponse<LeaveApplication>>("/leave/mine");
-  return data;
+  return useQuery({
+    queryKey: ["leave", "applications"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+  });
 }
 
 /** Fetch a single leave application by ID. */
 export function useApplicationDetail(id: number) {
-  const data = http.get<LeaveApplication>(`/leave/${id}/`);
-  return data;
+  return useQuery({
+    queryKey: ["leave", "application", id],
+    queryFn: async () => await http.get<LeaveApplication>(`/leave/${id}/`).data,
+  });
 }
 
+/** Fetch the approvals inbox (for Unit Heads). */
+export function useInbox() {
+  return useQuery({
+    queryKey: ["leave", "inbox"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+  });
+}
+
+/** Fetch leave balances for a specific year. */
+export function useBalances(year: number) {
+  return useQuery({
+    queryKey: ["leave", "balances", year],
+    queryFn: async () => asList(await http.get<LeaveBalance[]>(`/leave/balances/${year}/`, { params: { year } })).data,
+  });
+}
+
+// --- Mutations ---
+
 /** Submit a new leave application. */
-export function useSubmitApplication() {
-  const data = http.post("/leave/apply/", {} as any);
-  return data;
+export function useApply() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: ApplyInput) => {
+      const response = await http.post("/leave/applications/", vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }
 
 /** Withdraw an application. */
-export function useWithdrawApplication(id: number) {
-  const data = http.delete(`/leave/${id}/withdraw/`);
-  return data;
+export function useWithdraw(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await http.post(`/leave/${id}/withdraw/`, {});
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }
 
 /** Cancel an approved leave. */
-export function useCancelApprovedLeave(id: number) {
-  const data = http.post(`/leave/${id}/cancel/`, {} as any);
-  return data;
-}
-
-/** Extend an existing leave. */
-export function useExtendLeave(id: number) {
-  const data = http.post(`/leave/${id}/extend/`, {} as any);
-  return data;
-}
-
-/** Submit a resumption request for an approved leave. */
-export function useSubmitResumption(id: number) {
-  const data = http.post(`/leave/${id}/resumption-submit/`, {} as any);
-  return data;
+export function useCancel(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await http.post(`/leave/${id}/cancel/`, {});
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }
 
 /** Respond to a substitute request. */
-export function useRespondToSubstitute(id: number) {
-  const data = http.post(`/leave/${id}/substitute/respond/`, {} as any);
-  return data;
+export function useSubstituteResponse(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { accept: boolean }) => {
+      const response = await http.post(`/leave/${id}/substitute-response/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }
 
 /** Nominate a replacement for a substitute. */
-export function useNominateReplacement(id: number) {
-  const data = http.post(`/leave/${id}/substitute/nominate-replacement/`, {} as any);
-  return data;
+export function useReplaceSubstitute(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { substitute_id: number }) => {
+      const response = await http.post(`/leave/${id}/replace-substitute/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }
 
-/** View the approvals inbox (for Unit Heads). */
-export function useApprovalsInbox() {
-  const data = http.get("/leave/approvals-inbox/", {} as any);
-  return data;
-}
-
-/** Make a unit head decision on an application. */
-export function useUnitHeadDecision(id: number) {
-  const data = http.post(`/leave/${id}/decide-unit-head/`, {} as any);
-  return data;
-}
-
-/** Make a recommendation decision (e.g., for Dean). */
-export function useRecommendationDecision(id: number) {
-  const data = http.post(`/leave/${id}/decide-recommendation/`, {} as any);
-  return data;
-}
-
-/** Route an application to establishment verification. */
-export function useEstablishmentRoute(id: number) {
-  const data = http.post(`/leave/${id}/establishment-route/`, {} as any);
-  return data;
-}
-
-/** Make a final sanction decision. */
-export function useFinalSanctionDecision(id: number) {
-  const data = http.post(`/leave/${id}/final-sanction/`, {} as any);
-  return data;
-}
-
-/** Decide on cancellation of an approved leave. */
-export function useDecideCancellation(id: number) {
-  const data = http.post(`/leave/${id}/decide-cancellation/`, {} as any);
-  return data;
-}
-
-/** View leave balances for a specific year. */
-export function useBalances(year: number) {
-  const data = http.get<LeaveBalance>(`/leave/balances/${year}/`);
-  return data;
-}
-
-/** View history of leave applications. */
-export function useHistory() {
-  const data = http.get("/leave/history/", {} as any);
-  return data;
-}
-
-/** Review a resumption application (specific endpoint). */
-export function useReviewResumption(id: number) {
-  const data = http.post(`/leave/${id}/resumption-review/`, {} as any);
-  return data;
+/** Make a decision on an application (approve/reject/recommend). */
+export function useDecide(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { decision: Decision; remark: string }) => {
+      const response = await http.post(`/leave/${id}/decide/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
 }

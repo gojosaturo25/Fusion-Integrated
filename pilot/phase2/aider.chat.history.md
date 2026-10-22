@@ -4997,3 +4997,288 @@ def test_unit_head_is_final_el_false():
 > Tokens: 5.2k sent, 949 received.  
 > Applied edit to modules/leave/tests/test_policy.py  
 > Applied edit to modules/leave/tests/__init__.py  
+
+# aider chat started at 2026-10-22 23:53:28
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/api.ts --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/api/serializers.py --read modules/leave/api/urls.py --read client/src/lib/http.ts --message-file pilot/phase2/prompts/010-client-api.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 258 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/api.ts to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added client/src/lib/http.ts to the chat (read-only).  
+> Added modules/leave/api/urls.py to the chat (read-only).  
+> Added modules/leave/api/serializers.py to the chat (read-only).  
+
+#### Review findings on client/src/modules/leave/api.ts: it calls endpoints that do not exist (/leave/mine, /leave/apply/, /leave/<id>/decide-unit-head/ ...), its "hooks" are not React hooks (they call http.get during render and return a Promise), it imports ApplicationStatus from the placement module (another module's internals are off limits), and its types do not match the server.  
+####   
+#### Replace the whole file with TypeScript types plus TanStack Query hooks for the API in the "API" section of DESIGN.md. The axios instance `http` already has baseURL "/api/v1", so paths start with "/leave/". The serializers in modules/leave/api/serializers.py (read-only) define the JSON field names; DRF sends DecimalField values as strings.  
+####   
+#### Start the file with exactly:  
+####   
+#### import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";  
+####   
+#### import { http } from "../../lib/http";  
+####   
+#### Types to export: LeaveCategory ("CL" | "RH" | "SCL" | "EL" | "COL" | "VL"), HalfDay ("none" | "first" | "second"), Stage, Status, SubstituteStatus, Decision ("approve" | "reject" | "recommended" | "not_recommended" | "verify"), LeaveAction, LeaveApplication (every field of LeaveApplicationSerializer; days is a string; actions is LeaveAction[]), LeaveBalance (category, year, entitled, used, available; the last three are strings), ApplyInput (the fields of ApplySerializer; substitute_id is number | null). Also export const CATEGORY_LABELS: Record<LeaveCategory, string> = { CL: "Casual Leave", RH: "Restricted Holiday", SCL: "Special Casual Leave", EL: "Earned Leave", COL: "Commuted Leave", VL: "Vacation Leave" }.  
+####   
+#### List endpoints may return a plain array or a page object, so add:  
+#### function asList<T>(data: T[] | { results: T[] }): T[] { return Array.isArray(data) ? data : data.results; }  
+####   
+#### Queries (query keys all start with "leave"):  
+#### - useMyApplications(): GET /leave/applications/ -> LeaveApplication[]  
+#### - useInbox(): GET /leave/inbox/ -> LeaveApplication[]  
+#### - useBalances(year: number): GET /leave/balances/ with params { year } -> LeaveBalance[]  
+####   
+#### Mutations (each receives its variables in mutate(...), and on success calls queryClient.invalidateQueries({ queryKey: ["leave"] })):  
+#### - useApply(): POST /leave/applications/ with ApplyInput  
+#### - useWithdraw(): { id } -> POST /leave/applications/${id}/withdraw/  
+#### - useCancel(): { id } -> POST /leave/applications/${id}/cancel/  
+#### - useSubstituteResponse(): { id, accept } -> POST /leave/applications/${id}/substitute-response/ with { accept }  
+#### - useReplaceSubstitute(): { id, substitute_id } -> POST /leave/applications/${id}/replace-substitute/ with { substitute_id }  
+#### - useDecide(): { id, decision, remark } -> POST /leave/applications/${id}/decide/ with { decision, remark }  
+####   
+#### Follow this pattern from the placement module:  
+####   
+#### export function usePostings(filters?: { placement_year?: string }) {  
+####   return useQuery({  
+####     queryKey: ["placement", "postings", filters],  
+####     queryFn: async () => (await http.get<Page<Posting>>("/placement/postings", { params: filters })).data,  
+####   });  
+#### }  
+####   
+#### export function useApplyToPosting() {  
+####   const qc = useQueryClient();  
+####   return useMutation({  
+####     mutationFn: async (vars: { id: number }) => (await http.post(`/placement/postings/${vars.id}/apply`)).data,  
+####     onSuccess: () => qc.invalidateQueries({ queryKey: ["placement"] }),  
+####   });  
+#### }  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/api.ts
+```typescript
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { http } from "../../lib/http";
+
+/** Leave category types as per DESIGN.md */
+export type LeaveCategory = "CL" | "RH" | "SCL" | "EL" | "COL" | "VL";
+
+/** Half day options as per DESIGN.md */
+export type HalfDay = "none" | "first" | "second";
+
+/** Stage types as per DESIGN.md */
+export type Stage = "substitute" | "unit_head" | "establishment" | "sanction" | "done";
+
+/** Status types as per DESIGN.md */
+export type Status = "pending" | "approved" | "rejected" | "withdrawn" | "cancelled";
+
+/** Substitute status types as per DESIGN.md */
+export type SubstituteStatus = "not_required" | "pending" | "accepted" | "declined";
+
+/** Decision types for the decide endpoint as per serializers.py */
+export type Decision = "approve" | "reject" | "recommended" | "not_recommended" | "verify";
+
+/** Leave action data structure matching LeaveActionSerializer */
+export interface LeaveAction {
+  id: number;
+  actor_id: number;
+  action: string;
+  remark: string | null;
+  created_at: string;
+}
+
+/** Leave application data structure matching LeaveApplicationSerializer.
+ * Note: days is a string because DRF sends DecimalField values as strings. */
+export interface LeaveApplication {
+  id: number;
+  user_id: number;
+  kind: "leave" | "cancellation";
+  parent: LeaveApplication | null;
+  category: LeaveCategory;
+  start_date: string; // ISO date string
+  end_date: string;   // ISO date string
+  half_day: HalfDay;
+  days: string;       // String representation of Decimal
+  purpose: string;
+  station_leave: boolean;
+  station_address: string | null;
+  substitute_id: number | null;
+  substitute_status: SubstituteStatus;
+  unit_head_id: number | null;
+  establishment_id: number | null;
+  sanctioning_authority_id: number | null;
+  unit_head_recommendation: string | null;
+  stage: Stage;
+  status: Status;
+  assignee_id: number | null;
+  decided_at: string | null;
+  created_at: string;
+  updated_at: string;
+  actions: LeaveAction[];
+}
+
+/** Leave balance data structure matching LeaveBalanceSerializer.
+ * Note: entitled, used, and available are strings because DRF sends DecimalField values as strings. */
+export interface LeaveBalance {
+  id: number;
+  category: LeaveCategory;
+  year: number;
+  entitled: string; // String representation of Decimal
+  used: string;     // String representation of Decimal
+  available: string; // String representation of Decimal (entitled - used)
+}
+
+/** Input type for applying a leave as per ApplySerializer */
+export interface ApplyInput {
+  category: LeaveCategory;
+  start_date: string;
+  end_date: string;
+  half_day: HalfDay;
+  purpose: string;
+  station_leave: boolean;
+  station_address: string | null;
+  substitute_id: number | null;
+}
+
+/** Label mapping for leave categories */
+export const CATEGORY_LABELS: Record<LeaveCategory, string> = {
+  CL: "Casual Leave",
+  RH: "Restricted Holiday",
+  SCL: "Special Casual Leave",
+  EL: "Earned Leave",
+  COL: "Commuted Leave",
+  VL: "Vacation Leave",
+};
+
+/** Helper to normalize list responses from the API. */
+function asList<T>(data: T[] | { results: T[] }): T[] {
+  return Array.isArray(data) ? data : data.results;
+}
+
+// --- Queries ---
+
+/** Fetch all leave applications for the current user. */
+export function useMyApplications() {
+  return useQuery({
+    queryKey: ["leave", "applications"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+  });
+}
+
+/** Fetch a single leave application by ID. */
+export function useApplicationDetail(id: number) {
+  return useQuery({
+    queryKey: ["leave", "application", id],
+    queryFn: async () => await http.get<LeaveApplication>(`/leave/${id}/`).data,
+  });
+}
+
+/** Fetch the approvals inbox (for Unit Heads). */
+export function useInbox() {
+  return useQuery({
+    queryKey: ["leave", "inbox"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+  });
+}
+
+/** Fetch leave balances for a specific year. */
+export function useBalances(year: number) {
+  return useQuery({
+    queryKey: ["leave", "balances", year],
+    queryFn: async () => asList(await http.get<LeaveBalance[]>(`/leave/balances/${year}/`, { params: { year } })).data,
+  });
+}
+
+// --- Mutations ---
+
+/** Submit a new leave application. */
+export function useApply() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: ApplyInput) => {
+      const response = await http.post("/leave/applications/", vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Withdraw an application. */
+export function useWithdraw(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await http.post(`/leave/${id}/withdraw/`, {});
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Cancel an approved leave. */
+export function useCancel(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await http.post(`/leave/${id}/cancel/`, {});
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Respond to a substitute request. */
+export function useSubstituteResponse(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { accept: boolean }) => {
+      const response = await http.post(`/leave/${id}/substitute-response/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Nominate a replacement for a substitute. */
+export function useReplaceSubstitute(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { substitute_id: number }) => {
+      const response = await http.post(`/leave/${id}/replace-substitute/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Make a decision on an application (approve/reject/recommend). */
+export function useDecide(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { decision: Decision; remark: string }) => {
+      const response = await http.post(`/leave/${id}/decide/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+```
+
+> Tokens: 7.0k sent, 1.6k received.  
+> Applied edit to client/src/modules/leave/api.ts  

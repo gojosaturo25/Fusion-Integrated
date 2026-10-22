@@ -25624,3 +25624,992 @@ ASSISTANT def test_unit_head_is_final_el_false():
 ASSISTANT     """unit_head_is_final is False for 'EL' (BR-EL-017)."""
 ASSISTANT     assert policy.unit_head_is_final("EL") is False
 ASSISTANT ```
+TO LLM 2026-10-22T23:53:30
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+USER 
+USER client/src/lib/http.ts
+USER ```
+USER /** One axios instance for the whole app, with the interceptors the legacy
+USER  *  academic SPA never had. */
+USER import axios from "axios";
+USER 
+USER export const http = axios.create({
+USER   baseURL: "/api/v1",
+USER   withCredentials: true,          // the session cookie, never a JS-readable token
+USER   timeout: 15000,
+USER });
+USER 
+USER /** Paired with the session cookie. Held in memory rather than a readable
+USER  *  cookie, which the SPA could not read cross-origin in development. */
+USER let csrfToken = "";
+USER export function setCsrfToken(value: string) {
+USER   csrfToken = value ?? "";
+USER }
+USER 
+USER const UNSAFE = new Set(["post", "put", "patch", "delete"]);
+USER 
+USER http.interceptors.request.use((config) => {
+USER   if (csrfToken && UNSAFE.has((config.method ?? "get").toLowerCase())) {
+USER     config.headers.set("X-CSRF-Token", csrfToken);
+USER   }
+USER   return config;
+USER });
+USER 
+USER let onUnauthorized: (() => void) | null = null;
+USER export function setUnauthorizedHandler(fn: () => void) {
+USER   onUnauthorized = fn;
+USER }
+USER 
+USER http.interceptors.response.use(
+USER   (r) => r,
+USER   (error) => {
+USER     if (error.response?.status === 401) onUnauthorized?.();
+USER     return Promise.reject(error);
+USER   },
+USER );
+USER 
+USER /** Pull a usable message out of the platform's error envelope. */
+USER export function errorMessage(e: unknown): string {
+USER   const env = (e as { response?: { data?: { error?: {
+USER     message?: string; details?: { message?: string }[] } } } })
+USER     ?.response?.data?.error;
+USER   if (!env) return "Something went wrong. Please try again.";
+USER   if (env.details?.length) {
+USER     return env.details.map((d) => d.message).filter(Boolean).join(" ") ||
+USER       env.message || "Request failed.";
+USER   }
+USER   return env.message ?? "Request failed.";
+USER }
+USER 
+USER /** A `responseType: "blob"` request delivers the *error* body as a Blob too,
+USER  *  which hides the envelope from errorMessage. Read it back before rethrowing. */
+USER export async function readBlobError(e: unknown): Promise<unknown> {
+USER   const res = (e as { response?: { data?: unknown } })?.response;
+USER   if (res?.data instanceof Blob) {
+USER     try {
+USER       res.data = JSON.parse(await res.data.text());
+USER     } catch {
+USER       res.data = undefined;             // an HTML page, not our envelope
+USER     }
+USER   }
+USER   return e;
+USER }
+USER 
+USER export function errorStatus(e: unknown): number | undefined {
+USER   return (e as { response?: { status?: number } })?.response?.status;
+USER }
+USER 
+USER export function requestId(e: unknown): string | undefined {
+USER   return (e as { response?: { data?: { error?: { request_id?: string } } } })
+USER     ?.response?.data?.error?.request_id;
+USER }
+USER ```
+USER 
+USER modules/leave/api/urls.py
+USER ```
+USER """
+USER URL patterns for the Leave Management API.
+USER Maps HTTP methods and paths to DRF views.
+USER """
+USER 
+USER from django.urls import path, include
+USER from rest_framework.routers import DefaultRouter
+USER 
+USER from modules.leave.api.views import (
+USER     ApplicationListCreateView,
+USER     ApplicationDetailView,
+USER     WithdrawView,
+USER     CancelView,
+USER     SubstituteResponseView,
+USER     ReplaceSubstituteView,
+USER     InboxView,
+USER     DecideView,
+USER     BalanceView,
+USER     ReportingLineView,
+USER )
+USER 
+USER # Router for generic CRUD if needed in future, though we use specific views here.
+USER router = DefaultRouter()
+USER 
+USER urlpatterns = [
+USER     # Application Management
+USER     path("applications/", ApplicationListCreateView.as_view(), name="applications-list"),
+USER     
+USER     # Single Application Detail (used by all actions)
+USER     path("applications/<int:pk>/", ApplicationDetailView.as_view(), name="application-detail"),
+USER     
+USER     # Lifecycle Actions on Application
+USER     path("applications/<int:pk>/withdraw/", WithdrawView.as_view(), name="withdraw-application"),
+USER     path("applications/<int:pk>/cancel/", CancelView.as_view(), name="cancel-approved-leave"),
+USER     path("applications/<int:pk>/substitute-response/", SubstituteResponseView.as_view(), name="respond-to-substitute"),
+USER     path("applications/<int:pk>/replace-substitute/", ReplaceSubstituteView.as_view(), name="replace-substitute"),
+USER     
+USER     # Decision Actions (Inbox and specific decisions)
+USER     path("inbox/", InboxView.as_view(), name="approvals-inbox-list"),
+USER     path("applications/<int:pk>/decide/", DecideView.as_view(), name="decide-application"),
+USER     
+USER     # Balances and History
+USER     path("balances/<int:year>/", BalanceView.as_view(), name="user-balances"),
+USER ]
+USER ```
+USER 
+USER modules/leave/api/serializers.py
+USER ```
+USER from rest_framework import serializers
+USER 
+USER from modules.leave.models import HalfDay, LeaveAction, LeaveApplication, LeaveBalance, LeaveCategory, ReportingLine
+USER 
+USER 
+USER class LeaveActionSerializer(serializers.ModelSerializer):
+USER     class Meta:
+USER         model = LeaveAction
+USER         fields = ["id", "actor_id", "action", "remark", "created_at"]
+USER 
+USER 
+USER class LeaveApplicationSerializer(serializers.ModelSerializer):
+USER     actions = LeaveActionSerializer(many=True, read_only=True)
+USER 
+USER     class Meta:
+USER         model = LeaveApplication
+USER         fields = [
+USER             "id",
+USER             "user_id",
+USER             "kind",
+USER             "parent",
+USER             "category",
+USER             "start_date",
+USER             "end_date",
+USER             "half_day",
+USER             "days",
+USER             "purpose",
+USER             "station_leave",
+USER             "station_address",
+USER             "substitute_id",
+USER             "substitute_status",
+USER             "unit_head_id",
+USER             "establishment_id",
+USER             "sanctioning_authority_id",
+USER             "unit_head_recommendation",
+USER             "stage",
+USER             "status",
+USER             "assignee_id",
+USER             "decided_at",
+USER             "created_at",
+USER             "actions",
+USER         ]
+USER         read_only_fields = (
+USER             "user_id",
+USER             "kind",
+USER             "parent",
+USER             "category",
+USER             "start_date",
+USER             "end_date",
+USER             "half_day",
+USER             "days",
+USER             "purpose",
+USER             "station_leave",
+USER             "station_address",
+USER             "substitute_id",
+USER             "substitute_status",
+USER             "unit_head_id",
+USER             "establishment_id",
+USER             "sanctioning_authority_id",
+USER             "unit_head_recommendation",
+USER             "stage",
+USER             "status",
+USER             "assignee_id",
+USER             "decided_at",
+USER             "created_at",
+USER             "actions",
+USER         )
+USER 
+USER 
+USER class ApplySerializer(serializers.Serializer):
+USER     category = serializers.ChoiceField(
+USER         choices=LeaveCategory.choices,
+USER         required=True,
+USER     )
+USER     start_date = serializers.DateField(required=True)
+USER     end_date = serializers.DateField(required=True)
+USER     half_day = serializers.ChoiceField(
+USER         choices=HalfDay.choices,
+USER         default=HalfDay.NONE,
+USER     )
+USER     purpose = serializers.CharField()
+USER     station_leave = serializers.BooleanField(default=False)
+USER     station_address = serializers.CharField(allow_blank=True, default="")
+USER     substitute_id = serializers.IntegerField(required=False, allow_null=True)
+USER 
+USER     def validate(self, attrs):
+USER         if attrs["end_date"] < attrs["start_date"]:
+USER             raise serializers.ValidationError("End date must be after start date.")
+USER         return attrs
+USER 
+USER 
+USER class DecisionSerializer(serializers.Serializer):
+USER     decision = serializers.ChoiceField(
+USER         choices=[("approve", "Approve"), ("reject", "Reject"), ("recommended", "Recommended"), ("not_recommended", "Not Recommended"), ("verify", "Verify")],
+USER         required=True,
+USER     )
+USER     remark = serializers.CharField(allow_blank=True, default="")
+USER 
+USER 
+USER class SubstituteResponseSerializer(serializers.Serializer):
+USER     accept = serializers.BooleanField()
+USER 
+USER 
+USER class ReplaceSubstituteSerializer(serializers.Serializer):
+USER     substitute_id = serializers.IntegerField(required=True)
+USER 
+USER 
+USER class LeaveBalanceSerializer(serializers.ModelSerializer):
+USER     available = serializers.DecimalField(
+USER         max_digits=5,
+USER         decimal_places=1,
+USER         read_only=True,
+USER     )
+USER 
+USER     class Meta:
+USER         model = LeaveBalance
+USER         fields = ["id", "category", "year", "entitled", "used", "available"]
+USER 
+USER 
+USER class ReportingLineSerializer(serializers.ModelSerializer):
+USER     class Meta:
+USER         model = ReportingLine
+USER         fields = ["user_id", "unit_head_id", "establishment_id", "sanctioning_authority_id"]
+USER 
+USER     def __init__(self, *args, **kwargs):
+USER         super().__init__(*args, **kwargs)
+USER         self.fields["user_id"].read_only = True
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface Posting {
+USER │  id: number;
+USER │  title: string;
+USER │  kind: "fte" | "internship" | "ppo";
+USER │  company: CompanyBrief;
+USER │  placement_year: string;
+USER │  description: string;
+USER │  location: string;
+USER │  ctc_lpa: string | null;
+USER │  stipend_pm: string | null;
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER client/src/ui/layout/AppShellLayout.tsx:
+USER ⋮
+USER │export interface NavGroupItem {
+USER │  code: string;
+USER │  label: string;
+USER │  icon?: string;
+USER │  to?: string;
+USER │  app?: string;
+USER │  links?: NavLinkItem[];
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/offer_policy.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Decision:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/modules/leave/api.ts
+USER ```
+USER import { http } from "../../lib/http";
+USER import type { ApplicationStatus } from "../placement/api/types";
+USER 
+USER /** Leave application data structure matching the backend serializer. */
+USER export interface LeaveApplication {
+USER   id: number;
+USER   applicant_id: number;
+USER   leave_type: string;
+USER   start_date: string; // ISO date string
+USER   end_date: string;   // ISO date string
+USER   reason: string;
+USER   status: ApplicationStatus;
+USER   created_at: string;
+USER   updated_at: string;
+USER   unit_head_recommendation?: string | null;
+USER   final_sanction_decision?: string | null;
+USER }
+USER 
+USER /** Leave balance data structure. */
+USER export interface LeaveBalance {
+USER   year: number;
+USER   earned_days: number;
+USER   used_days: number;
+USER   remaining_days: number;
+USER   carry_forward_days: number;
+USER }
+USER 
+USER /** Response envelope for list views. */
+USER export interface ListResponse<T> {
+USER   results: T[];
+USER   count: number;
+USER   next: string | null;
+USER   previous: string | null;
+USER }
+USER 
+USER /** Error response structure. */
+USER export interface ErrorResponse {
+USER   error?: {
+USER     message?: string;
+USER     details?: Array<{ message: string }>;
+USER     request_id?: string;
+USER   };
+USER }
+USER 
+USER // --- Hooks ---
+USER 
+USER /** Fetch all leave applications for the current user. */
+USER export function useMyApplications() {
+USER   const data = http.get<ListResponse<LeaveApplication>>("/leave/mine");
+USER   return data;
+USER }
+USER 
+USER /** Fetch a single leave application by ID. */
+USER export function useApplicationDetail(id: number) {
+USER   const data = http.get<LeaveApplication>(`/leave/${id}/`);
+USER   return data;
+USER }
+USER 
+USER /** Submit a new leave application. */
+USER export function useSubmitApplication() {
+USER   const data = http.post("/leave/apply/", {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Withdraw an application. */
+USER export function useWithdrawApplication(id: number) {
+USER   const data = http.delete(`/leave/${id}/withdraw/`);
+USER   return data;
+USER }
+USER 
+USER /** Cancel an approved leave. */
+USER export function useCancelApprovedLeave(id: number) {
+USER   const data = http.post(`/leave/${id}/cancel/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Extend an existing leave. */
+USER export function useExtendLeave(id: number) {
+USER   const data = http.post(`/leave/${id}/extend/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Submit a resumption request for an approved leave. */
+USER export function useSubmitResumption(id: number) {
+USER   const data = http.post(`/leave/${id}/resumption-submit/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Respond to a substitute request. */
+USER export function useRespondToSubstitute(id: number) {
+USER   const data = http.post(`/leave/${id}/substitute/respond/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Nominate a replacement for a substitute. */
+USER export function useNominateReplacement(id: number) {
+USER   const data = http.post(`/leave/${id}/substitute/nominate-replacement/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** View the approvals inbox (for Unit Heads). */
+USER export function useApprovalsInbox() {
+USER   const data = http.get("/leave/approvals-inbox/", {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Make a unit head decision on an application. */
+USER export function useUnitHeadDecision(id: number) {
+USER   const data = http.post(`/leave/${id}/decide-unit-head/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Make a recommendation decision (e.g., for Dean). */
+USER export function useRecommendationDecision(id: number) {
+USER   const data = http.post(`/leave/${id}/decide-recommendation/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Route an application to establishment verification. */
+USER export function useEstablishmentRoute(id: number) {
+USER   const data = http.post(`/leave/${id}/establishment-route/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Make a final sanction decision. */
+USER export function useFinalSanctionDecision(id: number) {
+USER   const data = http.post(`/leave/${id}/final-sanction/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Decide on cancellation of an approved leave. */
+USER export function useDecideCancellation(id: number) {
+USER   const data = http.post(`/leave/${id}/decide-cancellation/`, {} as any);
+USER   return data;
+USER }
+USER 
+USER /** View leave balances for a specific year. */
+USER export function useBalances(year: number) {
+USER   const data = http.get<LeaveBalance>(`/leave/balances/${year}/`);
+USER   return data;
+USER }
+USER 
+USER /** View history of leave applications. */
+USER export function useHistory() {
+USER   const data = http.get("/leave/history/", {} as any);
+USER   return data;
+USER }
+USER 
+USER /** Review a resumption application (specific endpoint). */
+USER export function useReviewResumption(id: number) {
+USER   const data = http.post(`/leave/${id}/resumption-review/`, {} as any);
+USER   return data;
+USER }
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings on client/src/modules/leave/api.ts: it calls endpoints that do not exist (/leave/mine, /leave/apply/, /leave/<id>/decide-unit-head/ ...), its "hooks" are not React hooks (they call http.get during render and return a Promise), it imports ApplicationStatus from the placement module (another module's internals are off limits), and its types do not match the server.
+USER 
+USER Replace the whole file with TypeScript types plus TanStack Query hooks for the API in the "API" section of DESIGN.md. The axios instance `http` already has baseURL "/api/v1", so paths start with "/leave/". The serializers in modules/leave/api/serializers.py (read-only) define the JSON field names; DRF sends DecimalField values as strings.
+USER 
+USER Start the file with exactly:
+USER 
+USER import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+USER 
+USER import { http } from "../../lib/http";
+USER 
+USER Types to export: LeaveCategory ("CL" | "RH" | "SCL" | "EL" | "COL" | "VL"), HalfDay ("none" | "first" | "second"), Stage, Status, SubstituteStatus, Decision ("approve" | "reject" | "recommended" | "not_recommended" | "verify"), LeaveAction, LeaveApplication (every field of LeaveApplicationSerializer; days is a string; actions is LeaveAction[]), LeaveBalance (category, year, entitled, used, available; the last three are strings), ApplyInput (the fields of ApplySerializer; substitute_id is number | null). Also export const CATEGORY_LABELS: Record<LeaveCategory, string> = { CL: "Casual Leave", RH: "Restricted Holiday", SCL: "Special Casual Leave", EL: "Earned Leave", COL: "Commuted Leave", VL: "Vacation Leave" }.
+USER 
+USER List endpoints may return a plain array or a page object, so add:
+USER function asList<T>(data: T[] | { results: T[] }): T[] { return Array.isArray(data) ? data : data.results; }
+USER 
+USER Queries (query keys all start with "leave"):
+USER - useMyApplications(): GET /leave/applications/ -> LeaveApplication[]
+USER - useInbox(): GET /leave/inbox/ -> LeaveApplication[]
+USER - useBalances(year: number): GET /leave/balances/ with params { year } -> LeaveBalance[]
+USER 
+USER Mutations (each receives its variables in mutate(...), and on success calls queryClient.invalidateQueries({ queryKey: ["leave"] })):
+USER - useApply(): POST /leave/applications/ with ApplyInput
+USER - useWithdraw(): { id } -> POST /leave/applications/${id}/withdraw/
+USER - useCancel(): { id } -> POST /leave/applications/${id}/cancel/
+USER - useSubstituteResponse(): { id, accept } -> POST /leave/applications/${id}/substitute-response/ with { accept }
+USER - useReplaceSubstitute(): { id, substitute_id } -> POST /leave/applications/${id}/replace-substitute/ with { substitute_id }
+USER - useDecide(): { id, decision, remark } -> POST /leave/applications/${id}/decide/ with { decision, remark }
+USER 
+USER Follow this pattern from the placement module:
+USER 
+USER export function usePostings(filters?: { placement_year?: string }) {
+USER   return useQuery({
+USER     queryKey: ["placement", "postings", filters],
+USER     queryFn: async () => (await http.get<Page<Posting>>("/placement/postings", { params: filters })).data,
+USER   });
+USER }
+USER 
+USER export function useApplyToPosting() {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async (vars: { id: number }) => (await http.post(`/placement/postings/${vars.id}/apply`)).data,
+USER     onSuccess: () => qc.invalidateQueries({ queryKey: ["placement"] }),
+USER   });
+USER }
+USER 
+USER Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-22T23:57:46
+ASSISTANT client/src/modules/leave/api.ts
+ASSISTANT ```typescript
+ASSISTANT import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+ASSISTANT 
+ASSISTANT import { http } from "../../lib/http";
+ASSISTANT 
+ASSISTANT /** Leave category types as per DESIGN.md */
+ASSISTANT export type LeaveCategory = "CL" | "RH" | "SCL" | "EL" | "COL" | "VL";
+ASSISTANT 
+ASSISTANT /** Half day options as per DESIGN.md */
+ASSISTANT export type HalfDay = "none" | "first" | "second";
+ASSISTANT 
+ASSISTANT /** Stage types as per DESIGN.md */
+ASSISTANT export type Stage = "substitute" | "unit_head" | "establishment" | "sanction" | "done";
+ASSISTANT 
+ASSISTANT /** Status types as per DESIGN.md */
+ASSISTANT export type Status = "pending" | "approved" | "rejected" | "withdrawn" | "cancelled";
+ASSISTANT 
+ASSISTANT /** Substitute status types as per DESIGN.md */
+ASSISTANT export type SubstituteStatus = "not_required" | "pending" | "accepted" | "declined";
+ASSISTANT 
+ASSISTANT /** Decision types for the decide endpoint as per serializers.py */
+ASSISTANT export type Decision = "approve" | "reject" | "recommended" | "not_recommended" | "verify";
+ASSISTANT 
+ASSISTANT /** Leave action data structure matching LeaveActionSerializer */
+ASSISTANT export interface LeaveAction {
+ASSISTANT   id: number;
+ASSISTANT   actor_id: number;
+ASSISTANT   action: string;
+ASSISTANT   remark: string | null;
+ASSISTANT   created_at: string;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Leave application data structure matching LeaveApplicationSerializer.
+ASSISTANT  * Note: days is a string because DRF sends DecimalField values as strings. */
+ASSISTANT export interface LeaveApplication {
+ASSISTANT   id: number;
+ASSISTANT   user_id: number;
+ASSISTANT   kind: "leave" | "cancellation";
+ASSISTANT   parent: LeaveApplication | null;
+ASSISTANT   category: LeaveCategory;
+ASSISTANT   start_date: string; // ISO date string
+ASSISTANT   end_date: string;   // ISO date string
+ASSISTANT   half_day: HalfDay;
+ASSISTANT   days: string;       // String representation of Decimal
+ASSISTANT   purpose: string;
+ASSISTANT   station_leave: boolean;
+ASSISTANT   station_address: string | null;
+ASSISTANT   substitute_id: number | null;
+ASSISTANT   substitute_status: SubstituteStatus;
+ASSISTANT   unit_head_id: number | null;
+ASSISTANT   establishment_id: number | null;
+ASSISTANT   sanctioning_authority_id: number | null;
+ASSISTANT   unit_head_recommendation: string | null;
+ASSISTANT   stage: Stage;
+ASSISTANT   status: Status;
+ASSISTANT   assignee_id: number | null;
+ASSISTANT   decided_at: string | null;
+ASSISTANT   created_at: string;
+ASSISTANT   updated_at: string;
+ASSISTANT   actions: LeaveAction[];
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Leave balance data structure matching LeaveBalanceSerializer.
+ASSISTANT  * Note: entitled, used, and available are strings because DRF sends DecimalField values as strings. */
+ASSISTANT export interface LeaveBalance {
+ASSISTANT   id: number;
+ASSISTANT   category: LeaveCategory;
+ASSISTANT   year: number;
+ASSISTANT   entitled: string; // String representation of Decimal
+ASSISTANT   used: string;     // String representation of Decimal
+ASSISTANT   available: string; // String representation of Decimal (entitled - used)
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Input type for applying a leave as per ApplySerializer */
+ASSISTANT export interface ApplyInput {
+ASSISTANT   category: LeaveCategory;
+ASSISTANT   start_date: string;
+ASSISTANT   end_date: string;
+ASSISTANT   half_day: HalfDay;
+ASSISTANT   purpose: string;
+ASSISTANT   station_leave: boolean;
+ASSISTANT   station_address: string | null;
+ASSISTANT   substitute_id: number | null;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Label mapping for leave categories */
+ASSISTANT export const CATEGORY_LABELS: Record<LeaveCategory, string> = {
+ASSISTANT   CL: "Casual Leave",
+ASSISTANT   RH: "Restricted Holiday",
+ASSISTANT   SCL: "Special Casual Leave",
+ASSISTANT   EL: "Earned Leave",
+ASSISTANT   COL: "Commuted Leave",
+ASSISTANT   VL: "Vacation Leave",
+ASSISTANT };
+ASSISTANT 
+ASSISTANT /** Helper to normalize list responses from the API. */
+ASSISTANT function asList<T>(data: T[] | { results: T[] }): T[] {
+ASSISTANT   return Array.isArray(data) ? data : data.results;
+ASSISTANT }
+ASSISTANT 
+ASSISTANT // --- Queries ---
+ASSISTANT 
+ASSISTANT /** Fetch all leave applications for the current user. */
+ASSISTANT export function useMyApplications() {
+ASSISTANT   return useQuery({
+ASSISTANT     queryKey: ["leave", "applications"],
+ASSISTANT     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Fetch a single leave application by ID. */
+ASSISTANT export function useApplicationDetail(id: number) {
+ASSISTANT   return useQuery({
+ASSISTANT     queryKey: ["leave", "application", id],
+ASSISTANT     queryFn: async () => await http.get<LeaveApplication>(`/leave/${id}/`).data,
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Fetch the approvals inbox (for Unit Heads). */
+ASSISTANT export function useInbox() {
+ASSISTANT   return useQuery({
+ASSISTANT     queryKey: ["leave", "inbox"],
+ASSISTANT     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Fetch leave balances for a specific year. */
+ASSISTANT export function useBalances(year: number) {
+ASSISTANT   return useQuery({
+ASSISTANT     queryKey: ["leave", "balances", year],
+ASSISTANT     queryFn: async () => asList(await http.get<LeaveBalance[]>(`/leave/balances/${year}/`, { params: { year } })).data,
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT // --- Mutations ---
+ASSISTANT 
+ASSISTANT /** Submit a new leave application. */
+ASSISTANT export function useApply() {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async (vars: ApplyInput) => {
+ASSISTANT       const response = await http.post("/leave/applications/", vars);
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Withdraw an application. */
+ASSISTANT export function useWithdraw(id: number) {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async () => {
+ASSISTANT       const response = await http.post(`/leave/${id}/withdraw/`, {});
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Cancel an approved leave. */
+ASSISTANT export function useCancel(id: number) {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async () => {
+ASSISTANT       const response = await http.post(`/leave/${id}/cancel/`, {});
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Respond to a substitute request. */
+ASSISTANT export function useSubstituteResponse(id: number) {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async (vars: { accept: boolean }) => {
+ASSISTANT       const response = await http.post(`/leave/${id}/substitute-response/`, vars);
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Nominate a replacement for a substitute. */
+ASSISTANT export function useReplaceSubstitute(id: number) {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async (vars: { substitute_id: number }) => {
+ASSISTANT       const response = await http.post(`/leave/${id}/replace-substitute/`, vars);
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT 
+ASSISTANT /** Make a decision on an application (approve/reject/recommend). */
+ASSISTANT export function useDecide(id: number) {
+ASSISTANT   const qc = useQueryClient();
+ASSISTANT   return useMutation({
+ASSISTANT     mutationFn: async (vars: { decision: Decision; remark: string }) => {
+ASSISTANT       const response = await http.post(`/leave/${id}/decide/`, vars);
+ASSISTANT       return response.data;
+ASSISTANT     },
+ASSISTANT     onSuccess: () => {
+ASSISTANT       qc.invalidateQueries({ queryKey: ["leave"] });
+ASSISTANT     },
+ASSISTANT   });
+ASSISTANT }
+ASSISTANT ```
