@@ -1073,3 +1073,948 @@ ASSISTANT
 ASSISTANT     def __str__(self) -> str:
 ASSISTANT         return f"{self.action} on {self.application.id} by {self.actor_id}"
 ASSISTANT ```
+TO LLM 2026-10-22T22:01:31
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER LeaveError -> 400 {"detail": msg}; NotFound -> 404.
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/chunks/br_policy.md
+USER ```
+USER # ELM Business Rules — categories, entitlement, counting, overlap, substitute (BR-EL-001..015)
+USER 
+USER (Unedited excerpt from the supplied ELM specification package.)
+USER 
+USER ### BR-EL-001 — Supported leave-category eligibility
+USER 
+USER - **Rule Type:** Eligibility
+USER - **Rule Statement:** A new leave request shall use only CL, RH, SCL, EL, COL, or VL and shall satisfy the category-applicability conditions in the current configured ELM policy.
+USER - **Applies To:** New leave validation
+USER - **Condition / Trigger:** Requested category/application context
+USER - **Required Outcome / Constraint:** Reject/prevent progression when category applicability is not satisfied.
+USER - **Related CFRs:** CFR-EL-002–003
+USER - **Related Use Cases:** EL-UC-001, EL-UC-009
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER - **Status / Revision Note:** Revised to remove published-policy-version semantics.
+USER 
+USER ### BR-EL-002 — Casual Leave entitlement and lapse
+USER 
+USER - **Rule Type:** Entitlement
+USER - **Rule Statement:** Each employee has 8 CL days per year; unused CL lapses at year end and does not carry forward.
+USER - **Applies To:** CL validation/year-end
+USER - **Condition / Trigger:** CL account/request
+USER - **Required Outcome / Constraint:** Enforce 8-day annual entitlement and no carry-forward.
+USER - **Related CFRs:** CFR-EL-004, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-001; EL-UC-020
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-003 — Restricted Holiday entitlement and applicability
+USER 
+USER - **Rule Type:** Entitlement / Calendar
+USER - **Rule Statement:** Each employee has 2 RH days per year; an RH request must correspond to an applicable Restricted Holiday in the currently effective published holiday/RH calendar; unused RH lapses at year end.
+USER - **Applies To:** RH validation/year-end
+USER - **Condition / Trigger:** RH request/account
+USER - **Required Outcome / Constraint:** Enforce entitlement, calendar applicability, and lapse.
+USER - **Related CFRs:** CFR-EL-005, CFR-EL-025, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-001, EL-UC-015; EL-UC-020
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Expanded/confirmed after adjudication.
+USER 
+USER ### BR-EL-004 — Special Casual Leave entitlement and admissibility
+USER 
+USER - **Rule Type:** Entitlement / Authority
+USER - **Rule Statement:** Each employee may use up to 15 SCL days per calendar year for a special purpose considered admissible by the applicable Sanctioning Authority; no separate encoded admissibility criterion is required; unused SCL lapses at year end.
+USER - **Applies To:** SCL validation/decision/year-end
+USER - **Condition / Trigger:** SCL request/account
+USER - **Required Outcome / Constraint:** Enforce annual limit; leave purpose is judged by authority; lapse unused SCL.
+USER - **Related CFRs:** CFR-EL-006, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-001, EL-UC-005; EL-UC-020
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Clarified: admissibility is authority judgment, not separate encoded rule.
+USER 
+USER ### BR-EL-005 — Non-faculty Earned Leave credit and carry-forward
+USER 
+USER - **Rule Type:** Entitlement
+USER - **Rule Statement:** Each non-faculty employee shall receive 30 EL days per year and unused EL shall carry forward according to policy.
+USER - **Applies To:** EL account/year-end
+USER - **Condition / Trigger:** Non-faculty EL
+USER - **Required Outcome / Constraint:** Credit 30/year and preserve unused EL across year boundary.
+USER - **Related CFRs:** CFR-EL-007, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-001; EL-UC-020
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-006 — Faculty Vacation Leave entitlement and vacation-period applicability
+USER 
+USER - **Rule Type:** Entitlement / Calendar
+USER - **Rule Statement:** Each faculty member shall have 60 VL associated with vacation periods supplied by the institute Academic Calendar, and VL may be availed only during an applicable vacation period.
+USER - **Applies To:** VL validation
+USER - **Condition / Trigger:** Faculty VL request
+USER - **Required Outcome / Constraint:** Enforce 60 VL and external Academic Calendar vacation-period applicability.
+USER - **Related CFRs:** CFR-EL-008
+USER - **Related Use Cases:** EL-UC-001
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Clarified external vacation-period source.
+USER 
+USER ### BR-EL-007 — VL-to-EL year-end conversion
+USER 
+USER - **Rule Type:** Calculation / Year-end
+USER - **Rule Statement:** At year end, all unused faculty VL shall convert to EL at 2 VL : 1 EL including fractional conversion, and VL itself shall not carry forward.
+USER - **Applies To:** Year-end processing
+USER - **Condition / Trigger:** Unused faculty VL
+USER - **Required Outcome / Constraint:** Convert at 2:1 including fractions; leave no unused VL balance as VL.
+USER - **Related CFRs:** CFR-EL-008, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-020
+USER - **Related Workflow(s):** N/A
+USER - **Status / Revision Note:** Active, consolidated statement.
+USER 
+USER ### BR-EL-008 — Treatment of EL created by VL conversion
+USER 
+USER - **Rule Type:** Account
+USER - **Rule Statement:** EL created by VL conversion shall be credited to the faculty member's EL balance, may carry forward, and may subsequently be availed.
+USER - **Applies To:** Year-end/account use
+USER - **Condition / Trigger:** Converted EL
+USER - **Required Outcome / Constraint:** Credit and retain converted EL as usable EL.
+USER - **Related CFRs:** CFR-EL-008, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-020; EL-UC-001
+USER - **Related Workflow(s):** N/A
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-009 — Commuted Leave entitlement and treatment
+USER 
+USER - **Rule Type:** Entitlement / Evidence
+USER - **Rule Statement:** Eligible employees have 20 COL days/year in this baseline; COL is medical/balance-controlled, supporting medical evidence may be required where applicable, and unused COL carries forward.
+USER - **Applies To:** COL validation/year-end
+USER - **Condition / Trigger:** COL request/account
+USER - **Required Outcome / Constraint:** Enforce annual entitlement, balance/evidence conditions, and carry-forward.
+USER - **Related CFRs:** CFR-EL-009, CFR-EL-028
+USER - **Related Use Cases:** EL-UC-001; EL-UC-020
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Consolidated.
+USER 
+USER ### BR-EL-010 — Half-day CL treatment
+USER 
+USER - **Rule Type:** Calculation
+USER - **Rule Statement:** CL shall support first-half and second-half requests; an approved half day consumes 0.5 CL day.
+USER - **Applies To:** CL validation/accounting
+USER - **Condition / Trigger:** Half-day CL
+USER - **Required Outcome / Constraint:** Recognize halves and deduct 0.5 day when approved.
+USER - **Related CFRs:** CFR-EL-004
+USER - **Related Use Cases:** EL-UC-001
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-011 — Continuous-day counting
+USER 
+USER - **Rule Type:** Counting
+USER - **Rule Statement:** For EL, COL, and VL, intervening weekends and closed holidays inside the continuous approved interval count as leave days; this rule does not apply to CL, SCL, or RH.
+USER - **Applies To:** Leave-day calculation
+USER - **Condition / Trigger:** EL/COL/VL and excluded categories
+USER - **Required Outcome / Constraint:** Apply category-specific counting boundary exactly.
+USER - **Related CFRs:** CFR-EL-003, CFR-EL-010
+USER - **Related Use Cases:** EL-UC-001, EL-UC-009
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-012 — Applicant non-overlap with half-day CL exception
+USER 
+USER - **Rule Type:** Validation
+USER - **Rule Statement:** A new request shall not impermissibly overlap the employee's active pending or approved leave; first-half and second-half CL on the same date are non-overlapping when they occupy different halves.
+USER - **Applies To:** New-request validation
+USER - **Condition / Trigger:** Employee leave intervals
+USER - **Required Outcome / Constraint:** Block impermissible overlap; permit different CL halves on same date.
+USER - **Related CFRs:** CFR-EL-003
+USER - **Related Use Cases:** EL-UC-001
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Confirmed PS gap.
+USER 
+USER ### BR-EL-013 — Station Leave coupling
+USER 
+USER - **Rule Type:** Scope / Information
+USER - **Rule Statement:** Station Leave permission/details, when applicable, shall be captured within the same leave application and shall not create a separate leave-request process.
+USER - **Applies To:** Leave application
+USER - **Condition / Trigger:** Outside-Jabalpur context
+USER - **Required Outcome / Constraint:** Keep Station Leave inside associated leave application.
+USER - **Related CFRs:** CFR-EL-002
+USER - **Related Use Cases:** EL-UC-001
+USER - **Related Workflow(s):** CW-EL-01
+USER - **Status / Revision Note:** Active.
+USER 
+USER ### BR-EL-014 — Substitute eligibility
+USER 
+USER - **Rule Type:** Eligibility
+USER - **Rule Statement:** When responsibility coverage is required, exactly one substitute is nominated; the substitute must be another employee, must not be the applicant, and must have no overlapping pending or approved leave during the responsibility period.
+USER - **Applies To:** Substitute nomination
+USER - **Condition / Trigger:** Nominated employee and responsibility period
+USER - **Required Outcome / Constraint:** Reject an ineligible nominee.
+USER - **Related CFRs:** CFR-EL-011–012
+USER - **Related Use Cases:** EL-UC-001, EL-UC-002, EL-UC-009, EL-UC-019
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER - **Status / Revision Note:** Expanded to include not-the-applicant condition.
+USER 
+USER ### BR-EL-015 — Substitute consent gate and decline recovery
+USER 
+USER - **Rule Type:** Routing / Eligibility
+USER - **Rule Statement:** Required approval routing shall not proceed until the nominated substitute accepts. A decline leaves the consent gate closed; the applicant may nominate another eligible substitute or withdraw the pending request where applicable.
+USER - **Applies To:** Substitute response
+USER - **Condition / Trigger:** Pending request requiring responsibility coverage
+USER - **Required Outcome / Constraint:** Accept releases routing gate; decline does not.
+USER - **Related CFRs:** CFR-EL-012
+USER - **Related Use Cases:** EL-UC-002, EL-UC-019
+USER - **Related Workflow(s):** CW-EL-01; CW-EL-03
+USER - **Status / Revision Note:** Expanded with adjudicated recovery path.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class ConflictError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/domain/policy.py
+USER ```
+USER """
+USER Leave Policy Rules (BR-EL-001..015).
+USER Pure Python implementation without Django/DRF/Celery imports.
+USER """
+USER 
+USER from dataclasses import dataclass, field
+USER from datetime import date
+USER from enum import Enum
+USER from typing import Optional
+USER 
+USER 
+USER class EmployeeKind(Enum):
+USER     FACULTY = "faculty"
+USER     STAFF = "staff"
+USER     NON_FACULTY_STAFF = "non_faculty_staff"  # Used for generic staff not in faculty
+USER 
+USER 
+USER class LeaveCategory(Enum):
+USER     CL = "CL"  # Casual Leave
+USER     RH = "RH"  # Restricted Holiday
+USER     SCL = "SCL"  # Special Casual Leave
+USER     EL = "EL"  # Earned Leave
+USER     COL = "COL"  # Compensatory / Balance Controlled Leave
+USER     VL = "VL"  # Vacation Leave
+USER 
+USER 
+USER @dataclass(frozen=True)
+USER class EntitlementConfig:
+USER     """Configuration for leave entitlements and rules."""
+USER 
+USER     category: LeaveCategory
+USER     days_per_year: float
+USER     carry_forward: bool
+USER     continuous_counting: bool  # True for EL/COL/VL, False for CL/SCL/RH
+USER     half_day_consumption: Optional[float] = None  # 0.5 for CL, None otherwise
+USER     requires_substitute: bool = False
+USER     unit_head_decision_required: bool = False  # Unit Head decides (CL, RH) vs recommends (SCL, EL, COL, VL)
+USER 
+USER     def __post_init__(self):
+USER         if self.half_day_consumption is not None and self.category != LeaveCategory.CL:
+USER             raise ValueError(f"Half-day consumption only applies to CL. Category: {self.category}")
+USER 
+USER 
+USER # Define entitlements based on BR-EL-001 through BR-EL-015
+USER 
+USER ENTITLEMENTS = {
+USER     LeaveCategory.CL: EntitlementConfig(
+USER         category=LeaveCategory.CL,
+USER         days_per_year=8.0,
+USER         carry_forward=False,
+USER         continuous_counting=False,
+USER         half_day_consumption=0.5,
+USER         requires_substitute=True,
+USER         unit_head_decision_required=True,  # BR-EL-001: Unit Head decides applicability
+USER     ),
+USER     LeaveCategory.RH: EntitlementConfig(
+USER         category=LeaveCategory.RH,
+USER         days_per_year=2.0,
+USER         carry_forward=False,
+USER         continuous_counting=False,
+USER         requires_substitute=True,
+USER         unit_head_decision_required=True,  # BR-EL-003: Unit Head decides calendar applicability
+USER     ),
+USER     LeaveCategory.SCL: EntitlementConfig(
+USER         category=LeaveCategory.SCL,
+USER         days_per_year=15.0,
+USER         carry_forward=False,
+USER         continuous_counting=False,
+USER         requires_substitute=True,
+USER         unit_head_decision_required=False,  # BR-EL-004: Authority judgment, not encoded rule
+USER     ),
+USER     LeaveCategory.EL: EntitlementConfig(
+USER         category=LeaveCategory.EL,
+USER         days_per_year=30.0,
+USER         carry_forward=True,
+USER         continuous_counting=True,  # BR-EL-011: Continuous counting applies
+USER         requires_substitute=False,
+USER         unit_head_decision_required=False,
+USER     ),
+USER     LeaveCategory.COL: EntitlementConfig(
+USER         category=LeaveCategory.COL,
+USER         days_per_year=20.0,
+USER         carry_forward=True,
+USER         continuous_counting=True,  # BR-EL-011: Continuous counting applies
+USER         requires_substitute=False,
+USER         unit_head_decision_required=False,
+USER     ),
+USER     LeaveCategory.VL: EntitlementConfig(
+USER         category=LeaveCategory.VL,
+USER         days_per_year=60.0,
+USER         carry_forward=False,  # BR-EL-007: VL converts to EL at year end, no carry forward as VL
+USER         continuous_counting=True,  # BR-EL-011: Continuous counting applies
+USER         requires_substitute=False,
+USER         unit_head_decision_required=False,
+USER     ),
+USER }
+USER 
+USER 
+USER @dataclass(frozen=True)
+USER class YearEndConversionRule:
+USER     """Rules for year-end conversions."""
+USER 
+USER     category: LeaveCategory
+USER     conversion_rate: float  # How many target days per source day (e.g., VL to EL is 2.0)
+USER     target_category: LeaveCategory
+USER 
+USER 
+USER # BR-EL-007: VL converts to EL at 2:1 including fractions
+USER YEAR_END_CONVERSIONS = {
+USER     LeaveCategory.VL: YearEndConversionRule(
+USER         category=LeaveCategory.VL,
+USER         conversion_rate=2.0,
+USER         target_category=LeaveCategory.EL,
+USER     ),
+USER }
+USER 
+USER 
+USER @dataclass(frozen=True)
+USER class SubstituteEligibilityRule:
+USER     """Rules for substitute nomination (BR-EL-014)."""
+USER 
+USER     must_be_employee: bool = True
+USER     must_not_be_applicant: bool = True
+USER     no_overlapping_leave: bool = True
+USER 
+USER 
+USER SUBSTITUTE_RULE = SubstituteEligibilityRule()
+USER 
+USER 
+USER def get_entitlement_config(category: LeaveCategory) -> EntitlementConfig:
+USER     """Retrieve entitlement configuration for a category."""
+USER     return ENTITLEMENTS[category]
+USER 
+USER 
+USER def is_continuous_counting(category: LeaveCategory) -> bool:
+USER     """Check if continuous counting applies (BR-EL-011)."""
+USER     config = get_entitlement_config(category)
+USER     return config.continuous_counting
+USER 
+USER 
+USER def half_day_consumption(category: LeaveCategory) -> Optional[float]:
+USER     """Get consumption rate for half-day requests (BR-EL-010)."""
+USER     config = get_entitlement_config(category)
+USER     return config.half_day_consumption
+USER 
+USER 
+USER def requires_substitute(category: LeaveCategory) -> bool:
+USER     """Check if a substitute is required (BR-EL-014)."""
+USER     config = get_entitlement_config(category)
+USER     return config.requires_substitute
+USER 
+USER 
+USER def unit_head_decision_required(category: LeaveCategory) -> bool:
+USER     """Check if Unit Head must make the final decision (BR-EL-001, BR-EL-003)."""
+USER     config = get_entitlement_config(category)
+USER     return config.unit_head_decision_required
+USER 
+USER 
+USER def year_end_conversion(category: LeaveCategory) -> Optional[YearEndConversionRule]:
+USER     """Get year-end conversion rule if applicable (BR-EL-007)."""
+USER     return YEAR_END_CONVERSIONS.get(category)
+USER 
+USER 
+USER def is_applicable_category(category: LeaveCategory) -> bool:
+USER     """Check if category is supported per BR-EL-001."""
+USER     # Supported categories: CL, RH, SCL, EL, COL, VL
+USER     return category in ENTITLEMENTS
+USER 
+USER 
+USER def calculate_consumed_days(
+USER     requested_from: date,
+USER     requested_to: date,
+USER     category: LeaveCategory,
+USER ) -> float:
+USER     """
+USER     Calculate the number of leave days consumed.
+USER     
+USER     BR-EL-011: For EL, COL, VL, weekends/holidays count as leave days.
+USER                 For CL, SCL, RH, they do not.
+USER     BR-EL-010: Half-day CL consumes 0.5 day.
+USER     """
+USER     # Base calculation: number of days in range (inclusive)
+USER     delta = requested_to - requested_from
+USER     base_days = delta.days + 1
+USER 
+USER     config = get_entitlement_config(category)
+USER 
+USER     # Apply continuous counting rule (BR-EL-011)
+USER     if is_continuous_counting(category):
+USER         # Weekends and holidays count as leave days for EL, COL, VL
+USER         # Note: In a full implementation, we would check calendar objects here.
+USER         # For now, we assume the input dates are already adjusted or the logic
+USER         # handles the specific date range provided.
+USER         # The rule states "intervening weekends and closed holidays ... count as leave days".
+USER         # This implies we should NOT subtract them. The base_days calculation above
+USER         # includes all days. If a specific calendar check is needed, it would be
+USER         # added here to determine if a day is a weekend/holiday and whether to include/exclude.
+USER         # Given the rule "count as leave days", we keep all days in the range.
+USER         pass
+USER     else:
+USER         # For CL, SCL, RH, weekends and holidays do NOT count.
+USER         # This would require a calendar service to filter out non-working days.
+USER         # Placeholder logic: assume standard working days if calendar not available.
+USER         # In a real system, this would call a calendar API.
+USER         pass
+USER 
+USER     # Apply half-day consumption (BR-EL-010)
+USER     # Note: This function calculates total days. If the request is for multiple half-days,
+USER     # the caller should multiply by 2 or handle the count separately.
+USER     # However, if the input represents a single day split into halves, we need to know how many halves.
+USER     # Since this function takes requested_from/to (dates), it implies full days unless specified otherwise.
+USER     # Let's assume the caller handles half-day logic by passing specific date ranges or flags.
+USER     # For now, we return base_days adjusted for continuous counting.
+USER     
+USER     # To properly support half-days, we might need to know if the request spans a single day with multiple halves.
+USER     # A common pattern is: requested_from=requested_to (same day) -> 1 full day or 2 half days?
+USER     # The rule says "an approved half day consumes 0.5 CL day".
+USER     # Let's assume the API passes the number of half-days separately or we infer from context.
+USER     # For this pure policy module, we will return the count of days as per continuous counting.
+USER     # The actual deduction logic (0.5 vs 1.0) is likely handled in the service layer based on approval details.
+USER     # However, to be complete: if it's a half-day request, we need to know it's half.
+USER     # Let's assume `requested_from` and `requested_to` define the interval.
+USER     # If the interval is 1 day, is it 1 full or 2 halves? Usually 1 full unless specified.
+USER     # We will return the count of days in the interval. The service layer will multiply by 0.5 if approved as half-day.
+USER     
+USER     return base_days
+USER 
+USER 
+USER def check_applicant_overlap(
+USER     applicant_id: int,
+USER     new_request_start: date,
+USER     new_request_end: date,
+USER ) -> bool:
+USER     """
+USER     Check if a new request overlaps with active pending or approved leave (BR-EL-012).
+USER     
+USER     Exception: First-half and second-half CL on the same date are non-overlapping.
+USER     """
+USER     # This is a placeholder for the actual overlap logic.
+USER     # In a real system, this would query LeaveApplication records for the applicant_id.
+USER     # It would check status in ['pending', 'approved'] and date ranges.
+USER     # The exception for CL halves on the same date needs to be handled here.
+USER     
+USER     # Pseudo-logic:
+USER     # 1. Find all active/pending/approved leave applications for applicant_id within [new_start, new_end].
+USER     # 2. For each overlap found:
+USER     #    a. If category is CL and the overlapping application is on the same date as new_request_start == new_request_end:
+USER     #       Check if they are different halves (e.g., first-half vs second-half). If so, allow.
+USER     #       Otherwise, reject.
+USER     #    b. For other categories or non-same-date overlaps, reject.
+USER     
+USER     # Since we don't have access to the LeaveApplication model here (pure domain),
+USER     # this function signature is conceptual. The actual implementation would be in a service.
+USER     # We return False (no overlap found) as a placeholder.
+USER     return False
+USER 
+USER 
+USER def check_substitute_eligibility(
+USER     substitute_id: int,
+USER     applicant_id: int,
+USER     responsibility_start: date,
+USER     responsibility_end: date,
+USER ) -> bool:
+USER     """
+USER     Check if a nominated substitute is eligible (BR-EL-014).
+USER     
+USER     Conditions:
+USER     - Must be another employee.
+USER     - Must not be the applicant.
+USER     - Must have no overlapping pending or approved leave during the responsibility period.
+USER     """
+USER     # Placeholder logic. In reality, this would query LeaveApplication for substitute_id.
+USER     return True  # Assume eligible unless specific checks fail
+USER 
+USER 
+USER def get_categories_requiring_unit_head_decision() -> list[LeaveCategory]:
+USER     """Get categories where Unit Head makes the final decision (BR-EL-001, BR-EL-003)."""
+USER     return [LeaveCategory.CL, LeaveCategory.RH]
+USER 
+USER 
+USER def get_categories_recommended_by_unit_head() -> list[LeaveCategory]:
+USER     """Get categories where Unit Head only recommends (SCL, EL, COL, VL)."""
+USER     return [LeaveCategory.SCL, LeaveCategory.EL, LeaveCategory.COL, LeaveCategory.VL]
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings on the Phase-1 modules/leave/domain/policy.py: check_applicant_overlap() always returns False and check_substitute_eligibility() always returns True (placeholders), calculate_consumed_days() ignores weekends and half days, EL is offered to faculty although BR-EL-005 limits it to non-faculty, and the VL-to-EL rate is inverted.
+USER 
+USER Rewrite modules/leave/domain/policy.py following the "domain/policy.py" section of DESIGN.md (read-only) and the business rules file (read-only). It must be pure Python: import only datetime, decimal and typing (no Django, DRF or Celery).
+USER 
+USER Define exactly:
+USER - class PolicyError(Exception)
+USER - CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
+USER - ENTITLEMENT: dict mapping each category to (days_per_year: Decimal, faculty_allowed: bool, staff_allowed: bool, carries_forward: bool) with the values in DESIGN.md
+USER - CONTINUOUS = {"EL", "COL", "VL"}
+USER - def entitlement(category: str, kind: str) -> Decimal | None
+USER - def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal
+USER - def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool
+USER - def unit_head_is_final(category: str) -> bool
+USER 
+USER Raise PolicyError for an unknown category, end before start, or a half day that is not a single-day CL. Put a one-line comment with the BR-EL id where each rule is enforced. Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-22T22:06:30
+ASSISTANT modules/leave/domain/policy.py
+ASSISTANT ```python
+ASSISTANT """
+ASSISTANT Leave Policy Rules (BR-EL-001..015).
+ASSISTANT Pure Python implementation without Django/DRF/Celery imports.
+ASSISTANT """
+ASSISTANT 
+ASSISTANT from datetime import date
+ASSISTANT from decimal import Decimal, ROUND_HALF_UP
+ASSISTANT from typing import Dict, Optional
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class PolicyError(Exception):
+ASSISTANT     """Domain policy error."""
+ASSISTANT     pass
+ASSISTANT 
+ASSISTANT 
+ASSISTANT CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
+ASSISTANT 
+ASSISTANT ENTITLEMENT: Dict[str, tuple] = {
+ASSISTANT     "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
+ASSISTANT     "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
+ASSISTANT     "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
+ASSISTANT     "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
+ASSISTANT     "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
+ASSISTANT     "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+ASSISTANT }
+ASSISTANT 
+ASSISTANT CONTINUOUS = {"EL", "COL", "VL"}
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def entitlement(category: str, kind: str) -> Optional[Decimal]:
+ASSISTANT     """
+ASSISTANT     Return the annual leave entitlement for a category and kind.
+ASSISTANT     
+ASSISTANT     - kind="faculty" returns faculty allowance (or None if not eligible).
+ASSISTANT     - kind="staff" returns staff allowance (or None if not eligible).
+ASSISTANT     - Returns None if the category is not supported or the user kind is ineligible.
+ASSISTANT     
+ASSISTANT     BR-EL-001: Only supported categories allowed.
+ASSISTANT     BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+ASSISTANT     """
+ASSISTANT     if category not in CATEGORIES:
+ASSISTANT         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+ASSISTANT     
+ASSISTANT     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+ASSISTANT     
+ASSISTANT     if kind == "faculty":
+ASSISTANT         if faculty_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # EL is not for faculty
+ASSISTANT     elif kind == "staff":
+ASSISTANT         if staff_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+ASSISTANT     
+ASSISTANT     return None
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+ASSISTANT     """
+ASSISTANT     Calculate the number of leave days consumed.
+ASSISTANT     
+ASSISTANT     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+ASSISTANT     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+ASSISTANT                CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+ASSISTANT     
+ASSISTANT     Note: Since no external calendar service is imported, we assume the input dates represent
+ASSISTANT     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+ASSISTANT     standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+ASSISTANT     """
+ASSISTANT     if start > end:
+ASSISTANT         raise PolicyError("End date must be on or after start date")  # Generic validation
+ASSISTANT     
+ASSISTANT     if half_day != "none" and category not in ("CL",):
+ASSISTANT         raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     if half_day != "none" and start != end:
+ASSISTANT         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     days = Decimal(str((end - start).days + 1))
+ASSISTANT     
+ASSISTANT     category_upper = category.upper()
+ASSISTANT     
+ASSISTANT     if category_upper in CONTINUOUS:
+ASSISTANT         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+ASSISTANT         # No filtering for weekends/holidays.
+ASSISTANT         pass
+ASSISTANT     else:
+ASSISTANT         # CL, RH, SCL: Count Monday to Friday only.
+ASSISTANT         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+ASSISTANT         current = start
+ASSISTANT         while current <= end:
+ASSISTANT             if current.weekday() < 5:  # Monday=0 to Friday=4
+ASSISTANT                 days += Decimal("1")
+ASSISTANT             current += date(1)
+ASSISTANT     
+ASSISTANT     if half_day != "none":
+ASSISTANT         # Apply half-day consumption (0.5 day)
+ASSISTANT         days *= Decimal("0.5")
+ASSISTANT     
+ASSISTANT     return days
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool:
+ASSISTANT     """
+ASSISTANT     Check if two leave requests overlap.
+ASSISTANT     
+ASSISTANT     True when the date ranges intersect, except a single shared date where both halves are set and different.
+ASSISTANT     BR-EL-012: Applicant non-overlap with half-day CL exception.
+ASSISTANT     """
+ASSISTANT     # Determine if ranges intersect
+ASSISTANT     # Intersection exists if: start_a <= end_b AND start_b <= end_a
+ASSISTANT     intersects = (a_start <= b_end) and (b_start <= a_end)
+ASSISTANT     
+ASSISTANT     if not intersects:
+ASSISTANT         return False
+ASSISTANT     
+ASSISTANT     # Check for the half-day exception on the same date
+ASSISTANT     # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
+ASSISTANT     # If both are on the same day and have different halves, they do NOT overlap.
+ASSISTANT     if a_start == b_start:
+ASSISTANT         if a_half != "none" and b_half != "none":
+ASSISTANT             # Both are half-days on the same day
+ASSISTANT             if a_half != b_half:
+ASSISTANT                 return False  # Different halves on same date -> non-overlapping
+ASSISTANT     
+ASSISTANT     return True
+ASSISTANT 
+ASSISTANT 
+ASSISTANT def unit_head_is_final(category: str) -> bool:
+ASSISTANT     """
+ASSISTANT     Determine if Unit Head has final decision power.
+ASSISTANT     
+ASSISTANT     BR-EL-016: True for CL and RH.
+ASSISTANT     BR-EL-017: Others only get a recommendation.
+ASSISTANT     """
+ASSISTANT     return category in ("CL", "RH")
+ASSISTANT ```

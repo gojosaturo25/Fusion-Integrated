@@ -220,3 +220,175 @@ class LeaveAction(models.Model):
 
 > Tokens: 4.3k sent, 1.3k received.  
 > Applied edit to modules/leave/models.py  
+
+# aider chat started at 2026-10-22 22:01:23
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/domain/policy.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read /Users/vishalkumar/elm_specs_md/pilot_kit/chunks/br_policy.md --message-file pilot/phase2/prompts/002-policy.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/domain/policy.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/chunks/br_policy.md to the chat (read-only).  
+
+#### Review findings on the Phase-1 modules/leave/domain/policy.py: check_applicant_overlap() always returns False and check_substitute_eligibility() always returns True (placeholders), calculate_consumed_days() ignores weekends and half days, EL is offered to faculty although BR-EL-005 limits it to non-faculty, and the VL-to-EL rate is inverted.  
+####   
+#### Rewrite modules/leave/domain/policy.py following the "domain/policy.py" section of DESIGN.md (read-only) and the business rules file (read-only). It must be pure Python: import only datetime, decimal and typing (no Django, DRF or Celery).  
+####   
+#### Define exactly:  
+#### - class PolicyError(Exception)  
+#### - CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")  
+#### - ENTITLEMENT: dict mapping each category to (days_per_year: Decimal, faculty_allowed: bool, staff_allowed: bool, carries_forward: bool) with the values in DESIGN.md  
+#### - CONTINUOUS = {"EL", "COL", "VL"}  
+#### - def entitlement(category: str, kind: str) -> Decimal | None  
+#### - def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal  
+#### - def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool  
+#### - def unit_head_is_final(category: str) -> bool  
+####   
+#### Raise PolicyError for an unknown category, end before start, or a half day that is not a single-day CL. Put a one-line comment with the BR-EL id where each rule is enforced. Write the whole file. Do not ask for more files.  
+
+modules/leave/domain/policy.py
+```python
+"""
+Leave Policy Rules (BR-EL-001..015).
+Pure Python implementation without Django/DRF/Celery imports.
+"""
+
+from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Dict, Optional
+
+
+class PolicyError(Exception):
+    """Domain policy error."""
+    pass
+
+
+CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
+
+ENTITLEMENT: Dict[str, tuple] = {
+    "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
+    "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
+    "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
+    "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
+    "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
+    "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+}
+
+CONTINUOUS = {"EL", "COL", "VL"}
+
+
+def entitlement(category: str, kind: str) -> Optional[Decimal]:
+    """
+    Return the annual leave entitlement for a category and kind.
+    
+    - kind="faculty" returns faculty allowance (or None if not eligible).
+    - kind="staff" returns staff allowance (or None if not eligible).
+    - Returns None if the category is not supported or the user kind is ineligible.
+    
+    BR-EL-001: Only supported categories allowed.
+    BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+    """
+    if category not in CATEGORIES:
+        raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+    
+    days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+    
+    if kind == "faculty":
+        if faculty_allowed:
+            return days_per_year
+        else:
+            return None  # EL is not for faculty
+    elif kind == "staff":
+        if staff_allowed:
+            return days_per_year
+        else:
+            return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+    
+    return None
+
+
+def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+    """
+    Calculate the number of leave days consumed.
+    
+    BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+    BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+               CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+    
+    Note: Since no external calendar service is imported, we assume the input dates represent
+    the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+    standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+    """
+    if start > end:
+        raise PolicyError("End date must be on or after start date")  # Generic validation
+    
+    if half_day != "none" and category not in ("CL",):
+        raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+    
+    if half_day != "none" and start != end:
+        raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+    
+    days = Decimal(str((end - start).days + 1))
+    
+    category_upper = category.upper()
+    
+    if category_upper in CONTINUOUS:
+        # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+        # No filtering for weekends/holidays.
+        pass
+    else:
+        # CL, RH, SCL: Count Monday to Friday only.
+        # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+        current = start
+        while current <= end:
+            if current.weekday() < 5:  # Monday=0 to Friday=4
+                days += Decimal("1")
+            current += date(1)
+    
+    if half_day != "none":
+        # Apply half-day consumption (0.5 day)
+        days *= Decimal("0.5")
+    
+    return days
+
+
+def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool:
+    """
+    Check if two leave requests overlap.
+    
+    True when the date ranges intersect, except a single shared date where both halves are set and different.
+    BR-EL-012: Applicant non-overlap with half-day CL exception.
+    """
+    # Determine if ranges intersect
+    # Intersection exists if: start_a <= end_b AND start_b <= end_a
+    intersects = (a_start <= b_end) and (b_start <= a_end)
+    
+    if not intersects:
+        return False
+    
+    # Check for the half-day exception on the same date
+    # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
+    # If both are on the same day and have different halves, they do NOT overlap.
+    if a_start == b_start:
+        if a_half != "none" and b_half != "none":
+            # Both are half-days on the same day
+            if a_half != b_half:
+                return False  # Different halves on same date -> non-overlapping
+    
+    return True
+
+
+def unit_head_is_final(category: str) -> bool:
+    """
+    Determine if Unit Head has final decision power.
+    
+    BR-EL-016: True for CL and RH.
+    BR-EL-017: Others only get a recommendation.
+    """
+    return category in ("CL", "RH")
+```
+
+> Tokens: 8.8k sent, 1.3k received.  
+> Applied edit to modules/leave/domain/policy.py  
