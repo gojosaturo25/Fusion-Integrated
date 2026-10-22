@@ -6725,3 +6725,140 @@ client/src/modules/leave/pages/ApplyLeavePage.tsx
 
 > Tokens: 6.0k sent, 988 received.  
 > Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  
+
+# aider chat started at 2026-10-23 00:24:16
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/SubstituteRequestsPage.tsx --read client/src/modules/leave/api.ts --read client/src/ui/components/DataTable.tsx --read client/src/ui/components/ErrorState.tsx --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/014-client-substitute-page.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/SubstituteRequestsPage.tsx to the chat.  
+> Added client/src/ui/components/DataTable.tsx to the chat (read-only).  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added client/src/ui/components/ErrorState.tsx to the chat (read-only).  
+
+#### Review findings: the Phase-1 page imports modules that do not exist and never calls the server.  
+####   
+#### Replace the whole file with a default-exported SubstituteRequestsPage component (EL-UC-011, BR-EL-014, BR-EL-015). Start it with these imports. tsconfig has noUnusedLocals, so remove any imported name you end up not using, and do not import from any other path:  
+####   
+#### import { Button, Card, Container, Group } from "@mantine/core";  
+#### import { notifications } from "@mantine/notifications";  
+####   
+#### import { errorMessage } from "../../../lib/http";  
+#### import { DataTable } from "../../../ui/components/DataTable";  
+#### import { ErrorState } from "../../../ui/components/ErrorState";  
+#### import { PageHeader } from "../../../ui/components/PageHeader";  
+#### import { CATEGORY_LABELS, useInbox, useSubstituteResponse, type LeaveApplication } from "../api";  
+####   
+#### Rows: useInbox() filtered to stage "substitute" (requests where a colleague nominated me as their substitute).  
+#### DataTable columns: Colleague (user_id), Category (CATEGORY_LABELS), Dates, Days, Purpose, Actions with "Accept" (accept true) and "Decline" (accept false) buttons that call useSubstituteResponse().mutate({ id, accept }).  
+#### Empty state title: "No substitute requests".  
+#### If useInbox() has an error, render <ErrorState error={error} />.  
+####   
+#### Fusion uses Mantine 7: use leftSection (not leftIcon), gap (not spacing), justify (not position), and the shared components in client/src/ui/components (read-only). DataTable needs the props rows, columns, loading, rowKey and empty ({ title, description }). Every mutation shows notifications.show({ color: "green", ... }) on success and notifications.show({ color: "red", title: "...", message: errorMessage(e) }) on error.  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/SubstituteRequestsPage.tsx
+```tsx
+import { useState } from "react";
+import { ActionIcon, Button, Card, Container, Group, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { FaCheck, FaTimes } from "react-icons/fa";
+
+import { errorMessage } from "../../../lib/http";
+import { DataTable } from "../../../ui/components/DataTable";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { CATEGORY_LABELS, useInbox, useSubstituteResponse, type LeaveApplication } from "../api";
+
+export default function SubstituteRequestsPage() {
+  const respondMutation = useSubstituteResponse();
+  const [requestId, setRequestId] = useState<number | null>(null);
+
+  if (respondMutation.isPending) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <Card padding="lg">
+          <Text>Processing...</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  const inboxData = useInbox();
+  
+  if (inboxData.error) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Manage substitute requests" />
+        <ErrorState error={inboxData.error} />
+      </Container>
+    );
+  }
+
+  const applications = inboxData.data?.filter((app) => app.stage === "substitute") || [];
+
+  if (applications.length === 0) {
+    return (
+      <Container size="xl">
+        <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+        <Card padding="lg">
+          <Text>No substitute requests</Text>
+        </Card>
+      </Container>
+    );
+  }
+
+  const columns = [
+    { key: "colleague", header: "Colleague", align: "left", render: (row) => row.user_id },
+    { key: "category", header: "Category", align: "left", render: (row) => CATEGORY_LABELS[row.category] },
+    { key: "dates", header: "Dates", align: "left", render: (row) => `${row.start_date} to ${row.end_date}` },
+    { key: "days", header: "Days", align: "right", render: (row) => row.days },
+    { key: "purpose", header: "Purpose", align: "left", render: (row) => row.purpose },
+    { key: "actions", header: "Actions", align: "left", render: (row) => (
+      <Group>
+        <Button size="xs" leftSection={<FaCheck size={14} />} onClick={() => handleAccept(row.id)}>
+          Accept
+        </Button>
+        <Button size="xs" leftSection={<FaTimes size={14} />} color="red" onClick={() => handleDecline(row.id)}>
+          Decline
+        </Button>
+      </Group>
+    )},
+  ];
+
+  function handleAccept(id: number) {
+    respondMutation.mutate({ id, accept: true }, {
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute accepted" }),
+      onError: (e) => notifications.show({ color: "red", title: "Error", message: errorMessage(e) }),
+    });
+  }
+
+  function handleDecline(id: number) {
+    respondMutation.mutate({ id, accept: false }, {
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute declined" }),
+      onError: (e) => notifications.show({ color: "red", title: "Error", message: errorMessage(e) }),
+    });
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader title="Substitute Requests" subtitle="Requests addressed to you" />
+      <DataTable
+        rows={applications}
+        columns={columns}
+        loading={respondMutation.isPending}
+        rowKey={(row: LeaveApplication) => row.id}
+        empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
+      />
+    </Container>
+  );
+}
+```
+
+> Tokens: 7.1k sent, 889 received.  
+> Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
