@@ -6139,3 +6139,181 @@ export default function MyLeavesPage() {
 
 > Tokens: 8.0k sent, 1.3k received.  
 > Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  
+
+# aider chat started at 2026-10-23 00:14:18
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/ApprovalsPage.tsx --read client/src/modules/leave/api.ts --read client/src/ui/components/DataTable.tsx --read client/src/ui/components/StatusBadge.tsx --read client/src/ui/components/ErrorState.tsx --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/013-client-approvals-page.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ApprovalsPage.tsx to the chat.  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added client/src/ui/components/DataTable.tsx to the chat (read-only).  
+> Added client/src/ui/components/ErrorState.tsx to the chat (read-only).  
+> Added client/src/ui/components/StatusBadge.tsx to the chat (read-only).  
+
+#### Review findings: the Phase-1 page imports modules that do not exist and shows every application with approve/reject buttons regardless of who the approver is or which stage the request is in.  
+####   
+#### Replace the whole file with a default-exported ApprovalsPage component (EL-UC-003, EL-UC-004, EL-UC-005, EL-UC-006). Start it with these imports. tsconfig has noUnusedLocals, so remove any imported name you end up not using, and do not import from any other path:  
+####   
+#### import { useState } from "react";  
+#### import { Button, Card, Container, Group, TextInput } from "@mantine/core";  
+#### import { notifications } from "@mantine/notifications";  
+####   
+#### import { errorMessage } from "../../../lib/http";  
+#### import { DataTable } from "../../../ui/components/DataTable";  
+#### import { ErrorState } from "../../../ui/components/ErrorState";  
+#### import { PageHeader } from "../../../ui/components/PageHeader";  
+#### import { CATEGORY_LABELS, useDecide, useInbox, type Decision, type LeaveApplication } from "../api";  
+####   
+#### Rows: useInbox() filtered to stage other than "substitute" (the server already returns only requests assigned to me).  
+#### A TextInput "Remark (optional)" above the table; its value is sent with the next decision and cleared after success.  
+#### DataTable columns: Applicant (user_id), Category (CATEGORY_LABELS, plus " (cancellation)" when kind is "cancellation"), Dates, Days, Purpose, Stage, Unit Head recommendation, Actions.  
+#### Actions depend on the stage (DESIGN.md "Workflow"):  
+#### - stage "unit_head" and category "CL" or "RH": "Approve" (decision "approve") and "Reject" ("reject");  
+#### - stage "unit_head" and any other category: "Recommend" ("recommended") and "Not recommended" ("not_recommended");  
+#### - stage "establishment": "Verify" ("verify");  
+#### - stage "sanction": "Approve" ("approve") and "Reject" ("reject").  
+#### Each button calls useDecide().mutate({ id, decision, remark }). Use a helper function actionsFor(row: LeaveApplication): { label: string; decision: Decision; color: string }[] to keep the render small.  
+#### If useInbox() has an error, render <ErrorState error={error} />.  
+####   
+#### Fusion uses Mantine 7: use leftSection (not leftIcon), gap (not spacing), justify (not position), and the shared components in client/src/ui/components (read-only). DataTable needs the props rows, columns, loading, rowKey and empty ({ title, description }). Every mutation shows notifications.show({ color: "green", ... }) on success and notifications.show({ color: "red", title: "...", message: errorMessage(e) }) on error.  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/ApprovalsPage.tsx
+```typescript
+import { useState } from "react";
+import { Button, Card, Container, Group, TextInput } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+
+import { errorMessage } from "../../../lib/http";
+import { DataTable } from "../../../ui/components/DataTable";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { CATEGORY_LABELS, useDecide, useInbox, type Decision, type LeaveApplication } from "../api";
+
+export default function ApprovalsPage() {
+  const { data, isPending, error } = useInbox();
+  const [remark, setRemark] = useState("");
+
+  if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
+
+  function handleDecision(id: number, decision: Decision, remarkValue: string) {
+    useDecide.mutate({ id, decision, remark: remarkValue }, {
+      onSuccess: () => {
+        notifications.show({
+          color: "green",
+          title: "Success",
+          message: `Decision recorded for application ${id}.`,
+        });
+        setRemark("");
+      },
+      onError: (e) => {
+        notifications.show({
+          color: "red",
+          title: "Error",
+          message: errorMessage(e),
+        });
+      },
+    });
+  }
+
+  const actionsFor = (app: LeaveApplication): { label: string; decision: Decision; color: string }[] => {
+    switch (app.stage) {
+      case "unit_head":
+        if (app.category === "CL" || app.category === "RH") {
+          return [
+            { label: "Approve", decision: "approve", color: "blue" },
+            { label: "Reject", decision: "reject", color: "red" },
+          ];
+        }
+        return [
+          { label: "Recommend", decision: "recommended", color: "orange" },
+          { label: "Not recommended", decision: "not_recommended", color: "gray" },
+        ];
+      case "establishment":
+        return [{ label: "Verify", decision: "verify", color: "indigo" }];
+      case "sanction":
+        return [
+          { label: "Approve", decision: "approve", color: "blue" },
+          { label: "Reject", decision: "reject", color: "red" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const columns = [
+    { key: "applicant", header: "Applicant" },
+    { key: "category", header: "Category" },
+    { key: "start_date", header: "Dates" },
+    { key: "days", header: "Days" },
+    { key: "purpose", header: "Purpose" },
+    { key: "stage", header: "Stage" },
+    { key: "unit_head_recommendation", header: "Unit Head recommendation" },
+    { key: "actions", header: "Actions" },
+  ];
+
+  const rows = data?.results || [];
+
+  return (
+    <Container size="xl">
+      <PageHeader
+        title="Approvals Inbox"
+        subtitle="Requests awaiting your decision"
+      />
+      <TextInput
+        label="Remark (optional)"
+        value={remark}
+        onChange={(e) => setRemark(e.target.value)}
+        placeholder="Add a remark for the decision..."
+        clearable
+      />
+      {rows.length === 0 ? (
+        <Card padding="lg">
+          <Text>No pending approvals</Text>
+        </Card>
+      ) : (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          loading={isPending}
+          rowKey={(row: LeaveApplication) => row.id}
+          empty={{ title: "No applications found", description: "Check back later for updates." }}
+        >
+          {(row: LeaveApplication) => {
+            const appCategory = row.category;
+            const categoryLabel = appCategory === "cancellation" ? `${appCategory.toUpperCase()} (cancellation)` : CATEGORY_LABELS[appCategory];
+            const startDate = new Date(row.start_date).toLocaleDateString();
+            const endDate = new Date(row.end_date).toLocaleDateString();
+            const daysValue = row.days;
+            const purpose = row.purpose || "—";
+            const stageLabel = row.stage.replace(/_/g, " ");
+            const unitHeadRec = row.unit_head_recommendation || "—";
+
+            return (
+              <td key="actions">
+                {actionsFor(row).map((action) => (
+                  <Button
+                    key={action.decision}
+                    color={action.color}
+                    onClick={() => handleDecision(row.id, action.decision, remark)}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </td>
+            );
+          }}
+        </DataTable>
+      )}
+    </Container>
+  );
+}
+```
+
+> Tokens: 7.5k sent, 1.0k received.  
+> Applied edit to client/src/modules/leave/pages/ApprovalsPage.tsx  
