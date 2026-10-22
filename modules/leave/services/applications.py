@@ -1,3 +1,7 @@
+from datetime import date
+from decimal import Decimal
+from typing import Optional
+
 from django.db import transaction
 
 from core.api.exceptions import BadRequestError, NotFoundError
@@ -117,8 +121,6 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
     Validates eligibility, balance, overlaps, and substitutes.
     Routes the application to the appropriate approver.
     """
-    from datetime import date as DateType
-    
     category = data["category"]
     start_date = data["start_date"]
     end_date = data["end_date"]
@@ -180,47 +182,58 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
                 continue
 
         # Set stage to SUBSTITUTE
-        app, created = LeaveApplication.objects.create(
+        line = ReportingLine.objects.filter(user_id=user_id).first()
+        if line is None:
+            raise LeaveError("No reporting line configured.")
+
+        app = LeaveApplication.objects.create(
             user_id=user_id,
             kind=RequestKind.LEAVE.value,
             category=category,
             start_date=start_date,
             end_date=end_date,
             half_day=half_day,
+            days=days,
             purpose=purpose,
             station_leave=station_leave,
             station_address=station_address,
             substitute_id=substitute_id,
-            unit_head_id=ReportingLine.objects.get(user_id=user_id).unit_head_id,
-            establishment_id=ReportingLine.objects.get(user_id=user_id).establishment_id,
-            sanctioning_authority_id=ReportingLine.objects.get(user_id=user_id).sanctioning_authority_id,
+            unit_head_id=line.unit_head_id,
+            establishment_id=line.establishment_id,
+            sanctioning_authority_id=line.sanctioning_authority_id,
+            status=Status.PENDING,
         )
 
         app.stage = Stage.SUBSTITUTE.value
         app.assignee_id = substitute_id
         app.substitute_status = SubstituteStatus.PENDING.value
+        app.save()
     else:
         # No substitute nominated
-        app, created = LeaveApplication.objects.create(
+        line = ReportingLine.objects.filter(user_id=user_id).first()
+        if line is None:
+            raise LeaveError("No reporting line configured.")
+
+        app = LeaveApplication.objects.create(
             user_id=user_id,
             kind=RequestKind.LEAVE.value,
             category=category,
             start_date=start_date,
             end_date=end_date,
             half_day=half_day,
+            days=days,
             purpose=purpose,
             station_leave=station_leave,
             station_address=station_address,
             substitute_id=None,
-            unit_head_id=ReportingLine.objects.get(user_id=user_id).unit_head_id,
-            establishment_id=ReportingLine.objects.get(user_id=user_id).establishment_id,
-            sanctioning_authority_id=ReportingLine.objects.get(user_id=user_id).sanctioning_authority_id,
+            unit_head_id=line.unit_head_id,
+            establishment_id=line.establishment_id,
+            sanctioning_authority_id=line.sanctioning_authority_id,
+            status=Status.PENDING,
         )
 
-    # 6. Load ReportingLine (BR-EL-018) - Already done above via create defaults
-    
-    # 7. Route to approver (BR-EL-015, BR-EL-020)
-    route_to_approver(app)
+        app.substitute_status = SubstituteStatus.NOT_REQUIRED.value
+        route_to_approver(app)
 
     # Log action
     log_action(app, user_id, "apply", f"Leave application submitted for {category} leave.")
