@@ -102,7 +102,7 @@ function asList<T>(data: T[] | { results: T[] }): T[] {
 export function useMyApplications() {
   return useQuery({
     queryKey: ["leave", "applications"],
-    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+    queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/applications/")).data),
   });
 }
 
@@ -110,7 +110,7 @@ export function useMyApplications() {
 export function useApplicationDetail(id: number) {
   return useQuery({
     queryKey: ["leave", "application", id],
-    queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`).data),
+    queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`)).data,
   });
 }
 
@@ -118,7 +118,7 @@ export function useApplicationDetail(id: number) {
 export function useInbox() {
   return useQuery({
     queryKey: ["leave", "inbox"],
-    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+    queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/inbox/")).data),
   });
 }
 
@@ -126,7 +126,7 @@ export function useInbox() {
 export function useBalances(year: number) {
   return useQuery({
     queryKey: ["leave", "balances", year],
-    queryFn: async () => asList(await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })),
+    queryFn: async () => asList((await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })).data),
   });
 }
 

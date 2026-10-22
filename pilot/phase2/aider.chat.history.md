@@ -7056,3 +7056,119 @@ class ReportingLineView(APIView):
 
 > Tokens: 5.5k sent, 1.2k received.  
 > Applied edit to modules/leave/api/views.py  
+
+# aider chat started at 2026-10-23 00:45:18
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/api.ts --message-file pilot/phase2/prompts/018a-client-api-precedence.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/api.ts to the chat.  
+
+#### Task 010b did not fix item 1: tsc still reports TS2339/TS2345 on four lines because `.data` is read from the Promise instead of from the awaited response. Fix only these four lines, with four SEARCH/REPLACE edits (the parentheses must close right after the http.get(...) call, before .data):  
+####   
+#### 1. In useMyApplications:  
+####     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),  
+#### becomes  
+####     queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/applications/")).data),  
+####   
+#### 2. In useApplicationDetail:  
+####     queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`).data),  
+#### becomes  
+####     queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`)).data,  
+####   
+#### 3. In useInbox:  
+####     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),  
+#### becomes  
+####     queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/inbox/")).data),  
+####   
+#### 4. In useBalances:  
+####     queryFn: async () => asList(await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })),  
+#### becomes  
+####     queryFn: async () => asList((await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })).data),  
+####   
+#### Do not change anything else.  
+
+To fix the TypeScript errors reported by TSC, we need to ensure that `.data` is accessed on the awaited Promise object returned by `http.get(...)`, rather than trying to access `.data` on the unresolved Promise itself. This involves wrapping the `http.get(...)` call in parentheses before accessing `.data`.
+
+Here are the four *SEARCH/REPLACE* blocks for `client/src/modules/leave/api.ts`:
+
+client/src/modules/leave/api.ts
+```typescript
+<<<<<<< SEARCH
+export function useMyApplications() {
+  return useQuery({
+    queryKey: ["leave", "applications"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+  });
+}
+=======
+export function useMyApplications() {
+  return useQuery({
+    queryKey: ["leave", "applications"],
+    queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/applications/")).data),
+  });
+}
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/api.ts
+```typescript
+<<<<<<< SEARCH
+export function useApplicationDetail(id: number) {
+  return useQuery({
+    queryKey: ["leave", "application", id],
+    queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`).data),
+  });
+}
+=======
+export function useApplicationDetail(id: number) {
+  return useQuery({
+    queryKey: ["leave", "application", id],
+    queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`)).data,
+  });
+}
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/api.ts
+```typescript
+<<<<<<< SEARCH
+export function useInbox() {
+  return useQuery({
+    queryKey: ["leave", "inbox"],
+    queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+  });
+}
+=======
+export function useInbox() {
+  return useQuery({
+    queryKey: ["leave", "inbox"],
+    queryFn: async () => asList((await http.get<LeaveApplication[]>("/leave/inbox/")).data),
+  });
+}
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/api.ts
+```typescript
+<<<<<<< SEARCH
+export function useBalances(year: number) {
+  return useQuery({
+    queryKey: ["leave", "balances", year],
+    queryFn: async () => asList(await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })),
+  });
+}
+=======
+export function useBalances(year: number) {
+  return useQuery({
+    queryKey: ["leave", "balances", year],
+    queryFn: async () => asList((await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })).data),
+  });
+}
+>>>>>>> REPLACE
+```
+
+> Tokens: 4.8k sent, 596 received.  
+> Applied edit to client/src/modules/leave/api.ts  
