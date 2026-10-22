@@ -25,7 +25,7 @@ export interface LeaveAction {
   id: number;
   actor_id: number;
   action: string;
-  remark: string | null;
+  remark: string;
   created_at: string;
 }
 
@@ -35,7 +35,7 @@ export interface LeaveApplication {
   id: number;
   user_id: number;
   kind: "leave" | "cancellation";
-  parent: LeaveApplication | null;
+  parent: number | null;
   category: LeaveCategory;
   start_date: string; // ISO date string
   end_date: string;   // ISO date string
@@ -43,7 +43,7 @@ export interface LeaveApplication {
   days: string;       // String representation of Decimal
   purpose: string;
   station_leave: boolean;
-  station_address: string | null;
+  station_address: string;
   substitute_id: number | null;
   substitute_status: SubstituteStatus;
   unit_head_id: number | null;
@@ -55,7 +55,6 @@ export interface LeaveApplication {
   assignee_id: number | null;
   decided_at: string | null;
   created_at: string;
-  updated_at: string;
   actions: LeaveAction[];
 }
 
@@ -78,7 +77,7 @@ export interface ApplyInput {
   half_day: HalfDay;
   purpose: string;
   station_leave: boolean;
-  station_address: string | null;
+  station_address: string;
   substitute_id: number | null;
 }
 
@@ -111,7 +110,7 @@ export function useMyApplications() {
 export function useApplicationDetail(id: number) {
   return useQuery({
     queryKey: ["leave", "application", id],
-    queryFn: async () => await http.get<LeaveApplication>(`/leave/${id}/`).data,
+    queryFn: async () => (await http.get<LeaveApplication>(`/leave/applications/${id}/`).data),
   });
 }
 
@@ -127,7 +126,7 @@ export function useInbox() {
 export function useBalances(year: number) {
   return useQuery({
     queryKey: ["leave", "balances", year],
-    queryFn: async () => asList(await http.get<LeaveBalance[]>(`/leave/balances/${year}/`, { params: { year } })).data,
+    queryFn: async () => asList(await http.get<LeaveBalance[]>("/leave/balances/", { params: { year } })),
   });
 }
 
@@ -148,11 +147,11 @@ export function useApply() {
 }
 
 /** Withdraw an application. */
-export function useWithdraw(id: number) {
+export function useWithdraw() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const response = await http.post(`/leave/${id}/withdraw/`, {});
+    mutationFn: async (vars: { id: number }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/withdraw/`, {});
       return response.data;
     },
     onSuccess: () => {
@@ -162,11 +161,11 @@ export function useWithdraw(id: number) {
 }
 
 /** Cancel an approved leave. */
-export function useCancel(id: number) {
+export function useCancel() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const response = await http.post(`/leave/${id}/cancel/`, {});
+    mutationFn: async (vars: { id: number }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/cancel/`, {});
       return response.data;
     },
     onSuccess: () => {
@@ -176,11 +175,11 @@ export function useCancel(id: number) {
 }
 
 /** Respond to a substitute request. */
-export function useSubstituteResponse(id: number) {
+export function useSubstituteResponse() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { accept: boolean }) => {
-      const response = await http.post(`/leave/${id}/substitute-response/`, vars);
+    mutationFn: async (vars: { id: number; accept: boolean }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/substitute-response/`, vars);
       return response.data;
     },
     onSuccess: () => {
@@ -190,11 +189,11 @@ export function useSubstituteResponse(id: number) {
 }
 
 /** Nominate a replacement for a substitute. */
-export function useReplaceSubstitute(id: number) {
+export function useReplaceSubstitute() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { substitute_id: number }) => {
-      const response = await http.post(`/leave/${id}/replace-substitute/`, vars);
+    mutationFn: async (vars: { id: number; substitute_id: number }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/replace-substitute/`, vars);
       return response.data;
     },
     onSuccess: () => {
@@ -204,11 +203,11 @@ export function useReplaceSubstitute(id: number) {
 }
 
 /** Make a decision on an application (approve/reject/recommend). */
-export function useDecide(id: number) {
+export function useDecide() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { decision: Decision; remark: string }) => {
-      const response = await http.post(`/leave/${id}/decide/`, vars);
+    mutationFn: async (vars: { id: number; decision: Decision; remark: string }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/decide/`, vars);
       return response.data;
     },
     onSuccess: () => {
