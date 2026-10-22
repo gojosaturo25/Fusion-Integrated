@@ -912,3 +912,233 @@ modules/leave/services/__init__.py
 > Tokens: 18k sent, 3.2k received.  
 > Applied edit to modules/leave/services/applications.py  
 > Applied edit to modules/leave/services/__init__.py  
+
+# aider chat started at 2026-10-22 22:24:50
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/domain/policy.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/002b-policy-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 254 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/domain/policy.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review of policy.py from task 002 found these defects. Fix only these, with SEARCH/REPLACE edits:  
+####   
+#### 1. count_days() is wrong for CL, RH and SCL. It sets days to the total calendar days and then ADDS one for every weekday again, so Monday-Tuesday gives 4 instead of 2. It also advances the loop with `current += date(1)`, which raises TypeError. Fix: for categories not in CONTINUOUS, start days at Decimal("0") and count only dates with weekday() < 5, advancing with `current += timedelta(days=1)` (import timedelta from datetime). For CONTINUOUS categories keep days = (end - start).days + 1.  
+#### 2. For a half-day request (half_day != "none"), return Decimal("0.5") directly (BR-EL-010) instead of multiplying.  
+#### 3. In ENTITLEMENT, the faculty_allowed, staff_allowed and carries_forward values must be the booleans True/False, not Decimal("1")/Decimal("0").  
+#### 4. Remove the unused ROUND_HALF_UP import.  
+#### 5. entitlement() returns None for any kind other than "faculty" or "staff", so an applicant whose kind is "employee" or "" gets no leave. Per DESIGN.md, kind "faculty" means faculty and ANY other kind means staff: replace the `elif kind == "staff":` branch with an `else:` branch that uses staff_allowed, and remove the final `return None`.  
+####   
+#### Do not change anything else.  
+
+To fix the defects found in `modules/leave/domain/policy.py`, I will perform the following changes:
+
+1.  Remove the unused `ROUND_HALF_UP` import and add `timedelta`.
+2.  Fix `ENTITLEMENT` to use boolean `True`/`False` instead of `Decimal("1")`/`Decimal("0")`.
+3.  Fix `count_days()` logic:
+    *   For non-continuous categories (CL, RH, SCL), initialize days to 0 and iterate using `timedelta`, counting only weekdays.
+    *   For continuous categories (EL, COL, VL), calculate days directly without iteration.
+    *   Return `Decimal("0.5")` immediately for half-day requests instead of multiplying at the end.
+4.  Fix `entitlement()` to treat any kind other than "faculty" as "staff".
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/domain/policy.py
+```python
+<<<<<<< SEARCH
+from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Dict, Optional
+
+
+class PolicyError(Exception):
+=======
+from datetime import date, timedelta
+from decimal import Decimal
+from typing import Dict, Optional
+
+
+class PolicyError(Exception):
+>>>>>>> REPLACE
+```
+
+modules/leave/domain/policy.py
+<<<<<<< SEARCH
+ENTITLEMENT: Dict[str, tuple] = {
+    "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
+    "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
+    "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
+    "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
+    "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
+    "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+}
+=======
+ENTITLEMENT: Dict[str, tuple] = {
+    "CL": (Decimal("8"), True, True, False),  # BR-EL-002
+    "RH": (Decimal("2"), True, True, False),  # BR-EL-003
+    "SCL": (Decimal("15"), True, True, False),  # BR-EL-004
+    "EL": (Decimal("30"), False, True, True),  # BR-EL-005
+    "COL": (Decimal("20"), True, True, True),  # BR-EL-009
+    "VL": (Decimal("60"), True, False, False),  # BR-EL-006
+}
+>>>>>>> REPLACE
+```
+
+modules/leave/domain/policy.py
+<<<<<<< SEARCH
+def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+    """
+    Calculate the number of leave days consumed.
+    
+    BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+    BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+               CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+    
+    Note: Since no external calendar service is imported, we assume the input dates represent
+    the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+    standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+    """
+    if start > end:
+        raise PolicyError("End date must be on or after start date")  # Generic validation
+    
+    if half_day != "none" and category not in ("CL",):
+        raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+    
+    if half_day != "none" and start != end:
+        raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+    
+    days = Decimal(str((end - start).days + 1))
+    
+    category_upper = category.upper()
+    
+    if category_upper in CONTINUOUS:
+        # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+        # No filtering for weekends/holidays.
+        pass
+    else:
+        # CL, RH, SCL: Count Monday to Friday only.
+        # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+        current = start
+        while current <= end:
+            if current.weekday() < 5:  # Monday=0 to Friday=4
+                days += Decimal("1")
+            current += date(1)
+    
+    if half_day != "none":
+        # Apply half-day consumption (0.5 day)
+        days *= Decimal("0.5")
+    
+    return days
+=======
+def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+    """
+    Calculate the number of leave days consumed.
+    
+    BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+    BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+               CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+    
+    Note: Since no external calendar service is imported, we assume the input dates represent
+    the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+    standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+    """
+    if start > end:
+        raise PolicyError("End date must be on or after start date")  # Generic validation
+    
+    if half_day != "none" and category not in ("CL",):
+        raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+    
+    if half_day != "none" and start != end:
+        raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+    
+    category_upper = category.upper()
+    
+    if category_upper in CONTINUOUS:
+        # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+        # No filtering for weekends/holidays.
+        days = Decimal(str((end - start).days + 1))
+    else:
+        # CL, RH, SCL: Count Monday to Friday only.
+        # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+        days = Decimal("0")
+        current = start
+        while current <= end:
+            if current.weekday() < 5:  # Monday=0 to Friday=4
+                days += Decimal("1")
+            current += timedelta(days=1)
+    
+    if half_day != "none":
+        # Apply half-day consumption (0.5 day) directly per BR-EL-010
+        return Decimal("0.5")
+    
+    return days
+>>>>>>> REPLACE
+```
+
+modules/leave/domain/policy.py
+<<<<<<< SEARCH
+def entitlement(category: str, kind: str) -> Optional[Decimal]:
+    """
+    Return the annual leave entitlement for a category and kind.
+    
+    - kind="faculty" returns faculty allowance (or None if not eligible).
+    - kind="staff" returns staff allowance (or None if not eligible).
+    - Returns None if the category is not supported or the user kind is ineligible.
+    
+    BR-EL-001: Only supported categories allowed.
+    BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+    """
+    if category not in CATEGORIES:
+        raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+    
+    days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+    
+    if kind == "faculty":
+        if faculty_allowed:
+            return days_per_year
+        else:
+            return None  # EL is not for faculty
+    elif kind == "staff":
+        if staff_allowed:
+            return days_per_year
+        else:
+            return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+    
+    return None
+=======
+def entitlement(category: str, kind: str) -> Optional[Decimal]:
+    """
+    Return the annual leave entitlement for a category and kind.
+    
+    - kind="faculty" returns faculty allowance (or None if not eligible).
+    - Any other kind (e.g., "staff", "employee", "") is treated as staff.
+    - Returns None if the category is not supported or the user kind is ineligible.
+    
+    BR-EL-001: Only supported categories allowed.
+    BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+    """
+    if category not in CATEGORIES:
+        raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+    
+    days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+    
+    is_faculty = kind == "faculty"
+    
+    if is_faculty:
+        if faculty_allowed:
+            return days_per_year
+        else:
+            return None  # EL is not for faculty
+    else:
+        # Any kind other than "faculty" is treated as staff
+        if staff_allowed:
+            return days_per_year
+        else:
+            return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+>>>>>>> REPLACE
+```
+
+> Tokens: 6.1k sent, 2.1k received.  
+> Applied edit to modules/leave/domain/policy.py  

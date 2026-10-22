@@ -3,8 +3,8 @@ Leave Policy Rules (BR-EL-001..015).
 Pure Python implementation without Django/DRF/Celery imports.
 """
 
-from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import date, timedelta
+from decimal import Decimal
 from typing import Dict, Optional
 
 
@@ -16,12 +16,12 @@ class PolicyError(Exception):
 CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
 
 ENTITLEMENT: Dict[str, tuple] = {
-    "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
-    "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
-    "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
-    "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
-    "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
-    "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+    "CL": (Decimal("8"), True, True, False),  # BR-EL-002
+    "RH": (Decimal("2"), True, True, False),  # BR-EL-003
+    "SCL": (Decimal("15"), True, True, False),  # BR-EL-004
+    "EL": (Decimal("30"), False, True, True),  # BR-EL-005
+    "COL": (Decimal("20"), True, True, True),  # BR-EL-009
+    "VL": (Decimal("60"), True, False, False),  # BR-EL-006
 }
 
 CONTINUOUS = {"EL", "COL", "VL"}
@@ -32,7 +32,7 @@ def entitlement(category: str, kind: str) -> Optional[Decimal]:
     Return the annual leave entitlement for a category and kind.
     
     - kind="faculty" returns faculty allowance (or None if not eligible).
-    - kind="staff" returns staff allowance (or None if not eligible).
+    - Any other kind (e.g., "staff", "employee", "") is treated as staff.
     - Returns None if the category is not supported or the user kind is ineligible.
     
     BR-EL-001: Only supported categories allowed.
@@ -43,18 +43,19 @@ def entitlement(category: str, kind: str) -> Optional[Decimal]:
     
     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
     
-    if kind == "faculty":
+    is_faculty = kind == "faculty"
+    
+    if is_faculty:
         if faculty_allowed:
             return days_per_year
         else:
             return None  # EL is not for faculty
-    elif kind == "staff":
+    else:
+        # Any kind other than "faculty" is treated as staff
         if staff_allowed:
             return days_per_year
         else:
             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
-    
-    return None
 
 
 def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
@@ -78,26 +79,25 @@ def count_days(category: str, start: date, end: date, half_day: str = "none") ->
     if half_day != "none" and start != end:
         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
     
-    days = Decimal(str((end - start).days + 1))
-    
     category_upper = category.upper()
     
     if category_upper in CONTINUOUS:
         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
         # No filtering for weekends/holidays.
-        pass
+        days = Decimal(str((end - start).days + 1))
     else:
         # CL, RH, SCL: Count Monday to Friday only.
         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+        days = Decimal("0")
         current = start
         while current <= end:
             if current.weekday() < 5:  # Monday=0 to Friday=4
                 days += Decimal("1")
-            current += date(1)
+            current += timedelta(days=1)
     
     if half_day != "none":
-        # Apply half-day consumption (0.5 day)
-        days *= Decimal("0.5")
+        # Apply half-day consumption (0.5 day) directly per BR-EL-010
+        return Decimal("0.5")
     
     return days
 

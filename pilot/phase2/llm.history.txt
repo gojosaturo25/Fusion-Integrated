@@ -5116,3 +5116,740 @@ ASSISTANT modules/leave/services/__init__.py
 ASSISTANT ```python
 ASSISTANT """Leave Management Service Layer."""
 ASSISTANT ```
+TO LLM 2026-10-22T22:24:52
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.0.1-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-10-22
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/leave/api.ts:
+USER ⋮
+USER │export interface LeaveApplication {
+USER │  id: number;
+USER │  applicant_id: number;
+USER │  leave_type: string;
+USER │  start_date: string; // ISO date string
+USER │  end_date: string;   // ISO date string
+USER │  reason: string;
+USER │  status: ApplicationStatus;
+USER │  created_at: string;
+USER │  updated_at: string;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER modules/leave/models.py:
+USER ⋮
+USER │class Status(models.TextChoices):
+USER ⋮
+USER │class SubstituteStatus(models.TextChoices):
+USER ⋮
+USER │class ReportingLine(TimeStampedModel):
+USER │    """The reporting line for a leave application."""
+USER │
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveApplication(UserScopedModel, TimeStampedModel):
+USER │    """A leave application submitted by an employee."""
+USER │
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveBalance(UserScopedModel, TimeStampedModel):
+USER │    """Per-user, per-year, per-category leave balance."""
+USER │
+USER ⋮
+USER │    @property
+USER │    def available(self) -> Decimal:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveAction(models.Model):
+USER │    """Append-only history of actions taken on leave applications and balances."""
+USER │
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/models/policy.py:
+USER ⋮
+USER │class PlacementPolicy(TimeStampedModel):
+USER │    """One season of the signed Placement Policy. Switching rules live in
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class PolicyCategory(TimeStampedModel):
+USER │    """One category within a discipline group (policy rule 2).
+USER │
+USER │        CSE/ECE  Cat 1  <=10 LPA      1.5x, one switch then out
+USER │                 Cat 2  10-16.5 LPA   2x,   one switch then out
+USER │        Core     Cat 1  6.5-11.5 LPA  1.5x and must exceed 11.5
+USER │        Design   Cat 1  <=7.5 LPA     1.5x, out once above 12
+USER │                 Cat 2  7.5-12 LPA    1.5x, out once above 12
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/domain/policy.py
+USER ```
+USER """
+USER Leave Policy Rules (BR-EL-001..015).
+USER Pure Python implementation without Django/DRF/Celery imports.
+USER """
+USER 
+USER from datetime import date
+USER from decimal import Decimal, ROUND_HALF_UP
+USER from typing import Dict, Optional
+USER 
+USER 
+USER class PolicyError(Exception):
+USER     """Domain policy error."""
+USER     pass
+USER 
+USER 
+USER CATEGORIES = ("CL", "RH", "SCL", "EL", "COL", "VL")
+USER 
+USER ENTITLEMENT: Dict[str, tuple] = {
+USER     "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
+USER     "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
+USER     "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
+USER     "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
+USER     "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
+USER     "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+USER }
+USER 
+USER CONTINUOUS = {"EL", "COL", "VL"}
+USER 
+USER 
+USER def entitlement(category: str, kind: str) -> Optional[Decimal]:
+USER     """
+USER     Return the annual leave entitlement for a category and kind.
+USER     
+USER     - kind="faculty" returns faculty allowance (or None if not eligible).
+USER     - kind="staff" returns staff allowance (or None if not eligible).
+USER     - Returns None if the category is not supported or the user kind is ineligible.
+USER     
+USER     BR-EL-001: Only supported categories allowed.
+USER     BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+USER     """
+USER     if category not in CATEGORIES:
+USER         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+USER     
+USER     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+USER     
+USER     if kind == "faculty":
+USER         if faculty_allowed:
+USER             return days_per_year
+USER         else:
+USER             return None  # EL is not for faculty
+USER     elif kind == "staff":
+USER         if staff_allowed:
+USER             return days_per_year
+USER         else:
+USER             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+USER     
+USER     return None
+USER 
+USER 
+USER def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+USER     """
+USER     Calculate the number of leave days consumed.
+USER     
+USER     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+USER     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+USER                CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+USER     
+USER     Note: Since no external calendar service is imported, we assume the input dates represent
+USER     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+USER     standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+USER     """
+USER     if start > end:
+USER         raise PolicyError("End date must be on or after start date")  # Generic validation
+USER     
+USER     if half_day != "none" and category not in ("CL",):
+USER         raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+USER     
+USER     if half_day != "none" and start != end:
+USER         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+USER     
+USER     days = Decimal(str((end - start).days + 1))
+USER     
+USER     category_upper = category.upper()
+USER     
+USER     if category_upper in CONTINUOUS:
+USER         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+USER         # No filtering for weekends/holidays.
+USER         pass
+USER     else:
+USER         # CL, RH, SCL: Count Monday to Friday only.
+USER         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+USER         current = start
+USER         while current <= end:
+USER             if current.weekday() < 5:  # Monday=0 to Friday=4
+USER                 days += Decimal("1")
+USER             current += date(1)
+USER     
+USER     if half_day != "none":
+USER         # Apply half-day consumption (0.5 day)
+USER         days *= Decimal("0.5")
+USER     
+USER     return days
+USER 
+USER 
+USER def overlaps(a_start: date, a_end: date, a_half: str, b_start: date, b_end: date, b_half: str) -> bool:
+USER     """
+USER     Check if two leave requests overlap.
+USER     
+USER     True when the date ranges intersect, except a single shared date where both halves are set and different.
+USER     BR-EL-012: Applicant non-overlap with half-day CL exception.
+USER     """
+USER     # Determine if ranges intersect
+USER     # Intersection exists if: start_a <= end_b AND start_b <= end_a
+USER     intersects = (a_start <= b_end) and (b_start <= a_end)
+USER     
+USER     if not intersects:
+USER         return False
+USER     
+USER     # Check for the half-day exception on the same date
+USER     # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
+USER     # If both are on the same day and have different halves, they do NOT overlap.
+USER     if a_start == b_start:
+USER         if a_half != "none" and b_half != "none":
+USER             # Both are half-days on the same day
+USER             if a_half != b_half:
+USER                 return False  # Different halves on same date -> non-overlapping
+USER     
+USER     return True
+USER 
+USER 
+USER def unit_head_is_final(category: str) -> bool:
+USER     """
+USER     Determine if Unit Head has final decision power.
+USER     
+USER     BR-EL-016: True for CL and RH.
+USER     BR-EL-017: Others only get a recommendation.
+USER     """
+USER     return category in ("CL", "RH")
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review of policy.py from task 002 found these defects. Fix only these, with SEARCH/REPLACE edits:
+USER 
+USER 1. count_days() is wrong for CL, RH and SCL. It sets days to the total calendar days and then ADDS one for every weekday again, so Monday-Tuesday gives 4 instead of 2. It also advances the loop with `current += date(1)`, which raises TypeError. Fix: for categories not in CONTINUOUS, start days at Decimal("0") and count only dates with weekday() < 5, advancing with `current += timedelta(days=1)` (import timedelta from datetime). For CONTINUOUS categories keep days = (end - start).days + 1.
+USER 2. For a half-day request (half_day != "none"), return Decimal("0.5") directly (BR-EL-010) instead of multiplying.
+USER 3. In ENTITLEMENT, the faculty_allowed, staff_allowed and carries_forward values must be the booleans True/False, not Decimal("1")/Decimal("0").
+USER 4. Remove the unused ROUND_HALF_UP import.
+USER 5. entitlement() returns None for any kind other than "faculty" or "staff", so an applicant whose kind is "employee" or "" gets no leave. Per DESIGN.md, kind "faculty" means faculty and ANY other kind means staff: replace the `elif kind == "staff":` branch with an `else:` branch that uses staff_allowed, and remove the final `return None`.
+USER 
+USER Do not change anything else.
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-10-22T22:29:42
+ASSISTANT To fix the defects found in `modules/leave/domain/policy.py`, I will perform the following changes:
+ASSISTANT 
+ASSISTANT 1.  Remove the unused `ROUND_HALF_UP` import and add `timedelta`.
+ASSISTANT 2.  Fix `ENTITLEMENT` to use boolean `True`/`False` instead of `Decimal("1")`/`Decimal("0")`.
+ASSISTANT 3.  Fix `count_days()` logic:
+ASSISTANT     *   For non-continuous categories (CL, RH, SCL), initialize days to 0 and iterate using `timedelta`, counting only weekdays.
+ASSISTANT     *   For continuous categories (EL, COL, VL), calculate days directly without iteration.
+ASSISTANT     *   Return `Decimal("0.5")` immediately for half-day requests instead of multiplying at the end.
+ASSISTANT 4.  Fix `entitlement()` to treat any kind other than "faculty" as "staff".
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT modules/leave/domain/policy.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from datetime import date
+ASSISTANT from decimal import Decimal, ROUND_HALF_UP
+ASSISTANT from typing import Dict, Optional
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class PolicyError(Exception):
+ASSISTANT =======
+ASSISTANT from datetime import date, timedelta
+ASSISTANT from decimal import Decimal
+ASSISTANT from typing import Dict, Optional
+ASSISTANT 
+ASSISTANT 
+ASSISTANT class PolicyError(Exception):
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/domain/policy.py
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT ENTITLEMENT: Dict[str, tuple] = {
+ASSISTANT     "CL": (Decimal("8"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-002
+ASSISTANT     "RH": (Decimal("2"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-003
+ASSISTANT     "SCL": (Decimal("15"), Decimal("1"), Decimal("1"), Decimal("0")),  # BR-EL-004
+ASSISTANT     "EL": (Decimal("30"), Decimal("0"), Decimal("1"), Decimal("1")),  # BR-EL-005
+ASSISTANT     "COL": (Decimal("20"), Decimal("1"), Decimal("1"), Decimal("1")),  # BR-EL-009
+ASSISTANT     "VL": (Decimal("60"), Decimal("1"), Decimal("0"), Decimal("0")),  # BR-EL-006
+ASSISTANT }
+ASSISTANT =======
+ASSISTANT ENTITLEMENT: Dict[str, tuple] = {
+ASSISTANT     "CL": (Decimal("8"), True, True, False),  # BR-EL-002
+ASSISTANT     "RH": (Decimal("2"), True, True, False),  # BR-EL-003
+ASSISTANT     "SCL": (Decimal("15"), True, True, False),  # BR-EL-004
+ASSISTANT     "EL": (Decimal("30"), False, True, True),  # BR-EL-005
+ASSISTANT     "COL": (Decimal("20"), True, True, True),  # BR-EL-009
+ASSISTANT     "VL": (Decimal("60"), True, False, False),  # BR-EL-006
+ASSISTANT }
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/domain/policy.py
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+ASSISTANT     """
+ASSISTANT     Calculate the number of leave days consumed.
+ASSISTANT     
+ASSISTANT     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+ASSISTANT     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+ASSISTANT                CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+ASSISTANT     
+ASSISTANT     Note: Since no external calendar service is imported, we assume the input dates represent
+ASSISTANT     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+ASSISTANT     standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+ASSISTANT     """
+ASSISTANT     if start > end:
+ASSISTANT         raise PolicyError("End date must be on or after start date")  # Generic validation
+ASSISTANT     
+ASSISTANT     if half_day != "none" and category not in ("CL",):
+ASSISTANT         raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     if half_day != "none" and start != end:
+ASSISTANT         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     days = Decimal(str((end - start).days + 1))
+ASSISTANT     
+ASSISTANT     category_upper = category.upper()
+ASSISTANT     
+ASSISTANT     if category_upper in CONTINUOUS:
+ASSISTANT         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+ASSISTANT         # No filtering for weekends/holidays.
+ASSISTANT         pass
+ASSISTANT     else:
+ASSISTANT         # CL, RH, SCL: Count Monday to Friday only.
+ASSISTANT         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+ASSISTANT         current = start
+ASSISTANT         while current <= end:
+ASSISTANT             if current.weekday() < 5:  # Monday=0 to Friday=4
+ASSISTANT                 days += Decimal("1")
+ASSISTANT             current += date(1)
+ASSISTANT     
+ASSISTANT     if half_day != "none":
+ASSISTANT         # Apply half-day consumption (0.5 day)
+ASSISTANT         days *= Decimal("0.5")
+ASSISTANT     
+ASSISTANT     return days
+ASSISTANT =======
+ASSISTANT def count_days(category: str, start: date, end: date, half_day: str = "none") -> Decimal:
+ASSISTANT     """
+ASSISTANT     Calculate the number of leave days consumed.
+ASSISTANT     
+ASSISTANT     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
+ASSISTANT     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
+ASSISTANT                CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+ASSISTANT     
+ASSISTANT     Note: Since no external calendar service is imported, we assume the input dates represent
+ASSISTANT     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
+ASSISTANT     standard work weeks (Mon-Fri) as per BR-EL-011 implication for non-continuous categories.
+ASSISTANT     """
+ASSISTANT     if start > end:
+ASSISTANT         raise PolicyError("End date must be on or after start date")  # Generic validation
+ASSISTANT     
+ASSISTANT     if half_day != "none" and category not in ("CL",):
+ASSISTANT         raise PolicyError(f"Half-day consumption only applies to CL. Category: {category}")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     if half_day != "none" and start != end:
+ASSISTANT         raise PolicyError("Half-day consumption only allowed for single-day requests")  # BR-EL-010
+ASSISTANT     
+ASSISTANT     category_upper = category.upper()
+ASSISTANT     
+ASSISTANT     if category_upper in CONTINUOUS:
+ASSISTANT         # BR-EL-011: EL, COL, VL count every calendar day inclusive.
+ASSISTANT         # No filtering for weekends/holidays.
+ASSISTANT         days = Decimal(str((end - start).days + 1))
+ASSISTANT     else:
+ASSISTANT         # CL, RH, SCL: Count Monday to Friday only.
+ASSISTANT         # Since no holiday calendar is available, we assume standard working days (Mon-Fri).
+ASSISTANT         days = Decimal("0")
+ASSISTANT         current = start
+ASSISTANT         while current <= end:
+ASSISTANT             if current.weekday() < 5:  # Monday=0 to Friday=4
+ASSISTANT                 days += Decimal("1")
+ASSISTANT             current += timedelta(days=1)
+ASSISTANT     
+ASSISTANT     if half_day != "none":
+ASSISTANT         # Apply half-day consumption (0.5 day) directly per BR-EL-010
+ASSISTANT         return Decimal("0.5")
+ASSISTANT     
+ASSISTANT     return days
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT modules/leave/domain/policy.py
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def entitlement(category: str, kind: str) -> Optional[Decimal]:
+ASSISTANT     """
+ASSISTANT     Return the annual leave entitlement for a category and kind.
+ASSISTANT     
+ASSISTANT     - kind="faculty" returns faculty allowance (or None if not eligible).
+ASSISTANT     - kind="staff" returns staff allowance (or None if not eligible).
+ASSISTANT     - Returns None if the category is not supported or the user kind is ineligible.
+ASSISTANT     
+ASSISTANT     BR-EL-001: Only supported categories allowed.
+ASSISTANT     BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+ASSISTANT     """
+ASSISTANT     if category not in CATEGORIES:
+ASSISTANT         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+ASSISTANT     
+ASSISTANT     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+ASSISTANT     
+ASSISTANT     if kind == "faculty":
+ASSISTANT         if faculty_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # EL is not for faculty
+ASSISTANT     elif kind == "staff":
+ASSISTANT         if staff_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+ASSISTANT     
+ASSISTANT     return None
+ASSISTANT =======
+ASSISTANT def entitlement(category: str, kind: str) -> Optional[Decimal]:
+ASSISTANT     """
+ASSISTANT     Return the annual leave entitlement for a category and kind.
+ASSISTANT     
+ASSISTANT     - kind="faculty" returns faculty allowance (or None if not eligible).
+ASSISTANT     - Any other kind (e.g., "staff", "employee", "") is treated as staff.
+ASSISTANT     - Returns None if the category is not supported or the user kind is ineligible.
+ASSISTANT     
+ASSISTANT     BR-EL-001: Only supported categories allowed.
+ASSISTANT     BR-EL-005: EL is for non-faculty only (faculty_allowed=False).
+ASSISTANT     """
+ASSISTANT     if category not in CATEGORIES:
+ASSISTANT         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
+ASSISTANT     
+ASSISTANT     days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+ASSISTANT     
+ASSISTANT     is_faculty = kind == "faculty"
+ASSISTANT     
+ASSISTANT     if is_faculty:
+ASSISTANT         if faculty_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # EL is not for faculty
+ASSISTANT     else:
+ASSISTANT         # Any kind other than "faculty" is treated as staff
+ASSISTANT         if staff_allowed:
+ASSISTANT             return days_per_year
+ASSISTANT         else:
+ASSISTANT             return None  # VL is not for staff (faculty_allowed=True, staff_allowed=False)
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
