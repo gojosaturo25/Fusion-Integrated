@@ -10,7 +10,7 @@ class LeaveActionSerializer(serializers.ModelSerializer):
 
 
 class LeaveApplicationSerializer(serializers.ModelSerializer):
-    actions = LeaveActionSerializer(many=True)
+    actions = LeaveActionSerializer(many=True, read_only=True)
 
     class Meta:
         model = LeaveApplication
@@ -38,11 +38,33 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
             "assignee_id",
             "decided_at",
             "created_at",
+            "actions",
         ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["user_id"].read_only = True
+        read_only_fields = (
+            "user_id",
+            "kind",
+            "parent",
+            "category",
+            "start_date",
+            "end_date",
+            "half_day",
+            "days",
+            "purpose",
+            "station_leave",
+            "station_address",
+            "substitute_id",
+            "substitute_status",
+            "unit_head_id",
+            "establishment_id",
+            "sanctioning_authority_id",
+            "unit_head_recommendation",
+            "stage",
+            "status",
+            "assignee_id",
+            "decided_at",
+            "created_at",
+            "actions",
+        )
 
 
 class ApplySerializer(serializers.Serializer):
