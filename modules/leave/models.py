@@ -67,7 +67,7 @@ class LeaveApplication(UserScopedModel, TimeStampedModel):
     """A leave application submitted by an employee."""
 
     kind = models.CharField(
-        max_length=10,
+        max_length=12,
         choices=RequestKind.choices,
         default=RequestKind.LEAVE,
         verbose_name="Request Kind",
