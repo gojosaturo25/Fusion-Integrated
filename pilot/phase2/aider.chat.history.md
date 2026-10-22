@@ -7779,3 +7779,233 @@ client/src/modules/leave/pages/SubstituteRequestsPage.tsx
 
 > Tokens: 5.4k sent, 1.0k received.  
 > Applied edit to client/src/modules/leave/pages/SubstituteRequestsPage.tsx  
+
+# aider chat started at 2026-10-23 01:05:29
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/MyLeavesPage.tsx --read client/src/modules/leave/api.ts --read client/src/ui/components/DataTable.tsx --message-file pilot/phase2/prompts/018f-my-leaves-page-retry.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/MyLeavesPage.tsx to the chat.  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+> Added client/src/ui/components/DataTable.tsx to the chat (read-only).  
+
+#### Task 018c applied part of its edits but also pasted a raw "<<<<<<< SEARCH" block into the JSX (tsc: "Merge conflict marker encountered"), and it did not apply items 5, 7 and 8: withdraw() still only shows a notification, cancel() still calls the useCancel hook inside a handler (hooks may only be called at the top of a component), the table still reads applicationsData?.results (the hook returns a plain array), and the cancel condition compares Date objects.  
+####   
+#### Rewrite the whole file. Keep the imports and the ReplaceSubstitute component EXACTLY as they are now (they are correct). Then write MyLeavesPage with this structure:  
+####   
+#### export default function MyLeavesPage() {  
+####   const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();  
+####   const { data: balancesData } = useBalances(new Date().getFullYear());  
+####   const withdrawMutation = useWithdraw();  
+####   const cancelMutation = useCancel();  
+####   const today = new Date().toISOString().slice(0, 10);  
+####   
+####   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;  
+####   
+####   function withdraw(app: LeaveApplication) {  
+####     withdrawMutation.mutate({ id: app.id }, {  
+####       onSuccess: () => notifications.show({ color: "gray", title: "Withdrawn", message: "Your application has been withdrawn." }),  
+####       onError: (e) => notifications.show({ color: "red", title: "Could not withdraw", message: errorMessage(e) }),  
+####     });  
+####   }  
+####   
+####   function cancel(app: LeaveApplication) {  
+####     cancelMutation.mutate({ id: app.id }, {  
+####       onSuccess: () => notifications.show({ color: "blue", title: "Cancellation requested", message: "Your cancellation request has been sent for approval." }),  
+####       onError: (e) => notifications.show({ color: "red", title: "Could not cancel", message: errorMessage(e) }),  
+####     });  
+####   }  
+####   
+####   return (  
+####     <Container size="xl">  
+####       <PageHeader title="My Leaves" subtitle="Your leave balances and requests" />  
+####       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">  
+####         {(balancesData ?? []).map((b: LeaveBalance) => ( ...one Card per balance, key={b.category}: label CATEGORY_LABELS[b.category], "Available {b.available} of {b.entitled}", "Used {b.used}"... ))}  
+####       </SimpleGrid>  
+####       <Card padding="lg">  
+####         <DataTable<LeaveApplication>  
+####           rows={applicationsData ?? []}  
+####           loading={appsPending}  
+####           rowKey={(r) => r.id}  
+####           minWidth={900}  
+####           columns={[ ...seven columns, each { key, header, render: (r) => ... } ... ]}  
+####           empty={{ title: "No leave requests yet", description: "Requests you apply for appear here." }}  
+####         />  
+####       </Card>  
+####     </Container>  
+####   );  
+#### }  
+####   
+#### The seven columns: Type (CATEGORY_LABELS[r.category] plus " (cancellation)" when r.kind === "cancellation"), Dates (`${r.start_date} to ${r.end_date}`), Days (r.days), Stage (r.stage.replace(/_/g, " ")), Status (<StatusBadge status={r.status} />), Substitute (<ReplaceSubstitute id={r.id} substituteId={r.substitute_id} status={r.substitute_status} />), and Actions: a Group with a "Withdraw" Button (size="xs", variant="subtle", onClick={() => withdraw(r)}) when r.status === "pending" && r.kind === "leave", and a "Cancel leave" Button (size="xs", variant="subtle", color="red", onClick={() => cancel(r)}) when r.status === "approved" && r.kind === "leave" && r.start_date > today.  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/MyLeavesPage.tsx
+```typescript
+import { useState } from "react";
+import { Button, Card, Container, Group, NumberInput, SimpleGrid, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+
+import { errorMessage } from "../../../lib/http";
+import { DataTable } from "../../../ui/components/DataTable";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { StatusBadge } from "../../../ui/components/StatusBadge";
+import {
+  CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,
+  type LeaveApplication,
+  type LeaveBalance,
+} from "../api";
+
+function ReplaceSubstitute({ id, substituteId, status }: { id: number; substituteId: number | null; status: string }) {
+  const [subId, setSubId] = useState<string>("");
+  const replace = useReplaceSubstitute();
+
+  function handleSubmit() {
+    if (!subId) return;
+    replace.mutate({ id, substitute_id: Number(subId) }, {
+      onSuccess: () => notifications.show({ color: "green", title: "Substitute nominated", message: "Your new substitute has been asked to confirm." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not nominate", message: errorMessage(e) }),
+    });
+  }
+
+  return (
+    <Group gap="xs">
+      {status === "declined" ? (
+        <>
+          <NumberInput
+            size="xs"
+            placeholder="User ID"
+            value={subId}
+            onChange={(v) => setSubId(String(v))}
+          />
+          <Button size="xs" onClick={handleSubmit}>
+            Nominate
+          </Button>
+        </>
+      ) : (
+        <Text size="sm">
+          {substituteId ? `Replaced by user ${substituteId}` : "-"}
+        </Text>
+      )}
+    </Group>
+  );
+}
+
+export default function MyLeavesPage() {
+  const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+  const { data: balancesData } = useBalances(new Date().getFullYear());
+  const withdrawMutation = useWithdraw();
+  const cancelMutation = useCancel();
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+
+  function withdraw(app: LeaveApplication) {
+    withdrawMutation.mutate({ id: app.id }, {
+      onSuccess: () => notifications.show({ color: "gray", title: "Withdrawn", message: "Your application has been withdrawn." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not withdraw", message: errorMessage(e) }),
+    });
+  }
+
+  function cancel(app: LeaveApplication) {
+    cancelMutation.mutate({ id: app.id }, {
+      onSuccess: () => notifications.show({ color: "blue", title: "Cancellation requested", message: "Your cancellation request has been sent for approval." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not cancel", message: errorMessage(e) }),
+    });
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader title="My Leaves" subtitle="Your leave balances and requests" />
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">
+        {(balancesData ?? []).map((b: LeaveBalance) => (
+          <Card padding="sm" key={b.category}>
+            <Text fw={600} size="sm">{CATEGORY_LABELS[b.category]} ({b.year})</Text>
+            <Group gap="xs" mt="xs">
+              <Text size="sm">Available: {Number(b.available)}/Entitled: {Number(b.entitled)}</Text>
+              <Text size="sm">Used: {Number(b.used)}</Text>
+            </Group>
+          </Card>
+        ))}
+      </SimpleGrid>
+
+      <Card padding="lg">
+        <DataTable<LeaveApplication>
+          rows={applicationsData ?? []}
+          loading={appsPending}
+          rowKey={(r) => r.id}
+          minWidth={900}
+          columns={[
+            {
+              key: "category", header: "Type",
+              render: (r) => `${CATEGORY_LABELS[r.category]} ${r.kind === "cancellation" ? "(cancellation)" : ""}`,
+            },
+            {
+              key: "start_date", header: "Start Date",
+              render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+            },
+            {
+              key: "end_date", header: "End Date",
+              render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+            },
+            {
+              key: "days", header: "Days",
+              render: (r) => Number(r.days),
+            },
+            {
+              key: "stage", header: "Stage",
+              render: (r) => r.stage.replace(/_/g, " "),
+            },
+            {
+              key: "status", header: "Status",
+              render: (r) => <StatusBadge status={r.status} /> },
+            {
+              key: "substitute", header: "Substitute",
+              render: (r) => (
+                <ReplaceSubstitute
+                  id={r.id}
+                  substituteId={r.substitute_id}
+                  status={r.substitute_status}
+                />
+              ),
+            },
+            {
+              key: "actions", header: "", align: "right",
+              render: (r) => (
+                <Group justify="flex-end" gap="xs">
+                  {r.status === "pending" && r.kind === "leave" && (
+                    <Button
+                      size="xs" variant="subtle" color="gray"
+                      onClick={() => withdraw(r)}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                  {r.status === "approved" && r.kind === "leave" && new Date(r.start_date) > new Date(today) && (
+                    <Button
+                      size="xs" variant="subtle" color="red"
+                      onClick={() => cancel(r)}
+                    >
+                      Cancel leave
+                    </Button>
+                  )}
+                </Group>
+              ),
+            },
+          ]}
+          empty={{
+            title: "No leave requests yet",
+            description: "Requests you apply for appear here.",
+          }}
+        />
+      </Card>
+    </Container>
+  );
+}
+```
+
+> Tokens: 6.6k sent, 1.4k received.  
+> Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  

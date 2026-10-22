@@ -58,32 +58,25 @@ export default function MyLeavesPage() {
   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
 
   function withdraw(app: LeaveApplication) {
-    notifications.show({
-      color: "green", title: "Withdrawn",
-      message: `Your application has been withdrawn.`,
+    withdrawMutation.mutate({ id: app.id }, {
+      onSuccess: () => notifications.show({ color: "gray", title: "Withdrawn", message: "Your application has been withdrawn." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not withdraw", message: errorMessage(e) }),
     });
   }
 
   function cancel(app: LeaveApplication) {
-    const e = useCancel(app.id).mutateAsync();
-    if (e.error) {
-      notifications.show({ color: "red", title: "Error", message: errorMessage(e.error) });
-      return;
-    }
-    notifications.show({ color: "green", title: "Cancelled", message: `Your approved leave has been cancelled.` });
+    cancelMutation.mutate({ id: app.id }, {
+      onSuccess: () => notifications.show({ color: "blue", title: "Cancellation requested", message: "Your cancellation request has been sent for approval." }),
+      onError: (e) => notifications.show({ color: "red", title: "Could not cancel", message: errorMessage(e) }),
+    });
   }
 
   return (
     <Container size="xl">
-      <PageHeader
-        title="My Leaves"
-        subtitle="Track your leave balances and application history"
-      />
+      <PageHeader title="My Leaves" subtitle="Your leave balances and requests" />
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">
         {(balancesData ?? []).map((b: LeaveBalance) => (
-<<<<<<< SEARCH
-          rows={(applicationsData?.results ?? []) as LeaveApplication[]}
-          <Card padding="sm" key={b.id}>
+          <Card padding="sm" key={b.category}>
             <Text fw={600} size="sm">{CATEGORY_LABELS[b.category]} ({b.year})</Text>
             <Group gap="xs" mt="xs">
               <Text size="sm">Available: {Number(b.available)}/Entitled: {Number(b.entitled)}</Text>
@@ -95,7 +88,7 @@ export default function MyLeavesPage() {
 
       <Card padding="lg">
         <DataTable<LeaveApplication>
-          rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+          rows={applicationsData ?? []}
           loading={appsPending}
           rowKey={(r) => r.id}
           minWidth={900}
@@ -145,7 +138,7 @@ export default function MyLeavesPage() {
                       Withdraw
                     </Button>
                   )}
-                  {r.status === "approved" && r.kind === "leave" && r.start_date > today && (
+                  {r.status === "approved" && r.kind === "leave" && new Date(r.start_date) > new Date(today) && (
                     <Button
                       size="xs" variant="subtle" color="red"
                       onClick={() => cancel(r)}
@@ -158,9 +151,8 @@ export default function MyLeavesPage() {
             },
           ]}
           empty={{
-            icon: undefined,
-            title: "No leave applications found",
-            description: "Your leave applications will appear here.",
+            title: "No leave requests yet",
+            description: "Requests you apply for appear here.",
           }}
         />
       </Card>
