@@ -3540,3 +3540,146 @@ def ensure_balances(user_id: int, kind: str, year: int) -> list:
 > Tokens: 9.0k sent, 637 received.  
 > Applied edit to modules/leave/services/admin.py  
 > Applied edit to modules/leave/selectors.py  
+
+# aider chat started at 2026-10-22 23:29:23
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/api/serializers.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/models.py --message-file pilot/phase2/prompts/006-serializers.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/api/serializers.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+
+#### Review findings: the Phase-1 serializers import modules.directory.serializers, which does not exist (Django cannot even start), and describe fields that are not on the models.  
+####   
+#### Replace the whole content of modules/leave/api/serializers.py with DRF serializers for the models in modules/leave/models.py (read-only):  
+#### - LeaveActionSerializer (ModelSerializer: id, actor_id, action, remark, created_at)  
+#### - LeaveApplicationSerializer (ModelSerializer, all fields read-only: id, user_id, kind, parent, category, start_date, end_date, half_day, days, purpose, station_leave, station_address, substitute_id, substitute_status, unit_head_id, establishment_id, sanctioning_authority_id, unit_head_recommendation, stage, status, assignee_id, decided_at, created_at, and actions = LeaveActionSerializer(many=True))  
+#### - ApplySerializer (Serializer: category ChoiceField from LeaveCategory, start_date, end_date, half_day ChoiceField default "none", purpose CharField, station_leave BooleanField default False, station_address CharField allow_blank default "", substitute_id IntegerField required=False allow_null=True; validate() rejects end_date before start_date)  
+#### - DecisionSerializer (decision ChoiceField of approve, reject, recommended, not_recommended, verify; remark CharField allow_blank default "")  
+#### - SubstituteResponseSerializer (accept BooleanField)  
+#### - ReplaceSubstituteSerializer (substitute_id IntegerField)  
+#### - LeaveBalanceSerializer (ModelSerializer: category, year, entitled, used, and available as a read-only DecimalField(max_digits=5, decimal_places=1))  
+#### - ReportingLineSerializer (ModelSerializer: user_id read-only, unit_head_id, establishment_id, sanctioning_authority_id)  
+####   
+#### Import only from rest_framework and modules.leave.models. Write the whole file. Do not ask for more files.  
+####   
+#### Use exactly these imports at the top of serializers.py and nothing else:  
+####   
+#### from rest_framework import serializers  
+####   
+#### from modules.leave.models import HalfDay, LeaveAction, LeaveApplication, LeaveBalance, LeaveCategory, ReportingLine  
+
+modules/leave/api/serializers.py
+```python
+from rest_framework import serializers
+
+from modules.leave.models import HalfDay, LeaveAction, LeaveApplication, LeaveBalance, LeaveCategory, ReportingLine
+
+
+class LeaveActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LeaveAction
+        fields = ["id", "actor_id", "action", "remark", "created_at"]
+
+
+class LeaveApplicationSerializer(serializers.ModelSerializer):
+    actions = LeaveActionSerializer(many=True)
+
+    class Meta:
+        model = LeaveApplication
+        fields = [
+            "id",
+            "user_id",
+            "kind",
+            "parent",
+            "category",
+            "start_date",
+            "end_date",
+            "half_day",
+            "days",
+            "purpose",
+            "station_leave",
+            "station_address",
+            "substitute_id",
+            "substitute_status",
+            "unit_head_id",
+            "establishment_id",
+            "sanctioning_authority_id",
+            "unit_head_recommendation",
+            "stage",
+            "status",
+            "assignee_id",
+            "decided_at",
+            "created_at",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["user_id"].read_only = True
+
+
+class ApplySerializer(serializers.Serializer):
+    category = serializers.ChoiceField(
+        choices=LeaveCategory.choices,
+        required=True,
+    )
+    start_date = serializers.DateField(required=True)
+    end_date = serializers.DateField(required=True)
+    half_day = serializers.ChoiceField(
+        choices=HalfDay.choices,
+        default=HalfDay.NONE,
+    )
+    purpose = serializers.CharField()
+    station_leave = serializers.BooleanField(default=False)
+    station_address = serializers.CharField(allow_blank=True, default="")
+    substitute_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if attrs["end_date"] < attrs["start_date"]:
+            raise serializers.ValidationError("End date must be after start date.")
+        return attrs
+
+
+class DecisionSerializer(serializers.Serializer):
+    decision = serializers.ChoiceField(
+        choices=[("approve", "Approve"), ("reject", "Reject"), ("recommended", "Recommended"), ("not_recommended", "Not Recommended"), ("verify", "Verify")],
+        required=True,
+    )
+    remark = serializers.CharField(allow_blank=True, default="")
+
+
+class SubstituteResponseSerializer(serializers.Serializer):
+    accept = serializers.BooleanField()
+
+
+class ReplaceSubstituteSerializer(serializers.Serializer):
+    substitute_id = serializers.IntegerField(required=True)
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    available = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        read_only=True,
+    )
+
+    class Meta:
+        model = LeaveBalance
+        fields = ["id", "category", "year", "entitled", "used", "available"]
+
+
+class ReportingLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReportingLine
+        fields = ["user_id", "unit_head_id", "establishment_id", "sanctioning_authority_id"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["user_id"].read_only = True
+```
+
+> Tokens: 5.1k sent, 658 received.  
+> Applied edit to modules/leave/api/serializers.py  
