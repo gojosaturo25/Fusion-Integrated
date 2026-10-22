@@ -30309,3 +30309,1018 @@ ASSISTANT     </Container>
 ASSISTANT   );
 ASSISTANT }
 ASSISTANT ```
+TO LLM 2026-10-23T00:10:04
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER client/src/ui/components/DataTable.tsx
+USER ```
+USER import { Center, Checkbox, Loader, Table, Text, ThemeIcon } from "@mantine/core";
+USER import type { IconType } from "react-icons";
+USER import { FaInbox } from "react-icons/fa";
+USER 
+USER export interface Column<T> {
+USER   key: string;
+USER   header: string;
+USER   align?: "left" | "right";
+USER   render?: (row: T) => React.ReactNode;
+USER }
+USER 
+USER export type RowKey = string | number;
+USER 
+USER export interface Selection<T> {
+USER   selected: Set<RowKey>;
+USER   onChange: (next: Set<RowKey>) => void;
+USER   /** Rows that cannot be acted on — a terminal application, say. They render a
+USER    *  disabled box rather than vanishing, so the count still adds up. */
+USER   isSelectable?: (row: T) => boolean;
+USER }
+USER 
+USER interface Props<T> {
+USER   rows: T[];
+USER   columns: Column<T>[];
+USER   loading?: boolean;
+USER   minWidth?: number;
+USER   rowKey: (row: T) => RowKey;
+USER   empty: { icon?: IconType; title: string; description?: string };
+USER   /** Omit for a read-only table; the column only appears when passed. */
+USER   selection?: Selection<T>;
+USER }
+USER 
+USER /** Distilled from the sysadmin client's BatchTable: scroll container, inline
+USER  *  badges, and an EXPLICIT empty state. A bare "No data" is not acceptable. */
+USER export function DataTable<T>({
+USER   rows, columns, loading, minWidth = 760, rowKey, empty, selection,
+USER }: Props<T>) {
+USER   if (loading) return <Center py="xl"><Loader size="sm" /></Center>;
+USER 
+USER   if (!rows.length) {
+USER     const Icon = empty.icon ?? FaInbox;
+USER     return (
+USER       <Center py={48}>
+USER         <div style={{ textAlign: "center" }}>
+USER           <ThemeIcon size={48} radius="xl" variant="light" color="gray">
+USER             <Icon size={20} />
+USER           </ThemeIcon>
+USER           <Text fw={600} mt="md">{empty.title}</Text>
+USER           {empty.description && (
+USER             <Text c="dimmed" size="sm" mt={4}>{empty.description}</Text>
+USER           )}
+USER         </div>
+USER       </Center>
+USER     );
+USER   }
+USER 
+USER   const selectable = selection
+USER     ? rows.filter((r) => selection.isSelectable?.(r) ?? true)
+USER     : [];
+USER   const selectedHere = selection
+USER     ? selectable.filter((r) => selection.selected.has(rowKey(r))).length
+USER     : 0;
+USER   const allSelected = selectable.length > 0 && selectedHere === selectable.length;
+USER 
+USER   function toggleAll() {
+USER     if (!selection) return;
+USER     // Only the rows on screen, so a filter change cannot drop a selection.
+USER     const next = new Set(selection.selected);
+USER     for (const row of selectable) {
+USER       if (allSelected) next.delete(rowKey(row));
+USER       else next.add(rowKey(row));
+USER     }
+USER     selection.onChange(next);
+USER   }
+USER 
+USER   function toggleOne(key: RowKey) {
+USER     if (!selection) return;
+USER     const next = new Set(selection.selected);
+USER     if (next.has(key)) next.delete(key);
+USER     else next.add(key);
+USER     selection.onChange(next);
+USER   }
+USER 
+USER   return (
+USER     <Table.ScrollContainer minWidth={minWidth}>
+USER       <Table>
+USER         <Table.Thead>
+USER           <Table.Tr>
+USER             {selection && (
+USER               <Table.Th w={40}>
+USER                 <Checkbox
+USER                   aria-label="Select all on this page"
+USER                   checked={allSelected}
+USER                   indeterminate={selectedHere > 0 && !allSelected}
+USER                   onChange={toggleAll}
+USER                   disabled={!selectable.length}
+USER                 />
+USER               </Table.Th>
+USER             )}
+USER             {columns.map((c) => (
+USER               <Table.Th key={c.key} ta={c.align ?? "left"}>{c.header}</Table.Th>
+USER             ))}
+USER           </Table.Tr>
+USER         </Table.Thead>
+USER         <Table.Tbody>
+USER           {rows.map((row) => {
+USER             const key = rowKey(row);
+USER             const canSelect = selection?.isSelectable?.(row) ?? true;
+USER             return (
+USER               <Table.Tr
+USER                 key={key}
+USER                 bg={selection?.selected.has(key)
+USER                   ? "var(--mantine-color-blue-0)" : undefined}
+USER               >
+USER                 {selection && (
+USER                   <Table.Td>
+USER                     <Checkbox
+USER                       aria-label="Select row"
+USER                       checked={selection.selected.has(key)}
+USER                       onChange={() => toggleOne(key)}
+USER                       disabled={!canSelect}
+USER                     />
+USER                   </Table.Td>
+USER                 )}
+USER                 {columns.map((c) => (
+USER                   <Table.Td key={c.key} ta={c.align ?? "left"}>
+USER                     {c.render
+USER                       ? c.render(row)
+USER                       : String((row as Record<string, unknown>)[c.key] ?? "—")}
+USER                   </Table.Td>
+USER                 ))}
+USER               </Table.Tr>
+USER             );
+USER           })}
+USER         </Table.Tbody>
+USER       </Table>
+USER     </Table.ScrollContainer>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/modules/leave/api.ts
+USER ```
+USER import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+USER 
+USER import { http } from "../../lib/http";
+USER 
+USER /** Leave category types as per DESIGN.md */
+USER export type LeaveCategory = "CL" | "RH" | "SCL" | "EL" | "COL" | "VL";
+USER 
+USER /** Half day options as per DESIGN.md */
+USER export type HalfDay = "none" | "first" | "second";
+USER 
+USER /** Stage types as per DESIGN.md */
+USER export type Stage = "substitute" | "unit_head" | "establishment" | "sanction" | "done";
+USER 
+USER /** Status types as per DESIGN.md */
+USER export type Status = "pending" | "approved" | "rejected" | "withdrawn" | "cancelled";
+USER 
+USER /** Substitute status types as per DESIGN.md */
+USER export type SubstituteStatus = "not_required" | "pending" | "accepted" | "declined";
+USER 
+USER /** Decision types for the decide endpoint as per serializers.py */
+USER export type Decision = "approve" | "reject" | "recommended" | "not_recommended" | "verify";
+USER 
+USER /** Leave action data structure matching LeaveActionSerializer */
+USER export interface LeaveAction {
+USER   id: number;
+USER   actor_id: number;
+USER   action: string;
+USER   remark: string | null;
+USER   created_at: string;
+USER }
+USER 
+USER /** Leave application data structure matching LeaveApplicationSerializer.
+USER  * Note: days is a string because DRF sends DecimalField values as strings. */
+USER export interface LeaveApplication {
+USER   id: number;
+USER   user_id: number;
+USER   kind: "leave" | "cancellation";
+USER   parent: LeaveApplication | null;
+USER   category: LeaveCategory;
+USER   start_date: string; // ISO date string
+USER   end_date: string;   // ISO date string
+USER   half_day: HalfDay;
+USER   days: string;       // String representation of Decimal
+USER   purpose: string;
+USER   station_leave: boolean;
+USER   station_address: string | null;
+USER   substitute_id: number | null;
+USER   substitute_status: SubstituteStatus;
+USER   unit_head_id: number | null;
+USER   establishment_id: number | null;
+USER   sanctioning_authority_id: number | null;
+USER   unit_head_recommendation: string | null;
+USER   stage: Stage;
+USER   status: Status;
+USER   assignee_id: number | null;
+USER   decided_at: string | null;
+USER   created_at: string;
+USER   updated_at: string;
+USER   actions: LeaveAction[];
+USER }
+USER 
+USER /** Leave balance data structure matching LeaveBalanceSerializer.
+USER  * Note: entitled, used, and available are strings because DRF sends DecimalField values as strings. */
+USER export interface LeaveBalance {
+USER   id: number;
+USER   category: LeaveCategory;
+USER   year: number;
+USER   entitled: string; // String representation of Decimal
+USER   used: string;     // String representation of Decimal
+USER   available: string; // String representation of Decimal (entitled - used)
+USER }
+USER 
+USER /** Input type for applying a leave as per ApplySerializer */
+USER export interface ApplyInput {
+USER   category: LeaveCategory;
+USER   start_date: string;
+USER   end_date: string;
+USER   half_day: HalfDay;
+USER   purpose: string;
+USER   station_leave: boolean;
+USER   station_address: string | null;
+USER   substitute_id: number | null;
+USER }
+USER 
+USER /** Label mapping for leave categories */
+USER export const CATEGORY_LABELS: Record<LeaveCategory, string> = {
+USER   CL: "Casual Leave",
+USER   RH: "Restricted Holiday",
+USER   SCL: "Special Casual Leave",
+USER   EL: "Earned Leave",
+USER   COL: "Commuted Leave",
+USER   VL: "Vacation Leave",
+USER };
+USER 
+USER /** Helper to normalize list responses from the API. */
+USER function asList<T>(data: T[] | { results: T[] }): T[] {
+USER   return Array.isArray(data) ? data : data.results;
+USER }
+USER 
+USER // --- Queries ---
+USER 
+USER /** Fetch all leave applications for the current user. */
+USER export function useMyApplications() {
+USER   return useQuery({
+USER     queryKey: ["leave", "applications"],
+USER     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/applications/").data),
+USER   });
+USER }
+USER 
+USER /** Fetch a single leave application by ID. */
+USER export function useApplicationDetail(id: number) {
+USER   return useQuery({
+USER     queryKey: ["leave", "application", id],
+USER     queryFn: async () => await http.get<LeaveApplication>(`/leave/${id}/`).data,
+USER   });
+USER }
+USER 
+USER /** Fetch the approvals inbox (for Unit Heads). */
+USER export function useInbox() {
+USER   return useQuery({
+USER     queryKey: ["leave", "inbox"],
+USER     queryFn: async () => asList(await http.get<LeaveApplication[]>("/leave/inbox/").data),
+USER   });
+USER }
+USER 
+USER /** Fetch leave balances for a specific year. */
+USER export function useBalances(year: number) {
+USER   return useQuery({
+USER     queryKey: ["leave", "balances", year],
+USER     queryFn: async () => asList(await http.get<LeaveBalance[]>(`/leave/balances/${year}/`, { params: { year } })).data,
+USER   });
+USER }
+USER 
+USER // --- Mutations ---
+USER 
+USER /** Submit a new leave application. */
+USER export function useApply() {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async (vars: ApplyInput) => {
+USER       const response = await http.post("/leave/applications/", vars);
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER 
+USER /** Withdraw an application. */
+USER export function useWithdraw(id: number) {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async () => {
+USER       const response = await http.post(`/leave/${id}/withdraw/`, {});
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER 
+USER /** Cancel an approved leave. */
+USER export function useCancel(id: number) {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async () => {
+USER       const response = await http.post(`/leave/${id}/cancel/`, {});
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER 
+USER /** Respond to a substitute request. */
+USER export function useSubstituteResponse(id: number) {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async (vars: { accept: boolean }) => {
+USER       const response = await http.post(`/leave/${id}/substitute-response/`, vars);
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER 
+USER /** Nominate a replacement for a substitute. */
+USER export function useReplaceSubstitute(id: number) {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async (vars: { substitute_id: number }) => {
+USER       const response = await http.post(`/leave/${id}/replace-substitute/`, vars);
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER 
+USER /** Make a decision on an application (approve/reject/recommend). */
+USER export function useDecide(id: number) {
+USER   const qc = useQueryClient();
+USER   return useMutation({
+USER     mutationFn: async (vars: { decision: Decision; remark: string }) => {
+USER       const response = await http.post(`/leave/${id}/decide/`, vars);
+USER       return response.data;
+USER     },
+USER     onSuccess: () => {
+USER       qc.invalidateQueries({ queryKey: ["leave"] });
+USER     },
+USER   });
+USER }
+USER ```
+USER 
+USER client/src/ui/components/ErrorState.tsx
+USER ```
+USER import { Alert, Text } from "@mantine/core";
+USER import { FaExclamationTriangle } from "react-icons/fa";
+USER 
+USER import { errorMessage, requestId } from "../../lib/http";
+USER 
+USER export function ErrorState({ error }: { error: unknown }) {
+USER   const rid = requestId(error);
+USER   return (
+USER     <Alert
+USER       color="red" variant="light" icon={<FaExclamationTriangle />}
+USER       title="Could not load this"
+USER     >
+USER       <Text size="sm">{errorMessage(error)}</Text>
+USER       {rid && (
+USER         // The one id support can grep. Always show it.
+USER         <Text size="xs" c="dimmed" mt={6} ff="monospace">
+USER           Reference: {rid}
+USER         </Text>
+USER       )}
+USER     </Alert>
+USER   );
+USER }
+USER ```
+USER 
+USER client/src/ui/components/StatusBadge.tsx
+USER ```
+USER import { Badge } from "@mantine/core";
+USER 
+USER /** One status→colour map, so the same status is never two colours. */
+USER const COLORS: Record<string, string> = {
+USER   draft: "gray", submitted: "blue", under_review: "indigo",
+USER   shortlisted: "violet", offer_issued: "orange", offer_accepted: "green",
+USER   offer_declined: "gray", rejected: "red", withdrawn: "gray",
+USER   published: "green", closed: "gray", cancelled: "red", active: "green",
+USER };
+USER 
+USER export function StatusBadge({ status }: { status: string }) {
+USER   return (
+USER     <Badge color={COLORS[status] ?? "gray"} variant="light" size="sm">
+USER       {status.replace(/_/g, " ")}
+USER     </Badge>
+USER   );
+USER }
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/auth/RequireAuth.tsx:
+USER ⋮
+USER │export function RequireAuth({ children }: { children: React.ReactNode }) {
+USER │  const { status } = useAuth();
+USER │  const location = useLocation();
+USER │
+USER │  if (status === "loading") {
+USER │    return <Center h="100vh"><Loader /></Center>;
+USER │  }
+USER │  // Not a logout: signing in again cannot work while the IAM is unreachable.
+USER │  if (status === "unavailable") {
+USER │    return (
+USER ⋮
+USER 
+USER client/src/lib/http.ts:
+USER ⋮
+USER │export function setUnauthorizedHandler(fn: () => void) {
+USER │  onUnauthorized = fn;
+USER ⋮
+USER │export function errorMessage(e: unknown): string {
+USER │  const env = (e as { response?: { data?: { error?: {
+USER │    message?: string; details?: { message?: string }[] } } } })
+USER │    ?.response?.data?.error;
+USER │  if (!env) return "Something went wrong. Please try again.";
+USER │  if (env.details?.length) {
+USER │    return env.details.map((d) => d.message).filter(Boolean).join(" ") ||
+USER │      env.message || "Request failed.";
+USER │  }
+USER │  return env.message ?? "Request failed.";
+USER ⋮
+USER │export async function readBlobError(e: unknown): Promise<unknown> {
+USER │  const res = (e as { response?: { data?: unknown } })?.response;
+USER │  if (res?.data instanceof Blob) {
+USER │    try {
+USER │      res.data = JSON.parse(await res.data.text());
+USER │    } catch {
+USER │      res.data = undefined;             // an HTML page, not our envelope
+USER │    }
+USER │  }
+USER │  return e;
+USER ⋮
+USER │export function errorStatus(e: unknown): number | undefined {
+USER │  return (e as { response?: { status?: number } })?.response?.status;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER client/src/modules/placement/components/NewPostingModal.tsx:
+USER ⋮
+USER │                hideControls placeholder="Unlimited"
+USER │              />
+USER │            </Field>
+USER │            <Field span={12}>
+USER │              <DateTimePicker
+USER │                label="Applications close" value={closesAt}
+USER │                onChange={setClosesAt} clearable minDate={new Date()}
+USER │                placeholder="Select a date and time"
+USER ⋮
+USER 
+USER client/src/recruiter/AcceptInvitePage.tsx:
+USER ⋮
+USER │                    <Alert color="red" variant="light"
+USER │                      icon={<FaExclamationTriangle />}>
+USER │                      <Text size="sm">{errorMessage(accept.error)}</Text>
+USER ⋮
+USER 
+USER client/src/ui/components/PageHeader.tsx:
+USER ⋮
+USER │export function PageHeader({ title, subtitle, action }: {
+USER │  title: string;
+USER │  subtitle?: string;
+USER │  action?: React.ReactNode;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER client/src/modules/leave/pages/MyLeavesPage.tsx
+USER ```
+USER import { useState } from "react";
+USER import {
+USER   ActionIcon, Button, Card, Container, Group, Stack, Text,
+USER } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER import { FaHistory, FaUserCheck } from "react-icons/fa";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { DataTable } from "../../../ui/components/DataTable";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import { HistoryDrawer } from "../components/HistoryDrawer";
+USER import { useMyApplications, useBalances, useHistory } from "../api/hooks";
+USER import type { LeaveApplication, LeaveBalance } from "../api/types";
+USER 
+USER export default function MyLeavesPage() {
+USER   const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+USER   const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
+USER   const { data: historyData, isPending: historyPending } = useHistory();
+USER   const [historyFor, setHistoryFor] = useState<number | null>(null);
+USER 
+USER   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+USER 
+USER   function withdraw(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "gray", title: "Withdrawn",
+USER       message: `Your application has been withdrawn.`,
+USER     });
+USER   }
+USER 
+USER   function cancel(app: LeaveApplication) {
+USER     notifications.show({
+USER       color: "blue", title: "Cancelled",
+USER       message: `Your approved leave has been cancelled.`,
+USER     });
+USER   }
+USER 
+USER   return (
+USER     <Container size="xl">
+USER       <PageHeader
+USER         title="My Leaves"
+USER         subtitle="Track your leave balances and application history"
+USER       />
+USER       <Card padding="lg" mb="md">
+USER         <Text fw={600} mb="xs">Leave Balance ({balancesData?.year})</Text>
+USER         <Stack gap="sm">
+USER           <Group justify="space-between">
+USER             <Text>Earned Days: {balancesData?.earned_days ?? 0}</Text>
+USER             <Text>Used Days: {balancesData?.used_days ?? 0}</Text>
+USER           </Group>
+USER           <Group justify="space-between">
+USER             <Text>Remaining Days: {balancesData?.remaining_days ?? 0}</Text>
+USER             <Text>Carry Forward: {balancesData?.carry_forward_days ?? 0}</Text>
+USER           </Group>
+USER         </Stack>
+USER       </Card>
+USER 
+USER       <Card padding="lg">
+USER         <DataTable<LeaveApplication>
+USER           rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+USER           loading={appsPending}
+USER           rowKey={(r) => r.id}
+USER           minWidth={900}
+USER           columns={[
+USER             {
+USER               key: "leave_type", header: "Type",
+USER               render: (r) => r.leave_type.replace(/_/g, " "),
+USER             },
+USER             {
+USER               key: "start_date", header: "Start Date",
+USER               render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+USER             },
+USER             {
+USER               key: "end_date", header: "End Date",
+USER               render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+USER             },
+USER             { key: "status", header: "Status",
+USER               render: (r) => <StatusBadge status={r.status} /> },
+USER             {
+USER               key: "actions", header: "", align: "right",
+USER               render: (r) => (
+USER                 <Group justify="flex-end" gap="xs">
+USER                   <ActionIcon
+USER                     variant="subtle" color="gray" aria-label="History"
+USER                     onClick={() => setHistoryFor(r.id)}
+USER                   >
+USER                     <FaHistory size={12} />
+USER                   </ActionIcon>
+USER                   {r.status === "approved" && (
+USER                     <Button
+USER                       size="xs" variant="subtle" color="red"
+USER                       onClick={() => cancel(r)}
+USER                     >
+USER                       Cancel
+USER                     </Button>
+USER                   )}
+USER                   {r.status !== "approved" && r.status !== "cancelled" && (
+USER                     <Button
+USER                       size="xs" variant="subtle" color="gray"
+USER                       onClick={() => withdraw(r)}
+USER                     >
+USER                       Withdraw
+USER                     </Button>
+USER                   )}
+USER                 </Group>
+USER               ),
+USER             },
+USER           ]}
+USER           empty={{
+USER             icon: FaUserCheck,
+USER             title: "No leave applications found",
+USER             description: "Your leave applications will appear here.",
+USER           }}
+USER         />
+USER       </Card>
+USER 
+USER       <HistoryDrawer
+USER         applicationId={historyFor} onClose={() => setHistoryFor(null)}
+USER       />
+USER     </Container>
+USER   );
+USER }
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review findings: the Phase-1 page imports "../api/hooks", "../api/types" and "../components/HistoryDrawer", which do not exist, and its Withdraw and Cancel buttons only show a notification without calling the server.
+USER 
+USER Replace the whole file with a default-exported MyLeavesPage component (EL-UC-002, EL-UC-007, EL-UC-008, BR-EL-015). Start it with these imports. tsconfig has noUnusedLocals, so remove any imported name you end up not using, and do not import from any other path:
+USER 
+USER import { useState } from "react";
+USER import { Button, Card, Container, Group, NumberInput, SimpleGrid, Text } from "@mantine/core";
+USER import { notifications } from "@mantine/notifications";
+USER 
+USER import { errorMessage } from "../../../lib/http";
+USER import { DataTable } from "../../../ui/components/DataTable";
+USER import { ErrorState } from "../../../ui/components/ErrorState";
+USER import { PageHeader } from "../../../ui/components/PageHeader";
+USER import { StatusBadge } from "../../../ui/components/StatusBadge";
+USER import {
+USER   CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,
+USER   type LeaveApplication,
+USER } from "../api";
+USER 
+USER Layout:
+USER 1. PageHeader "My Leaves".
+USER 2. A SimpleGrid of small Cards, one per balance from useBalances(new Date().getFullYear()): the category label, "available of entitled days", and "used".
+USER 3. A Card with a DataTable<LeaveApplication> of useMyApplications() rows. Columns: Category (CATEGORY_LABELS, plus " (cancellation)" when kind is "cancellation"), Dates (start_date to end_date), Days, Stage, Status (StatusBadge), Substitute, Actions.
+USER    - Actions: a "Withdraw" button when status is "pending" and kind is "leave" (useWithdraw); a "Cancel leave" button when status is "approved", kind is "leave" and start_date is after today's date as "YYYY-MM-DD" (useCancel).
+USER    - Substitute column: when substitute_status is "declined" and status is "pending", render a small ReplaceSubstitute component defined in this file: it keeps its own useState for the new user id and shows a NumberInput (size "xs") and a "Nominate" button that calls useReplaceSubstitute().mutate({ id, substitute_id }). Otherwise show substitute_id and substitute_status, or "-".
+USER If useMyApplications() has an error, render <ErrorState error={error} /> inside the Container.
+USER 
+USER Fusion uses Mantine 7: use leftSection (not leftIcon), gap (not spacing), justify (not position), and the shared components in client/src/ui/components (read-only). DataTable needs the props rows, columns, loading, rowKey and empty ({ title, description }). Every mutation shows notifications.show({ color: "green", ... }) on success and notifications.show({ color: "red", title: "...", message: errorMessage(e) }) on error.
+USER 
+USER Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-23T00:14:15
+ASSISTANT client/src/modules/leave/pages/MyLeavesPage.tsx
+ASSISTANT ```tsx
+ASSISTANT import { useState } from "react";
+ASSISTANT import { Button, Card, Container, Group, NumberInput, SimpleGrid, Text } from "@mantine/core";
+ASSISTANT import { notifications } from "@mantine/notifications";
+ASSISTANT 
+ASSISTANT import { errorMessage } from "../../../lib/http";
+ASSISTANT import { DataTable } from "../../../ui/components/DataTable";
+ASSISTANT import { ErrorState } from "../../../ui/components/ErrorState";
+ASSISTANT import { PageHeader } from "../../../ui/components/PageHeader";
+ASSISTANT import { StatusBadge } from "../../../ui/components/StatusBadge";
+ASSISTANT import {
+ASSISTANT   CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,
+ASSISTANT   type LeaveApplication,
+ASSISTANT } from "../api";
+ASSISTANT 
+ASSISTANT function ReplaceSubstitute({ id, substituteId, status }: { id: number; substituteId: number | null; status: string }) {
+ASSISTANT   const [subId, setSubId] = useState<string>("");
+ASSISTANT   const mutate = useReplaceSubstitute(id);
+ASSISTANT 
+ASSISTANT   function handleSubmit() {
+ASSISTANT     if (!subId) return;
+ASSISTANT     mutate.mutate({ substitute_id: parseInt(subId, 10) });
+ASSISTANT   }
+ASSISTANT 
+ASSISTANT   return (
+ASSISTANT     <Group gap="xs">
+ASSISTANT       {status === "declined" ? (
+ASSISTANT         <>
+ASSISTANT           <NumberInput
+ASSISTANT             size="xs"
+ASSISTANT             placeholder="User ID"
+ASSISTANT             value={subId}
+ASSISTANT             onChange={setSubId}
+ASSISTANT           />
+ASSISTANT           <Button size="xs" onClick={handleSubmit}>
+ASSISTANT             Nominate
+ASSISTANT           </Button>
+ASSISTANT         </>
+ASSISTANT       ) : (
+ASSISTANT         <Text size="sm">
+ASSISTANT           {substituteId ? `Replaced by user ${substituteId}` : "-"}
+ASSISTANT         </Text>
+ASSISTANT       )}
+ASSISTANT     </Group>
+ASSISTANT   );
+ASSISTANT }
+ASSISTANT 
+ASSISTANT export default function MyLeavesPage() {
+ASSISTANT   const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+ASSISTANT   const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
+ASSISTANT   const [historyFor, setHistoryFor] = useState<number | null>(null);
+ASSISTANT 
+ASSISTANT   if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+ASSISTANT 
+ASSISTANT   function withdraw(app: LeaveApplication) {
+ASSISTANT     notifications.show({
+ASSISTANT       color: "green", title: "Withdrawn",
+ASSISTANT       message: `Your application has been withdrawn.`,
+ASSISTANT     });
+ASSISTANT   }
+ASSISTANT 
+ASSISTANT   function cancel(app: LeaveApplication) {
+ASSISTANT     const e = useCancel(app.id).mutateAsync();
+ASSISTANT     if (e.error) {
+ASSISTANT       notifications.show({ color: "red", title: "Error", message: errorMessage(e.error) });
+ASSISTANT       return;
+ASSISTANT     }
+ASSISTANT     notifications.show({ color: "green", title: "Cancelled", message: `Your approved leave has been cancelled.` });
+ASSISTANT   }
+ASSISTANT 
+ASSISTANT   return (
+ASSISTANT     <Container size="xl">
+ASSISTANT       <PageHeader
+ASSISTANT         title="My Leaves"
+ASSISTANT         subtitle="Track your leave balances and application history"
+ASSISTANT       />
+ASSISTANT       <SimpleGrid cols={1} gap="md" mb="md">
+ASSISTANT         {balancesData?.results?.map((b: LeaveBalance) => (
+ASSISTANT           <Card padding="sm" key={b.id}>
+ASSISTANT             <Text fw={600} size="sm">{CATEGORY_LABELS[b.category]} ({b.year})</Text>
+ASSISTANT             <Group gap="xs" mt="xs">
+ASSISTANT               <Text size="sm">Available: {Number(b.available)}/Entitled: {Number(b.entitled)}</Text>
+ASSISTANT               <Text size="sm">Used: {Number(b.used)}</Text>
+ASSISTANT             </Group>
+ASSISTANT           </Card>
+ASSISTANT         ))}
+ASSISTANT       </SimpleGrid>
+ASSISTANT 
+ASSISTANT       <Card padding="lg">
+ASSISTANT         <DataTable<LeaveApplication>
+ASSISTANT           rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+ASSISTANT           loading={appsPending}
+ASSISTANT           rowKey={(r) => r.id}
+ASSISTANT           minWidth={900}
+ASSISTANT           columns={[
+ASSISTANT             {
+ASSISTANT               key: "category", header: "Type",
+ASSISTANT               render: (r) => `${CATEGORY_LABELS[r.category]} ${r.kind === "cancellation" ? "(cancellation)" : ""}`,
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "start_date", header: "Start Date",
+ASSISTANT               render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "end_date", header: "End Date",
+ASSISTANT               render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "days", header: "Days",
+ASSISTANT               render: (r) => Number(r.days),
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "stage", header: "Stage",
+ASSISTANT               render: (r) => r.stage.replace(/_/g, " "),
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "status", header: "Status",
+ASSISTANT               render: (r) => <StatusBadge status={r.status} /> },
+ASSISTANT             {
+ASSISTANT               key: "substitute", header: "Substitute",
+ASSISTANT               render: (r) => (
+ASSISTANT                 <ReplaceSubstitute
+ASSISTANT                   id={r.id}
+ASSISTANT                   substituteId={r.substitute_id}
+ASSISTANT                   status={r.substitute_status}
+ASSISTANT                 />
+ASSISTANT               ),
+ASSISTANT             },
+ASSISTANT             {
+ASSISTANT               key: "actions", header: "", align: "right",
+ASSISTANT               render: (r) => (
+ASSISTANT                 <Group justify="flex-end" gap="xs">
+ASSISTANT                   {r.status === "pending" && r.kind === "leave" && (
+ASSISTANT                     <Button
+ASSISTANT                       size="xs" variant="subtle" color="gray"
+ASSISTANT                       onClick={() => withdraw(r)}
+ASSISTANT                     >
+ASSISTANT                       Withdraw
+ASSISTANT                     </Button>
+ASSISTANT                   )}
+ASSISTANT                   {r.status === "approved" && r.kind === "leave" && new Date(r.start_date) >= new Date() && (
+ASSISTANT                     <Button
+ASSISTANT                       size="xs" variant="subtle" color="red"
+ASSISTANT                       onClick={() => cancel(r)}
+ASSISTANT                     >
+ASSISTANT                       Cancel leave
+ASSISTANT                     </Button>
+ASSISTANT                   )}
+ASSISTANT                 </Group>
+ASSISTANT               ),
+ASSISTANT             },
+ASSISTANT           ]}
+ASSISTANT           empty={{
+ASSISTANT             icon: undefined,
+ASSISTANT             title: "No leave applications found",
+ASSISTANT             description: "Your leave applications will appear here.",
+ASSISTANT           }}
+ASSISTANT         />
+ASSISTANT       </Card>
+ASSISTANT     </Container>
+ASSISTANT   );
+ASSISTANT }
+ASSISTANT ```

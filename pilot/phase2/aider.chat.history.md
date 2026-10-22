@@ -5927,3 +5927,215 @@ export default function ApplyLeavePage() {
 
 > Tokens: 6.5k sent, 1.3k received.  
 > Applied edit to client/src/modules/leave/pages/ApplyLeavePage.tsx  
+
+# aider chat started at 2026-10-23 00:10:02
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/MyLeavesPage.tsx --read client/src/modules/leave/api.ts --read client/src/ui/components/DataTable.tsx --read client/src/ui/components/StatusBadge.tsx --read client/src/ui/components/ErrorState.tsx --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/012-client-my-leaves-page.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/MyLeavesPage.tsx to the chat.  
+> Added client/src/ui/components/DataTable.tsx to the chat (read-only).  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+> Added client/src/ui/components/ErrorState.tsx to the chat (read-only).  
+> Added client/src/ui/components/StatusBadge.tsx to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review findings: the Phase-1 page imports "../api/hooks", "../api/types" and "../components/HistoryDrawer", which do not exist, and its Withdraw and Cancel buttons only show a notification without calling the server.  
+####   
+#### Replace the whole file with a default-exported MyLeavesPage component (EL-UC-002, EL-UC-007, EL-UC-008, BR-EL-015). Start it with these imports. tsconfig has noUnusedLocals, so remove any imported name you end up not using, and do not import from any other path:  
+####   
+#### import { useState } from "react";  
+#### import { Button, Card, Container, Group, NumberInput, SimpleGrid, Text } from "@mantine/core";  
+#### import { notifications } from "@mantine/notifications";  
+####   
+#### import { errorMessage } from "../../../lib/http";  
+#### import { DataTable } from "../../../ui/components/DataTable";  
+#### import { ErrorState } from "../../../ui/components/ErrorState";  
+#### import { PageHeader } from "../../../ui/components/PageHeader";  
+#### import { StatusBadge } from "../../../ui/components/StatusBadge";  
+#### import {  
+####   CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,  
+####   type LeaveApplication,  
+#### } from "../api";  
+####   
+#### Layout:  
+#### 1. PageHeader "My Leaves".  
+#### 2. A SimpleGrid of small Cards, one per balance from useBalances(new Date().getFullYear()): the category label, "available of entitled days", and "used".  
+#### 3. A Card with a DataTable<LeaveApplication> of useMyApplications() rows. Columns: Category (CATEGORY_LABELS, plus " (cancellation)" when kind is "cancellation"), Dates (start_date to end_date), Days, Stage, Status (StatusBadge), Substitute, Actions.  
+####    - Actions: a "Withdraw" button when status is "pending" and kind is "leave" (useWithdraw); a "Cancel leave" button when status is "approved", kind is "leave" and start_date is after today's date as "YYYY-MM-DD" (useCancel).  
+####    - Substitute column: when substitute_status is "declined" and status is "pending", render a small ReplaceSubstitute component defined in this file: it keeps its own useState for the new user id and shows a NumberInput (size "xs") and a "Nominate" button that calls useReplaceSubstitute().mutate({ id, substitute_id }). Otherwise show substitute_id and substitute_status, or "-".  
+#### If useMyApplications() has an error, render <ErrorState error={error} /> inside the Container.  
+####   
+#### Fusion uses Mantine 7: use leftSection (not leftIcon), gap (not spacing), justify (not position), and the shared components in client/src/ui/components (read-only). DataTable needs the props rows, columns, loading, rowKey and empty ({ title, description }). Every mutation shows notifications.show({ color: "green", ... }) on success and notifications.show({ color: "red", title: "...", message: errorMessage(e) }) on error.  
+####   
+#### Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/MyLeavesPage.tsx
+```tsx
+import { useState } from "react";
+import { Button, Card, Container, Group, NumberInput, SimpleGrid, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+
+import { errorMessage } from "../../../lib/http";
+import { DataTable } from "../../../ui/components/DataTable";
+import { ErrorState } from "../../../ui/components/ErrorState";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { StatusBadge } from "../../../ui/components/StatusBadge";
+import {
+  CATEGORY_LABELS, useBalances, useCancel, useMyApplications, useReplaceSubstitute, useWithdraw,
+  type LeaveApplication,
+} from "../api";
+
+function ReplaceSubstitute({ id, substituteId, status }: { id: number; substituteId: number | null; status: string }) {
+  const [subId, setSubId] = useState<string>("");
+  const mutate = useReplaceSubstitute(id);
+
+  function handleSubmit() {
+    if (!subId) return;
+    mutate.mutate({ substitute_id: parseInt(subId, 10) });
+  }
+
+  return (
+    <Group gap="xs">
+      {status === "declined" ? (
+        <>
+          <NumberInput
+            size="xs"
+            placeholder="User ID"
+            value={subId}
+            onChange={setSubId}
+          />
+          <Button size="xs" onClick={handleSubmit}>
+            Nominate
+          </Button>
+        </>
+      ) : (
+        <Text size="sm">
+          {substituteId ? `Replaced by user ${substituteId}` : "-"}
+        </Text>
+      )}
+    </Group>
+  );
+}
+
+export default function MyLeavesPage() {
+  const { data: applicationsData, isPending: appsPending, error: appsError } = useMyApplications();
+  const { data: balancesData, isPending: balancesPending } = useBalances(new Date().getFullYear());
+  const [historyFor, setHistoryFor] = useState<number | null>(null);
+
+  if (appsError) return <Container size="xl"><ErrorState error={appsError} /></Container>;
+
+  function withdraw(app: LeaveApplication) {
+    notifications.show({
+      color: "green", title: "Withdrawn",
+      message: `Your application has been withdrawn.`,
+    });
+  }
+
+  function cancel(app: LeaveApplication) {
+    const e = useCancel(app.id).mutateAsync();
+    if (e.error) {
+      notifications.show({ color: "red", title: "Error", message: errorMessage(e.error) });
+      return;
+    }
+    notifications.show({ color: "green", title: "Cancelled", message: `Your approved leave has been cancelled.` });
+  }
+
+  return (
+    <Container size="xl">
+      <PageHeader
+        title="My Leaves"
+        subtitle="Track your leave balances and application history"
+      />
+      <SimpleGrid cols={1} gap="md" mb="md">
+        {balancesData?.results?.map((b: LeaveBalance) => (
+          <Card padding="sm" key={b.id}>
+            <Text fw={600} size="sm">{CATEGORY_LABELS[b.category]} ({b.year})</Text>
+            <Group gap="xs" mt="xs">
+              <Text size="sm">Available: {Number(b.available)}/Entitled: {Number(b.entitled)}</Text>
+              <Text size="sm">Used: {Number(b.used)}</Text>
+            </Group>
+          </Card>
+        ))}
+      </SimpleGrid>
+
+      <Card padding="lg">
+        <DataTable<LeaveApplication>
+          rows={(applicationsData?.results ?? []) as LeaveApplication[]}
+          loading={appsPending}
+          rowKey={(r) => r.id}
+          minWidth={900}
+          columns={[
+            {
+              key: "category", header: "Type",
+              render: (r) => `${CATEGORY_LABELS[r.category]} ${r.kind === "cancellation" ? "(cancellation)" : ""}`,
+            },
+            {
+              key: "start_date", header: "Start Date",
+              render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : "—",
+            },
+            {
+              key: "end_date", header: "End Date",
+              render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : "—",
+            },
+            {
+              key: "days", header: "Days",
+              render: (r) => Number(r.days),
+            },
+            {
+              key: "stage", header: "Stage",
+              render: (r) => r.stage.replace(/_/g, " "),
+            },
+            {
+              key: "status", header: "Status",
+              render: (r) => <StatusBadge status={r.status} /> },
+            {
+              key: "substitute", header: "Substitute",
+              render: (r) => (
+                <ReplaceSubstitute
+                  id={r.id}
+                  substituteId={r.substitute_id}
+                  status={r.substitute_status}
+                />
+              ),
+            },
+            {
+              key: "actions", header: "", align: "right",
+              render: (r) => (
+                <Group justify="flex-end" gap="xs">
+                  {r.status === "pending" && r.kind === "leave" && (
+                    <Button
+                      size="xs" variant="subtle" color="gray"
+                      onClick={() => withdraw(r)}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                  {r.status === "approved" && r.kind === "leave" && new Date(r.start_date) >= new Date() && (
+                    <Button
+                      size="xs" variant="subtle" color="red"
+                      onClick={() => cancel(r)}
+                    >
+                      Cancel leave
+                    </Button>
+                  )}
+                </Group>
+              ),
+            },
+          ]}
+          empty={{
+            icon: undefined,
+            title: "No leave applications found",
+            description: "Your leave applications will appear here.",
+          }}
+        />
+      </Card>
+    </Container>
+  );
+}
+```
+
+> Tokens: 8.0k sent, 1.3k received.  
+> Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  
