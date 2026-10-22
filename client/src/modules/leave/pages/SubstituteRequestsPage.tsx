@@ -1,9 +1,9 @@
-import { Button, Card, Container, Group } from "@mantine/core";
+import { Button, Card, Container, Group, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
 import { errorMessage } from "../../../lib/http";
-import { DataTable } from "../../../ui/components/DataTable";
+import { DataTable, type Column } from "../../../ui/components/DataTable";
 import { ErrorState } from "../../../ui/components/ErrorState";
 import { PageHeader } from "../../../ui/components/PageHeader";
 import { CATEGORY_LABELS, useInbox, useSubstituteResponse, type LeaveApplication } from "../api";
