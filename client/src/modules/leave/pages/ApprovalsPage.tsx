@@ -10,12 +10,15 @@ import { CATEGORY_LABELS, useDecide, useInbox, type Decision, type LeaveApplicat
 
 export default function ApprovalsPage() {
   const { data, isPending, error } = useInbox();
+  const decide = useDecide();
   const [remark, setRemark] = useState("");
 
   if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
 
-  function handleDecision(id: number, decision: Decision, remarkValue: string) {
-    useDecide.mutate({ id, decision, remark: remarkValue }, {
+  const rows = (data ?? []).filter((a) => a.stage !== "substitute");
+
+  function handleDecision(id: number, decision: Decision) {
+    decide.mutate({ id, decision, remark }, {
       onSuccess: () => {
         notifications.show({
           color: "green",
@@ -34,7 +37,7 @@ export default function ApprovalsPage() {
     });
   }
 
-  const actionsFor = (app: LeaveApplication): { label: string; decision: Decision; color: string }[] => {
+  function actionsFor(app: LeaveApplication): { label: string; decision: Decision; color: string }[] {
     switch (app.stage) {
       case "unit_head":
         if (app.category === "CL" || app.category === "RH") {
@@ -70,58 +73,58 @@ export default function ApprovalsPage() {
     { key: "actions", header: "Actions" },
   ];
 
-  const rows = data?.results || [];
+  const rowsData = data?.results || [];
 
   return (
     <Container size="xl">
       <PageHeader
-        title="Approvals Inbox"
-        subtitle="Requests awaiting your decision"
+        title="Leave Approvals"
+        subtitle="Requests waiting for your decision"
       />
       <TextInput
         label="Remark (optional)"
         value={remark}
-        onChange={(e) => setRemark(e.target.value)}
-        placeholder="Add a remark for the decision..."
+        onChange={(e) => setRemark(e.currentTarget.value)}
         clearable
       />
-      {rows.length === 0 ? (
+      {rowsData.length === 0 ? (
         <Card padding="lg">
           <Text>No pending approvals</Text>
         </Card>
       ) : (
-        <DataTable
+        <DataTable<LeaveApplication>
           rows={rows}
-          columns={columns}
-          loading={isPending}
-          rowKey={(row: LeaveApplication) => row.id}
-          empty={{ title: "No applications found", description: "Check back later for updates." }}
-        >
-          {(row: LeaveApplication) => {
-            const appCategory = row.category;
-            const categoryLabel = appCategory === "cancellation" ? `${appCategory.toUpperCase()} (cancellation)` : CATEGORY_LABELS[appCategory];
-            const startDate = new Date(row.start_date).toLocaleDateString();
-            const endDate = new Date(row.end_date).toLocaleDateString();
-            const daysValue = row.days;
-            const purpose = row.purpose || "—";
-            const stageLabel = row.stage.replace(/_/g, " ");
-            const unitHeadRec = row.unit_head_recommendation || "—";
-
-            return (
-              <td key="actions">
-                {actionsFor(row).map((action) => (
+          columns={[
+            ...columns,
+            { key: "applicant", header: "Applicant", render: (r) => r.user_id },
+            { key: "category", header: "Category", render: (r) => {
+              const categoryLabel = r.kind === "cancellation" ? `${r.category.toUpperCase()} (cancellation)` : CATEGORY_LABELS[r.category];
+              return <Text>{categoryLabel}</Text>;
+            }},
+            { key: "start_date", header: "Dates", render: (r) => `${r.start_date} to ${r.end_date}` },
+            { key: "days", header: "Days", render: (r) => r.days },
+            { key: "purpose", header: "Purpose", render: (r) => r.purpose || "—" },
+            { key: "stage", header: "Stage", render: (r) => r.stage.replace(/_/g, " ") },
+            { key: "unit_head_recommendation", header: "Unit Head recommendation", render: (r) => r.unit_head_recommendation || "—" },
+            { key: "actions", header: "Actions", render: (r) => (
+              <Group size="xs">
+                {actionsFor(r).map((action) => (
                   <Button
                     key={action.decision}
                     color={action.color}
-                    onClick={() => handleDecision(row.id, action.decision, remark)}
+                    loading={decide.isPending}
+                    onClick={() => handleDecision(r.id, action.decision)}
                   >
                     {action.label}
                   </Button>
                 ))}
-              </td>
-            );
-          }}
-        </DataTable>
+              </Group>
+            )},
+          ]}
+          loading={isPending}
+          rowKey={(r: LeaveApplication) => r.id}
+          empty={{ title: "No pending approvals", description: "Requests assigned to you appear here." }}
+        />
       )}
     </Container>
   );
