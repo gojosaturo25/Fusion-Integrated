@@ -1,5 +1,6 @@
 """Leave decision and cancellation services (rewritten in Phase 2)."""
 
+from decimal import Decimal
 from datetime import date
 from django.db import transaction
 from django.utils import timezone
@@ -20,7 +21,9 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
     - Update recommendation field for UNIT_HEAD stage if applicable.
     - Route to next approver if needed.
     """
-    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+    app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+    if app is None:
+        raise NotFound()
 
     # Check status and assignee ownership
     if app.status != Status.PENDING.value:
@@ -43,6 +46,10 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
             # BR-EL-016: CL and RH are final at Unit Head
             if decision not in ("approve", "reject"):
                 raise LeaveError(f"Unit Head must approve or reject for {category} leave.")
+            
+            log_action(app, actor_id, decision, remark)
+            finalize(app, actor_id, decision == "approve")
+            return app
         else:
             # BR-EL-017: Others get a recommendation
             if decision not in ("recommended", "not_recommended"):
@@ -50,9 +57,17 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
 
             # Store recommendation
             app.unit_head_recommendation = decision
-            # Route to next approver (Establishment or Sanctioning Authority)
-            route_to_approver(app)
-            return app  # Stage changed by route_to_approver, no further action needed here
+            
+            # Route to next approver (Establishment or Sanctioning Authority) directly
+            if app.establishment_id:
+                app.stage = Stage.ESTABLISHMENT.value
+                app.assignee_id = app.establishment_id
+            else:
+                app.stage = Stage.SANCTION.value
+                app.assignee_id = app.sanctioning_authority_id or app.user_id
+            
+            app.save()
+            log_action(app, actor_id, decision, remark)
 
     elif current_stage == Stage.ESTABLISHMENT.value:
         # BR-EL-018: Establishment verifies and moves to SANCTION
@@ -123,7 +138,7 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
         
         # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
         if parent_app.kind != RequestKind.LEAVE.value:
-            raise ValueError("Cannot cancel a cancellation request.")
+            raise LeaveError("Cannot cancel a cancellation request.")
 
         balance = LeaveBalance.objects.select_for_update().get(
             user_id=parent_app.user_id,
@@ -163,14 +178,14 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
 
     # Check kind and approval status
     if app.kind != RequestKind.LEAVE.value:
-        raise NotFound("Can only cancel LEAVE requests.")
+        raise LeaveError("Can only cancel LEAVE requests.")
 
     if app.status != Status.APPROVED.value:
-        raise NotFound(f"Can only cancel APPROVED leave requests. Current status: {app.status}.")
+        raise LeaveError(f"Can only cancel APPROVED leave requests. Current status: {app.status}.")
 
     # Check start date is in the future relative to today
     if app.start_date <= today:
-        raise NotFound("Can only cancel leave requests that have not started yet.")
+        raise LeaveError("Can only cancel leave requests that have not started yet.")
 
     # Check for existing pending cancellation
     if LeaveApplication.objects.filter(
@@ -178,7 +193,7 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
         kind=RequestKind.CANCELLATION.value,
         status=Status.PENDING.value
     ).exists():
-        raise NotFound("A pending cancellation request already exists for this application.")
+        raise LeaveError("A pending cancellation request already exists for this application.")
 
     # Create the cancellation request
     cancellation = LeaveApplication.objects.create(

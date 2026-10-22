@@ -3899,3 +3899,203 @@ class ReportingLineView(APIView):
 
 > Tokens: 10k sent, 1.3k received.  
 > Applied edit to modules/leave/api/views.py  
+
+# aider chat started at 2026-10-22 23:35:56
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/services/lifecycle.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/models.py --message-file pilot/phase2/prompts/004c-lifecycle-fix.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 256 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/services/lifecycle.py to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+
+#### Review of modules/leave/services/lifecycle.py from task 004b. Most of it is right; fix only these defects, with SEARCH/REPLACE edits:  
+####   
+#### 1. Decimal is used in finalize() but never imported (ruff F821, NameError on approval). Add the line `from decimal import Decimal` directly below `from datetime import date`.  
+####   
+#### 2. decide(), stage UNIT_HEAD, CL/RH (is_final True): after the approve/reject check nothing happens and the request stays pending forever (BR-EL-016). Directly after the line  
+####                 raise LeaveError(f"Unit Head must approve or reject for {category} leave.")  
+####    and still inside `if is_final:`, add:  
+####             log_action(app, actor_id, decision, remark)  
+####             finalize(app, actor_id, decision == "approve")  
+####             return app  
+####   
+#### 3. decide(), stage UNIT_HEAD, other categories: it calls route_to_approver(app), which sends the request back to the Unit Head, so it never moves on (BR-EL-017/018). Replace the line `            route_to_approver(app)` (the one inside decide, after `app.unit_head_recommendation = decision`) with:  
+####             if app.establishment_id:  
+####                 app.stage = Stage.ESTABLISHMENT  
+####                 app.assignee_id = app.establishment_id  
+####             else:  
+####                 app.stage = Stage.SANCTION  
+####                 app.assignee_id = app.sanctioning_authority_id or app.user_id  
+####             app.save()  
+####             log_action(app, actor_id, decision, remark)  
+####   
+#### 4. decide() and request_cancellation() load the row with `LeaveApplication.objects.select_for_update().get(id=application_id)`, which raises DoesNotExist (HTTP 500) for an unknown id. In both, use instead:  
+####     app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()  
+####     if app is None:  
+####         raise NotFound()  
+####   
+#### 5. request_cancellation(): after the ownership check, the business-rule failures are not "not found"; they are bad requests. Change the four later `raise NotFound(...)` calls in request_cancellation (not LEAVE kind, not APPROVED, already started, pending cancellation exists) to `raise LeaveError(...)` with the same messages. Keep the ownership check as NotFound.  
+####   
+#### 6. In finalize(), replace `raise ValueError("Cannot cancel a cancellation request.")` with `raise LeaveError("Cannot cancel a cancellation request.")`.  
+####   
+#### Do not change anything else.  
+
+To fix the defects in `modules/leave/services/lifecycle.py` as requested, I will perform the following changes:
+
+1.  Add `from decimal import Decimal` at the top of the file.
+2.  Modify the logic for CL/RH at UNIT_HEAD stage to log and finalize immediately after the approve/reject check.
+3.  Modify the logic for other categories at UNIT_HEAD stage to route directly to ESTABLISHMENT or SANCTION instead of looping back.
+4.  Change `.get(id=...)` to `.filter(id=...).first()` with a null check in both `decide()` and `request_cancellation()`.
+5.  Change the business-rule failure exceptions in `request_cancellation()` from `NotFound` to `LeaveError`.
+6.  Replace the `ValueError` in `finalize()` with `LeaveError`.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+"""Leave decision and cancellation services (rewritten in Phase 2)."""
+
+from datetime import date
+=======
+"""Leave decision and cancellation services (rewritten in Phase 2)."""
+
+from decimal import Decimal
+from datetime import date
+>>>>>>> REPLACE
+```
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+        if is_final:
+            # BR-EL-016: CL and RH are final at Unit Head
+            if decision not in ("approve", "reject"):
+                raise LeaveError(f"Unit Head must approve or reject for {category} leave.")
+=======
+        if is_final:
+            # BR-EL-016: CL and RH are final at Unit Head
+            if decision not in ("approve", "reject"):
+                raise LeaveError(f"Unit Head must approve or reject for {category} leave.")
+            
+            log_action(app, actor_id, decision, remark)
+            finalize(app, actor_id, decision == "approve")
+            return app
+>>>>>>> REPLACE
+```
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+        else:
+            # BR-EL-017: Others get a recommendation
+            if decision not in ("recommended", "not_recommended"):
+                raise LeaveError(f"Unit Head must recommend or not recommend for {category} leave.")
+
+            # Store recommendation
+            app.unit_head_recommendation = decision
+            # Route to next approver (Establishment or Sanctioning Authority)
+            route_to_approver(app)
+            return app  # Stage changed by route_to_approver, no further action needed here
+=======
+        else:
+            # BR-EL-017: Others get a recommendation
+            if decision not in ("recommended", "not_recommended"):
+                raise LeaveError(f"Unit Head must recommend or not recommend for {category} leave.")
+
+            # Store recommendation
+            app.unit_head_recommendation = decision
+            
+            # Route to next approver (Establishment or Sanctioning Authority) directly
+            if app.establishment_id:
+                app.stage = Stage.ESTABLISHMENT.value
+                app.assignee_id = app.establishment_id
+            else:
+                app.stage = Stage.SANCTION.value
+                app.assignee_id = app.sanctioning_authority_id or app.user_id
+            
+            app.save()
+            log_action(app, actor_id, decision, remark)
+>>>>>>> REPLACE
+```
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+    app = LeaveApplication.objects.select_for_update().get(id=application_id)
+=======
+    app = LeaveApplication.objects.select_for_update().filter(id=application_id).first()
+    if app is None:
+        raise NotFound()
+>>>>>>> REPLACE
+```
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+    # Check ownership
+    if app.user_id != actor_id:
+        raise NotFound(f"Only the owner can request cancellation for this application.")
+
+    # Check kind and approval status
+    if app.kind != RequestKind.LEAVE.value:
+        raise NotFound("Can only cancel LEAVE requests.")
+
+    if app.status != Status.APPROVED.value:
+        raise NotFound(f"Can only cancel APPROVED leave requests. Current status: {app.status}.")
+
+    # Check start date is in the future relative to today
+    if app.start_date <= today:
+        raise NotFound("Can only cancel leave requests that have not started yet.")
+
+    # Check for existing pending cancellation
+    if LeaveApplication.objects.filter(
+        parent=app,
+        kind=RequestKind.CANCELLATION.value,
+        status=Status.PENDING.value
+    ).exists():
+        raise NotFound("A pending cancellation request already exists for this application.")
+=======
+    # Check ownership
+    if app.user_id != actor_id:
+        raise NotFound(f"Only the owner can request cancellation for this application.")
+
+    # Check kind and approval status
+    if app.kind != RequestKind.LEAVE.value:
+        raise LeaveError("Can only cancel LEAVE requests.")
+
+    if app.status != Status.APPROVED.value:
+        raise LeaveError(f"Can only cancel APPROVED leave requests. Current status: {app.status}.")
+
+    # Check start date is in the future relative to today
+    if app.start_date <= today:
+        raise LeaveError("Can only cancel leave requests that have not started yet.")
+
+    # Check for existing pending cancellation
+    if LeaveApplication.objects.filter(
+        parent=app,
+        kind=RequestKind.CANCELLATION.value,
+        status=Status.PENDING.value
+    ).exists():
+        raise LeaveError("A pending cancellation request already exists for this application.")
+>>>>>>> REPLACE
+```
+
+modules/leave/services/lifecycle.py
+```python
+<<<<<<< SEARCH
+        # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
+        if parent_app.kind != RequestKind.LEAVE.value:
+            raise ValueError("Cannot cancel a cancellation request.")
+=======
+        # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
+        if parent_app.kind != RequestKind.LEAVE.value:
+            raise LeaveError("Cannot cancel a cancellation request.")
+>>>>>>> REPLACE
+```
+
+> Tokens: 8.3k sent, 1.2k received.  
+> Applied edit to modules/leave/services/lifecycle.py  
