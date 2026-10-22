@@ -87,7 +87,7 @@ export default function SubstituteRequestsPage() {
           loading={inboxData.isPending}
           rowKey={(row: LeaveApplication) => row.id}
           empty={{ title: "No substitute requests", description: "You have no active substitute requests." }}
-        </DataTable>
+        />
       </Card>
     </Container>
   );
