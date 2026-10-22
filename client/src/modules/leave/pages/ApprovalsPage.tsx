@@ -15,8 +15,6 @@ export default function ApprovalsPage() {
 
   if (error) return <Container size="xl"><ErrorState error={error} /></Container>;
 
-  const rows = (data ?? []).filter((a) => a.stage !== "substitute");
-
   function handleDecision(id: number, decision: Decision) {
     decide.mutate({ id, decision, remark }, {
       onSuccess: () => {
@@ -85,21 +83,16 @@ export default function ApprovalsPage() {
         label="Remark (optional)"
         value={remark}
         onChange={(e) => setRemark(e.currentTarget.value)}
-        clearable
+        mb="md"
       />
-      {rowsData.length === 0 ? (
-        <Card padding="lg">
-          <Text>No pending approvals</Text>
-        </Card>
-      ) : (
+      <Card padding="lg">
         <DataTable<LeaveApplication>
           rows={rows}
           columns={[
-            ...columns,
             { key: "applicant", header: "Applicant", render: (r) => r.user_id },
             { key: "category", header: "Category", render: (r) => {
               const categoryLabel = r.kind === "cancellation" ? `${r.category.toUpperCase()} (cancellation)` : CATEGORY_LABELS[r.category];
-              return <Text>{categoryLabel}</Text>;
+              return categoryLabel;
             }},
             { key: "start_date", header: "Dates", render: (r) => `${r.start_date} to ${r.end_date}` },
             { key: "days", header: "Days", render: (r) => r.days },
@@ -107,12 +100,13 @@ export default function ApprovalsPage() {
             { key: "stage", header: "Stage", render: (r) => r.stage.replace(/_/g, " ") },
             { key: "unit_head_recommendation", header: "Unit Head recommendation", render: (r) => r.unit_head_recommendation || "—" },
             { key: "actions", header: "Actions", render: (r) => (
-              <Group size="xs">
+              <Group gap="xs">
                 {actionsFor(r).map((action) => (
                   <Button
                     key={action.decision}
                     color={action.color}
                     loading={decide.isPending}
+                    size="xs"
                     onClick={() => handleDecision(r.id, action.decision)}
                   >
                     {action.label}
@@ -125,7 +119,7 @@ export default function ApprovalsPage() {
           rowKey={(r: LeaveApplication) => r.id}
           empty={{ title: "No pending approvals", description: "Requests assigned to you appear here." }}
         />
-      )}
+      </Card>
     </Container>
   );
 }
