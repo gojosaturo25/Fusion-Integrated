@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from modules.leave.models import HalfDay, LeaveAction, LeaveApplication, LeaveBalance, LeaveCategory, ReportingLine
+from modules.leave.models import (
+    HalfDay,
+    LeaveAction,
+    LeaveApplication,
+    LeaveBalance,
+    LeaveCategory,
+    ReportingLine,
+)
 
 
 class LeaveActionSerializer(serializers.ModelSerializer):
@@ -91,7 +98,13 @@ class LeaveApplySerializer(serializers.Serializer):
 
 class DecisionSerializer(serializers.Serializer):
     decision = serializers.ChoiceField(
-        choices=[("approve", "Approve"), ("reject", "Reject"), ("recommended", "Recommended"), ("not_recommended", "Not Recommended"), ("verify", "Verify")],
+        choices=[
+            ("approve", "Approve"),
+            ("reject", "Reject"),
+            ("recommended", "Recommended"),
+            ("not_recommended", "Not Recommended"),
+            ("verify", "Verify"),
+        ],
         required=True,
     )
     remark = serializers.CharField(allow_blank=True, default="")

@@ -1,3 +1,1 @@
-"""Employee Leave Management (ELM) module."""
-
-__version__ = "1.0"
+"""Employee Leave Management (ELM) module for Fusion."""

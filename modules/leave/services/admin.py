@@ -6,10 +6,12 @@ from modules.leave.services.applications import LeaveError, get_balance
 
 
 @transaction.atomic
-def set_reporting_line(user_id: int, unit_head_id: int, establishment_id=None, sanctioning_authority_id=None) -> ReportingLine:
+def set_reporting_line(
+    user_id: int, unit_head_id: int, establishment_id=None, sanctioning_authority_id=None
+) -> ReportingLine:
     """
     Update or create the reporting line for a user.
-    
+
     Raises LeaveError if unit_head_id is missing.
     """
     if unit_head_id is None:
@@ -21,7 +23,7 @@ def set_reporting_line(user_id: int, unit_head_id: int, establishment_id=None, s
             "unit_head_id": unit_head_id,
             "establishment_id": establishment_id,
             "sanctioning_authority_id": sanctioning_authority_id,
-        }
+        },
     )
 
     return reporting_line
@@ -31,11 +33,11 @@ def set_reporting_line(user_id: int, unit_head_id: int, establishment_id=None, s
 def ensure_balances(user_id: int, kind: str, year: int) -> list:
     """
     Ensure leave balances exist for all categories eligible for the given kind.
-    
+
     Returns a list of LeaveBalance objects ordered by category name.
     """
     eligible_categories = []
-    
+
     for category in policy.CATEGORIES:
         entitlement = policy.entitlement(category, kind)
         if entitlement is not None:

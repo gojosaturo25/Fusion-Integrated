@@ -1,5 +1,7 @@
 from decimal import Decimal
+
 from django.db import models
+
 from core.db.mixins import TimeStampedModel, UserScopedModel
 
 
@@ -96,7 +98,9 @@ class LeaveApplication(UserScopedModel, TimeStampedModel):
     purpose = models.TextField("Purpose / Reason")
     station_leave = models.BooleanField(default=False, verbose_name="Station Leave")
     station_address = models.TextField(blank=True, verbose_name="Station Address")
-    substitute_id = models.IntegerField(null=True, blank=True, verbose_name="Nominated Substitute ID")
+    substitute_id = models.IntegerField(
+        null=True, blank=True, verbose_name="Nominated Substitute ID"
+    )
     substitute_status = models.CharField(
         max_length=15,
         choices=SubstituteStatus.choices,
@@ -130,7 +134,9 @@ class LeaveApplication(UserScopedModel, TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+        return (
+            f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+        )
 
 
 class LeaveBalance(UserScopedModel, TimeStampedModel):

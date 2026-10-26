@@ -1,14 +1,19 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 from django.db import transaction
 
 from core.api.exceptions import BadRequestError, NotFoundError
 from modules.leave.domain import policy
 from modules.leave.models import (
-    LeaveAction, LeaveApplication, LeaveBalance, ReportingLine,
-    RequestKind, Stage, Status, SubstituteStatus,
+    LeaveAction,
+    LeaveApplication,
+    LeaveBalance,
+    ReportingLine,
+    RequestKind,
+    Stage,
+    Status,
+    SubstituteStatus,
 )
 
 
@@ -61,14 +66,20 @@ def get_balance(user_id: int, kind: str, category: str, year: int) -> LeaveBalan
     return balance
 
 
-def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id: Optional[int] = None) -> bool:
+def has_overlap(
+    user_id: int, start: date, end: date, half_day: str, exclude_id: int | None = None
+) -> bool:
     """Check if the user has an overlapping leave application.
 
     Considers PENDING or APPROVED LEAVE-kind applications.
     Applies BR-EL-012 exception for CL half-days on single dates.
     """
     # Determine which categories count as "LEAVE" for overlap purposes (excluding CANCELLATION)
-    leave_categories = [cat[0] for cat in LeaveApplication._meta.get_field('category').choices if cat[0] != 'CANCELLATION']
+    leave_categories = [
+        cat[0]
+        for cat in LeaveApplication._meta.get_field("category").choices
+        if cat[0] != "CANCELLATION"
+    ]
 
     applications = LeaveApplication.objects.filter(
         user_id=user_id,
@@ -83,7 +94,9 @@ def has_overlap(user_id: int, start: date, end: date, half_day: str, exclude_id:
 
     for app in applications:
         # Calculate overlap using policy logic
-        is_overlapping = policy.overlaps(app.start_date, app.end_date, app.half_day, start, end, half_day)
+        is_overlapping = policy.overlaps(
+            app.start_date, app.end_date, app.half_day, start, end, half_day
+        )
         if is_overlapping:
             return True
 
@@ -152,7 +165,9 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
         raise LeaveError(str(e))
 
     if balance.available < days:
-        raise LeaveError(f"Insufficient leave balance. Available: {balance.available}, Required: {days}.")
+        raise LeaveError(
+            f"Insufficient leave balance. Available: {balance.available}, Required: {days}."
+        )
 
     # 4. Check overlap (BR-EL-012)
     if has_overlap(user_id, start_date, end_date, half_day):
@@ -238,10 +253,12 @@ def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> L
         raise NotFound()
 
     if app.assignee_id != actor_id:
-        raise NotFound(f"Only the assigned substitute can respond to this application.")
+        raise NotFound("Only the assigned substitute can respond to this application.")
 
     if app.status != Status.PENDING.value or app.stage != Stage.SUBSTITUTE.value:
-        raise NotFound(f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}.")
+        raise NotFound(
+            f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}."
+        )
 
     if accept:
         description = "Substitute consent accepted."
@@ -269,13 +286,15 @@ def replace_substitute(actor_id: int, application_id: int, substitute_id: int) -
     app = LeaveApplication.objects.select_for_update().get(id=application_id)
 
     if app.user_id != actor_id:
-        raise NotFound(f"Only the application owner can nominate a replacement substitute.")
+        raise NotFound("Only the application owner can nominate a replacement substitute.")
 
     if app.status not in [Status.PENDING.value]:
         raise NotFound(f"Can only replace a declined substitute. Current status: {app.status}.")
 
     if app.substitute_status != SubstituteStatus.DECLINED.value:
-        raise NotFound(f"Can only replace a declined substitute. Current status: {app.substitute_status}.")
+        raise NotFound(
+            f"Can only replace a declined substitute. Current status: {app.substitute_status}."
+        )
 
     # Validate new substitute eligibility (simplified: not applicant, no overlap)
     if substitute_id == actor_id:
@@ -308,7 +327,7 @@ def withdraw(actor_id: int, application_id: int) -> LeaveApplication:
         raise NotFound()
 
     if app.user_id != actor_id:
-        raise NotFound(f"Only the application owner can withdraw this application.")
+        raise NotFound("Only the application owner can withdraw this application.")
 
     if app.status != Status.PENDING.value:
         raise NotFound(f"Cannot withdraw application in status {app.status}.")

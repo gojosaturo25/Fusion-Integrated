@@ -6,14 +6,20 @@ from modules.leave.models import LeaveApplication, ReportingLine, Status
 
 def my_applications(user_id: int) -> QuerySet:
     """Return the leave applications belonging to a specific user, ordered by creation date descending."""
-    return LeaveApplication.objects.prefetch_related("actions").filter(user_id=user_id).order_by("-created_at")
+    return (
+        LeaveApplication.objects.prefetch_related("actions")
+        .filter(user_id=user_id)
+        .order_by("-created_at")
+    )
 
 
 def inbox(user_id: int) -> QuerySet:
     """Return pending leave applications assigned to a specific user (the assignee)."""
-    return LeaveApplication.objects.prefetch_related("actions").filter(
-        Q(assignee_id=user_id) & Q(status=Status.PENDING.value)
-    ).order_by("created_at")
+    return (
+        LeaveApplication.objects.prefetch_related("actions")
+        .filter(Q(assignee_id=user_id) & Q(status=Status.PENDING.value))
+        .order_by("created_at")
+    )
 
 
 def visible_application(user_id: int, application_id: int) -> LeaveApplication:

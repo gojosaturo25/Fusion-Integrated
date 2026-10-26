@@ -8,8 +8,13 @@ from core.api.exceptions import NotFoundError
 from fusion_auth.permissions import HasModuleGrant, HasPermission
 from modules.leave import selectors
 from modules.leave.api.serializers import (
-    LeaveApplySerializer, DecisionSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
-    ReplaceSubstituteSerializer, ReportingLineSerializer, SubstituteResponseSerializer,
+    DecisionSerializer,
+    LeaveApplicationSerializer,
+    LeaveApplySerializer,
+    LeaveBalanceSerializer,
+    ReplaceSubstituteSerializer,
+    ReportingLineSerializer,
+    SubstituteResponseSerializer,
 )
 from modules.leave.services import admin, applications, lifecycle
 
@@ -18,11 +23,13 @@ class ApplicationListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == "GET":
             return [HasModuleGrant("leave")(), HasPermission("leave.application.view_own")()]
-        elif self.request.method == "POST":
+        if self.request.method == "POST":
             return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
         return super().get_permissions()
 
-    @extend_schema(operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True))
+    @extend_schema(
+        operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True)
+    )
     def get(self, request, *args, **kwargs):
         user_id = request.principal.user_id
         apps = selectors.my_applications(user_id)
@@ -102,7 +109,10 @@ class ReplaceSubstituteView(APIView):
 
 @extend_schema(responses=LeaveApplicationSerializer(many=True))
 class InboxView(APIView):
-    permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review", "leave.substitute.respond")]
+    permission_classes = [
+        HasModuleGrant("leave"),
+        HasPermission("leave.application.review", "leave.substitute.respond"),
+    ]
 
     def get(self, request, *args, **kwargs):
         user_id = request.principal.user_id
@@ -136,7 +146,10 @@ class DecideView(APIView):
         return Response(serializer.data)
 
 
-@extend_schema(parameters=[OpenApiParameter("year", int, required=False)], responses=LeaveBalanceSerializer(many=True))
+@extend_schema(
+    parameters=[OpenApiParameter("year", int, required=False)],
+    responses=LeaveBalanceSerializer(many=True),
+)
 class BalanceView(APIView):
     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
 
@@ -164,6 +177,11 @@ class ReportingLineView(APIView):
         serializer = ReportingLineSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        line = admin.set_reporting_line(user_id, data["unit_head_id"], data.get("establishment_id"), data.get("sanctioning_authority_id"))
+        line = admin.set_reporting_line(
+            user_id,
+            data["unit_head_id"],
+            data.get("establishment_id"),
+            data.get("sanctioning_authority_id"),
+        )
         serializer = ReportingLineSerializer(line)
         return Response(serializer.data)

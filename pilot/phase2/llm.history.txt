@@ -43218,3 +43218,363 @@ ASSISTANT =======
 ASSISTANT   const rows = (data ?? []).filter((a) => a.stage !== "substitute");
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-10-26T08:49:50
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER │class ConflictError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER pyproject.toml
+USER ```
+USER [build-system]
+USER requires = ["setuptools>=68"]
+USER build-backend = "setuptools.build_meta"
+USER 
+USER # This is a deployed application, not a distributable library. Disabling
+USER # package auto-discovery keeps `pip install -e .` working purely as a way to
+USER # resolve dependencies from a single source of truth, without setuptools
+USER # trying to guess which of config/ core/ modules/ is "the package".
+USER [tool.setuptools]
+USER py-modules = []
+USER 
+USER [project]
+USER name = "fusion-integrated"
+USER version = "0.1.0"
+USER description = "Fusion-Integrated — the non-academic platform. Independent modules, one login."
+USER requires-python = ">=3.12"
+USER dependencies = [
+USER     "Django>=5.2,<6.0",
+USER     "djangorestframework>=3.15",
+USER     "django-cors-headers>=4.4",
+USER     "django-filter>=24.3",
+USER     "drf-spectacular>=0.27",
+USER     "psycopg[binary]>=3.2",
+USER     "celery>=5.4",
+USER     "redis>=5.0",
+USER     "requests>=2.32",
+USER     "structlog>=24.4",
+USER     "python-dateutil>=2.9",
+USER     # Recruiter passwords. These are the only credentials this service stores —
+USER     # institute users authenticate at the IAM and we never see their password.
+USER     # Recruiters are external parties, so their hashes get the strongest
+USER     # available KDF rather than Django's PBKDF2 default.
+USER     "argon2-cffi>=23.1",
+USER     # The WSGI server ops/systemd/fusion-platform.service runs. Nothing else
+USER     # can serve this in production.
+USER     "gunicorn>=23.0",
+USER ]
+USER 
+USER [project.optional-dependencies]
+USER dev = [
+USER     "pytest>=8.3",
+USER     "pytest-django>=4.9",
+USER     "pytest-cov>=5.0",
+USER     "factory-boy>=3.3",
+USER     "freezegun>=1.5",
+USER     "ruff>=0.6",
+USER     "import-linter>=2.0",
+USER     "responses>=0.25",
+USER ]
+USER 
+USER [tool.ruff]
+USER line-length = 100
+USER target-version = "py312"
+USER exclude = ["*/migrations/*", ".venv", "build", "dist"]
+USER 
+USER [tool.ruff.lint]
+USER # Wide net; everything switched off below has a stated reason.
+USER select = [
+USER   "F", "E", "W", "I", "N", "UP", "B", "C4", "S", "BLE", "A", "DJ",
+USER   "ISC", "PIE", "T20", "RET", "SIM", "TC", "PERF", "RUF", "TRY",
+USER   "PLC", "PLE", "PLW", "EXE", "G", "INT", "YTT", "ASYNC",
+USER ]
+USER ignore = [
+USER   "S101",      # assert is fine in tests
+USER   "TRY003",    # domain errors carry a sentence written for whoever reads it
+USER   "TRY400",    # a handled IAM blip is a warning, not an exception
+USER   "RUF012",    # DRF class attributes are mutable by design
+USER   "PLC0415",   # function-level imports break real cycles and keep domain/ clean
+USER   "ISC001",    # conflicts with the formatter
+USER   "T201",      # ops/checks are CLI scripts; printing is their output
+USER   "PLW2901",   # rebinding a loop variable is idiomatic in the parsers here
+USER   "N818",      # *Error is rendered by HTTP; a bare name is a domain signal
+USER   "TC001", "TC002", "TC003",   # Django imports the app tree at boot anyway
+USER ]
+USER 
+USER [tool.ruff.lint.per-file-ignores]
+USER # `Decimal as D` keeps a table of money literals readable.
+USER "*/tests/*" = ["S", "E501", "N817"]
+USER "config/settings/*" = ["F403", "F405"]
+USER # A PDF-prose generator; long strings and typographic dashes are its content, not a style defect.
+USER "docs/08-delivery/build_assignment_pdf.py" = ["E501", "RUF001", "ISC004"]
+USER 
+USER [tool.pytest.ini_options]
+USER # `--ds` rather than DJANGO_SETTINGS_MODULE: pytest-django lets the
+USER # environment variable win over this file, and a developer exporting
+USER # config.settings.dev would then run a different suite from CI.
+USER DJANGO_SETTINGS_MODULE = "config.settings.test"
+USER python_files = ["test_*.py"]
+USER addopts = "-q --no-header --ds=config.settings.test"
+USER testpaths = ["modules", "core", "fusion_auth"]
+USER ```
+USER 
+USER modules/leave/__init__.py
+USER ```
+USER """Employee Leave Management (ELM) module."""
+USER 
+USER __version__ = "1.0"
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Fusion's CI runs `ruff check .` with the rule set in pyproject.toml, and the leave module has about 90 findings, most of them mechanical (blank lines containing whitespace, import order, unnecessary f-strings, long lines). The task runner fixes those with the SE tools themselves right after this step (ruff format + ruff check --fix, safe fixes only), so no other code change is needed from you.
+USER 
+USER Your only job: make modules/leave/__init__.py contain exactly this one line and nothing else:
+USER """Employee Leave Management (ELM) module for Fusion."""
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-26T08:50:41
+ASSISTANT modules/leave/__init__.py
+ASSISTANT ```
+ASSISTANT """Employee Leave Management (ELM) module for Fusion."""
+ASSISTANT ```

@@ -4,6 +4,7 @@ Nav items carry `required_permission` and the server filters before sending —
 the client does zero filtering, so a link a role cannot use never reaches the
 browser at all.
 """
+
 MODULE = {
     "code": "leave",
     "label": "Leave Management",
@@ -16,27 +17,39 @@ MODULE = {
 
 NAV_ITEMS = [
     # -- Employee-facing actions -------------------------------------------
-    {"code": "leave.apply", "label": "Apply for Leave",
-     "icon": "PlusCircle",
-     "to": "/leave/apply",
-     "required_permission": "leave.application.apply",
-     "sort_order": 5},
-    {"code": "leave.mine", "label": "My Leaves",
-     "icon": "ListChecks",
-     "to": "/leave/mine",
-     "required_permission": "leave.application.view_own",
-     "sort_order": 10},
-    {"code": "leave.substitute", "label": "Substitute Requests",
-     "icon": "Users",
-     "to": "/leave/substitute",
-     "required_permission": "leave.substitute.respond",
-     "sort_order": 15},
+    {
+        "code": "leave.apply",
+        "label": "Apply for Leave",
+        "icon": "PlusCircle",
+        "to": "/leave/apply",
+        "required_permission": "leave.application.apply",
+        "sort_order": 5,
+    },
+    {
+        "code": "leave.mine",
+        "label": "My Leaves",
+        "icon": "ListChecks",
+        "to": "/leave/mine",
+        "required_permission": "leave.application.view_own",
+        "sort_order": 10,
+    },
+    {
+        "code": "leave.substitute",
+        "label": "Substitute Requests",
+        "icon": "Users",
+        "to": "/leave/substitute",
+        "required_permission": "leave.substitute.respond",
+        "sort_order": 15,
+    },
     # -- Unit Head / Sanctioning Authority actions ------------------------
-    {"code": "leave.approvals", "label": "Leave Approvals",
-     "icon": "CheckCircle",
-     "to": "/leave/approvals",
-     "required_permission": "leave.application.review",
-     "sort_order": 20},
+    {
+        "code": "leave.approvals",
+        "label": "Leave Approvals",
+        "icon": "CheckCircle",
+        "to": "/leave/approvals",
+        "required_permission": "leave.application.review",
+        "sort_order": 20,
+    },
 ]
 
 #: Every permission this module recognises; ROLE_GRANTS below says who holds each.
@@ -46,7 +59,10 @@ PERMISSIONS = [
     ("leave.substitute.respond", "Accept or decline being nominated as a substitute"),
     ("leave.application.review", "Decide requests assigned to oneself at the Unit Head stage"),
     ("leave.application.verify", "Verify requests at the Establishment stage"),
-    ("leave.application.sanction", "Sanction or refuse requests at the Sanctioning Authority stage"),
+    (
+        "leave.application.sanction",
+        "Sanction or refuse requests at the Sanctioning Authority stage",
+    ),
     ("leave.admin.manage", "Maintain reporting lines"),
 ]
 

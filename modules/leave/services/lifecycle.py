@@ -1,7 +1,8 @@
 """Leave decision and cancellation services (rewritten in Phase 2)."""
 
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -14,7 +15,7 @@ from modules.leave.services.applications import LeaveError, NotFound, log_action
 def decide(actor_id: int, application_id: int, decision: str, remark: str = "") -> LeaveApplication:
     """
     Process a decision at the current stage of a leave application.
-    
+
     - Load application with select_for_update.
     - Raise NotFound if not PENDING or actor is not assignee.
     - Validate decision against stage and policy rules (BR-EL-016, BR-EL-017).
@@ -46,34 +47,33 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
             # BR-EL-016: CL and RH are final at Unit Head
             if decision not in ("approve", "reject"):
                 raise LeaveError(f"Unit Head must approve or reject for {category} leave.")
-            
+
             log_action(app, actor_id, decision, remark)
             finalize(app, actor_id, decision == "approve")
             return app
-        else:
-            # BR-EL-017: Others get a recommendation
-            if decision not in ("recommended", "not_recommended"):
-                raise LeaveError(f"Unit Head must recommend or not recommend for {category} leave.")
+        # BR-EL-017: Others get a recommendation
+        if decision not in ("recommended", "not_recommended"):
+            raise LeaveError(f"Unit Head must recommend or not recommend for {category} leave.")
 
-            # Store recommendation
-            app.unit_head_recommendation = decision
-            
-            # Route to next approver (Establishment or Sanctioning Authority) directly
-            if app.establishment_id:
-                app.stage = Stage.ESTABLISHMENT.value
-                app.assignee_id = app.establishment_id
-            else:
-                app.stage = Stage.SANCTION.value
-                app.assignee_id = app.sanctioning_authority_id or app.user_id
-            
-            app.save()
-            log_action(app, actor_id, decision, remark)
+        # Store recommendation
+        app.unit_head_recommendation = decision
+
+        # Route to next approver (Establishment or Sanctioning Authority) directly
+        if app.establishment_id:
+            app.stage = Stage.ESTABLISHMENT.value
+            app.assignee_id = app.establishment_id
+        else:
+            app.stage = Stage.SANCTION.value
+            app.assignee_id = app.sanctioning_authority_id or app.user_id
+
+        app.save()
+        log_action(app, actor_id, decision, remark)
 
     elif current_stage == Stage.ESTABLISHMENT.value:
         # BR-EL-018: Establishment verifies and moves to SANCTION
         if decision != "verify":
             raise LeaveError("Establishment must verify the application.")
-        
+
         app.stage = Stage.SANCTION.value
         app.assignee_id = app.sanctioning_authority_id or app.user_id  # Handle self-sanction case
         app.save()
@@ -84,7 +84,7 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
         # BR-EL-019: Sanctioning Authority makes final decision
         if decision not in ("approve", "reject"):
             raise LeaveError("Sanctioning Authority must approve or reject.")
-        
+
         app.status = Status.APPROVED.value if decision == "approve" else Status.REJECTED.value
         app.stage = Stage.DONE.value
         app.assignee_id = None
@@ -92,7 +92,7 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
         app.save()
 
         log_action(app, actor_id, "sanction_decision", f"{decision.capitalize()}d by {actor_id}.")
-        
+
         # Finalize the application (update balance)
         finalize(app, actor_id, decision == "approve")
 
@@ -106,7 +106,7 @@ def decide(actor_id: int, application_id: int, decision: str, remark: str = "") 
 def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
     """
     Finalize a leave application after approval/rejection.
-    
+
     - Set status to APPROVED/REJECTED, stage DONE, assignee None, decided_at.
     - On LEAVE approval: add days to user's LeaveBalance.used for the start year.
     - On CANCELLATION approval: set parent status to CANCELLED and subtract parent's days from balance.
@@ -118,15 +118,18 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
     app.decided_at = timezone.now()
     app.save()
 
-    log_action(app, actor_id, "finalize", f"Application {app.kind} finalized as {'approved' if approved else 'rejected'}.")
+    log_action(
+        app,
+        actor_id,
+        "finalize",
+        f"Application {app.kind} finalized as {'approved' if approved else 'rejected'}.",
+    )
 
     # Handle balance updates based on kind and approval status
     if app.kind == RequestKind.LEAVE.value and approved:
         # BR-EL-021: Approval adds days to used balance
         balance = LeaveBalance.objects.select_for_update().get(
-            user_id=app.user_id,
-            year=app.start_date.year,
-            category=app.category
+            user_id=app.user_id, year=app.start_date.year, category=app.category
         )
         old_used = balance.used
         new_used = Decimal(str(old_used)) + Decimal(str(app.days))
@@ -135,7 +138,7 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
     elif app.kind == RequestKind.CANCELLATION.value and approved:
         # BR-EL-023: Cancellation of an approved LEAVE subtracts days from used
         parent_app = LeaveApplication.objects.get(id=app.parent_id)
-        
+
         # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
         if parent_app.kind != RequestKind.LEAVE.value:
             raise LeaveError("Cannot cancel a cancellation request.")
@@ -143,15 +146,15 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
         balance = LeaveBalance.objects.select_for_update().get(
             user_id=parent_app.user_id,
             year=parent_app.start_date.year,
-            category=parent_app.category
+            category=parent_app.category,
         )
-        
+
         old_used = balance.used
         new_used = Decimal(str(old_used)) - Decimal(str(parent_app.days))
         # Ensure we don't go below zero (though logic should prevent this)
         if new_used < 0:
             new_used = Decimal("0")
-            
+
         balance.used = new_used
         balance.save()
 
@@ -164,7 +167,7 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
 def request_cancellation(actor_id: int, application_id: int, today: date) -> LeaveApplication:
     """
     Request cancellation of an approved leave.
-    
+
     - Only the owner can request.
     - Only applicable to APPROVED LEAVE-kind requests where start_date > today.
     - Only if no PENDING cancellation already exists.
@@ -174,7 +177,7 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
 
     # Check ownership
     if app.user_id != actor_id:
-        raise NotFound(f"Only the owner can request cancellation for this application.")
+        raise NotFound("Only the owner can request cancellation for this application.")
 
     # Check kind and approval status
     if app.kind != RequestKind.LEAVE.value:
@@ -189,9 +192,7 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
 
     # Check for existing pending cancellation
     if LeaveApplication.objects.filter(
-        parent=app,
-        kind=RequestKind.CANCELLATION.value,
-        status=Status.PENDING.value
+        parent=app, kind=RequestKind.CANCELLATION.value, status=Status.PENDING.value
     ).exists():
         raise LeaveError("A pending cancellation request already exists for this application.")
 
@@ -217,6 +218,11 @@ def request_cancellation(actor_id: int, application_id: int, today: date) -> Lea
     # Route the cancellation request to the appropriate approver
     route_to_approver(cancellation)
 
-    log_action(app, actor_id, "request_cancellation", f"Requested cancellation for application {application_id}.")
+    log_action(
+        app,
+        actor_id,
+        "request_cancellation",
+        f"Requested cancellation for application {application_id}.",
+    )
 
     return cancellation

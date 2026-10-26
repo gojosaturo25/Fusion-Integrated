@@ -5,8 +5,8 @@ import pytest
 
 from modules.leave.domain import policy
 
-FRI = date(2026, 11, 6)   # a Friday
-MON = date(2026, 11, 9)   # the following Monday
+FRI = date(2026, 11, 6)  # a Friday
+MON = date(2026, 11, 9)  # the following Monday
 
 
 def test_entitlement_cl_staff():
