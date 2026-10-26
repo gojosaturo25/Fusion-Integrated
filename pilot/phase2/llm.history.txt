@@ -46703,3 +46703,1664 @@ ASSISTANT     if app.status != Status.PENDING.value or app.stage != Stage.SUBSTI
 ASSISTANT         raise NotFound(f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}.")
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-10-26T08:58:59
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.0.1-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-10-26
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.test.tsx:
+USER ⋮
+USER │function wrapper({ children }: { children: ReactNode }) {
+USER │  const qc = new QueryClient({
+USER │    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+USER │  });
+USER │  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+USER ⋮
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/api/serializers.py:
+USER ⋮
+USER │class UserRefSerializer(serializers.Serializer):
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/api/serializers.py:
+USER ⋮
+USER │class LeaveActionSerializer(serializers.ModelSerializer):
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/leave/models.py:
+USER ⋮
+USER │class RequestKind(models.TextChoices):
+USER ⋮
+USER │class ReportingLine(TimeStampedModel):
+USER │    """The reporting line for a leave application."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveApplication(UserScopedModel, TimeStampedModel):
+USER │    """A leave application submitted by an employee."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveBalance(UserScopedModel, TimeStampedModel):
+USER │    """Per-user, per-year, per-category leave balance."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    @property
+USER │    def available(self) -> Decimal:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class LeaveAction(models.Model):
+USER │    """Append-only history of actions taken on leave applications and balances."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER .importlinter
+USER ```
+USER [importlinter]
+USER root_packages =
+USER     config
+USER     core
+USER     fusion_auth
+USER     modules
+USER # Required because the domain contract forbids external packages
+USER # (django, rest_framework, celery).
+USER include_external_packages = True
+USER 
+USER [importlinter:contract:modules-only-touch-contracts]
+USER name = Modules may reach each other ONLY through contracts.py
+USER type = forbidden
+USER source_modules =
+USER     modules.placement
+USER     modules.directory
+USER     modules.accesscontrol
+USER forbidden_modules =
+USER     modules.placement.models
+USER     modules.placement.services
+USER     modules.placement.selectors
+USER     modules.placement.api
+USER     modules.placement.domain
+USER     modules.directory.models
+USER     modules.directory.services
+USER     modules.directory.api
+USER     modules.accesscontrol.models
+USER # DIRECT imports only. contracts.py legitimately imports its OWN module's
+USER # models and services, so following the chain transitively would make this
+USER # contract impossible to satisfy. What we forbid is a module reaching straight
+USER # into another module's internals.
+USER allow_indirect_imports = true
+USER # contracts.py is deliberately absent from the list above — it is the door.
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER # Every module's domain, not just the first one written.
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER 
+USER [importlinter:contract:core-is-a-leaf]
+USER name = core/ must not import any module
+USER type = forbidden
+USER source_modules = core
+USER forbidden_modules =
+USER     modules
+USER     fusion_auth
+USER 
+USER [importlinter:contract:placement-layers]
+USER name = Layering inside placement
+USER type = layers
+USER layers =
+USER     modules.placement.api
+USER     modules.placement.services
+USER     modules.placement.selectors
+USER     modules.placement.models
+USER     modules.placement.domain
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Review finding: lint-imports passes on the Phase-1 code only because .importlinter never mentions modules.leave. Phase 1 imported modules.directory.models from inside leave, which the first contract exists to forbid, and nothing caught it. Add leave to the existing contracts and give it the same layering contract that placement has. Fix only this, with SEARCH/REPLACE edits in .importlinter:
+USER 
+USER 1. In [importlinter:contract:modules-only-touch-contracts], add `    modules.leave` as the last line of source_modules (after `    modules.accesscontrol`), and add these five lines at the end of forbidden_modules (after `    modules.accesscontrol.models`):
+USER     modules.leave.models
+USER     modules.leave.services
+USER     modules.leave.selectors
+USER     modules.leave.api
+USER     modules.leave.domain
+USER 
+USER 2. In [importlinter:contract:domain-is-pure-python], add `    modules.leave.domain` to source_modules directly after `    modules.placement.domain`.
+USER 
+USER 3. At the end of the file add a blank line and this contract:
+USER [importlinter:contract:leave-layers]
+USER name = Layering inside leave
+USER type = layers
+USER layers =
+USER     modules.leave.api
+USER     modules.leave.services
+USER     modules.leave.selectors
+USER     modules.leave.models
+USER     modules.leave.domain
+USER 
+USER Do not change anything else.
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-10-26T09:01:46
+ASSISTANT To update `.importlinter` and enforce the same import contracts and layering rules for `modules.leave` as exist for `modules.placement`, I will make the following changes:
+ASSISTANT 
+ASSISTANT 1.  Add `modules.leave` to the `source_modules` list in `[importlinter:contract:modules-only-touch-contracts]`.
+ASSISTANT 2.  Add the corresponding `forbidden_modules` entries for `leave` in the same section.
+ASSISTANT 3.  Add `modules.leave.domain` to the `source_modules` list in `[importlinter:contract:domain-is-pure-python]`.
+ASSISTANT 4.  Add a new contract `[importlinter:contract:leave-layers]` at the end of the file to define the layering order for the leave module.
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     config
+ASSISTANT     core
+ASSISTANT     fusion_auth
+ASSISTANT     modules
+ASSISTANT # Required because the domain contract forbids external packages
+ASSISTANT # (django, rest_framework, celery).
+ASSISTANT include_external_packages = True
+ASSISTANT 
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT =======
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     config
+ASSISTANT     core
+ASSISTANT     fusion_auth
+ASSISTANT     modules
+ASSISTANT # Required because the domain contract forbids external packages
+ASSISTANT # (django, rest_framework, celery).
+ASSISTANT include_external_packages = True
+ASSISTANT 
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.leave.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT =======
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.leave.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+ASSISTANT # and directory at once — so it is a tool, not a bounded context. It
+ASSISTANT # is installed in dev/test settings only. Declaring the exemption here keeps it
+ASSISTANT # visible instead of it quietly becoming a back door.
+ASSISTANT 
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT =======
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+ASSISTANT # and directory at once — so it is a tool, not a bounded context. It
+ASSISTANT # is installed in dev/test settings only. Declaring the exemption here keeps it
+ASSISTANT # visible instead of it quietly becoming a back door.
+ASSISTANT 
+ASSISTANT [importlinter:contract:leave-layers]
+ASSISTANT name = Layering inside leave
+ASSISTANT type = layers
+ASSISTANT layers =
+ASSISTANT     modules.leave.api
+ASSISTANT     modules.leave.services
+ASSISTANT     modules.leave.selectors
+ASSISTANT     modules.leave.models
+ASSISTANT     modules.leave.domain
+ASSISTANT 
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+TO LLM 2026-10-26T09:01:46
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.0.1-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-10-26
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER │class ConflictError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/checks.py:
+USER ⋮
+USER │def check_auth_cookie_name(app_configs, **kwargs):
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/api/serializers.py:
+USER ⋮
+USER │class LeaveActionSerializer(serializers.ModelSerializer):
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/api/views.py:
+USER ⋮
+USER │class ApplicationListView(_Scoped, generics.ListAPIView):
+USER │    # A recruiter is authorised by the company-scoped queryset, not by a code.
+USER │    permission_classes = [MODULE, ScopedCollection(P_VIEW_APPS, P_VIEW_SELF)]
+USER │
+USER ⋮
+USER │    def list(self, request, *args, **kwargs):
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER Review finding: lint-imports passes on the Phase-1 code only because .importlinter never mentions modules.leave. Phase 1 imported modules.directory.models from inside leave, which the first contract exists to forbid, and nothing caught it. Add leave to the existing contracts and give it the same layering contract that placement has. Fix only this, with SEARCH/REPLACE edits in .importlinter:
+USER 
+USER 1. In [importlinter:contract:modules-only-touch-contracts], add `    modules.leave` as the last line of source_modules (after `    modules.accesscontrol`), and add these five lines at the end of forbidden_modules (after `    modules.accesscontrol.models`):
+USER     modules.leave.models
+USER     modules.leave.services
+USER     modules.leave.selectors
+USER     modules.leave.api
+USER     modules.leave.domain
+USER 
+USER 2. In [importlinter:contract:domain-is-pure-python], add `    modules.leave.domain` to source_modules directly after `    modules.placement.domain`.
+USER 
+USER 3. At the end of the file add a blank line and this contract:
+USER [importlinter:contract:leave-layers]
+USER name = Layering inside leave
+USER type = layers
+USER layers =
+USER     modules.leave.api
+USER     modules.leave.services
+USER     modules.leave.selectors
+USER     modules.leave.models
+USER     modules.leave.domain
+USER 
+USER Do not change anything else.
+-------
+ASSISTANT To update `.importlinter` and enforce the same import contracts and layering rules for `modules.leave` as exist for `modules.placement`, I will make the following changes:
+ASSISTANT 
+ASSISTANT 1.  Add `modules.leave` to the `source_modules` list in `[importlinter:contract:modules-only-touch-contracts]`.
+ASSISTANT 2.  Add the corresponding `forbidden_modules` entries for `leave` in the same section.
+ASSISTANT 3.  Add `modules.leave.domain` to the `source_modules` list in `[importlinter:contract:domain-is-pure-python]`.
+ASSISTANT 4.  Add a new contract `[importlinter:contract:leave-layers]` at the end of the file to define the layering order for the leave module.
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     config
+ASSISTANT     core
+ASSISTANT     fusion_auth
+ASSISTANT     modules
+ASSISTANT # Required because the domain contract forbids external packages
+ASSISTANT # (django, rest_framework, celery).
+ASSISTANT include_external_packages = True
+ASSISTANT 
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT =======
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     config
+ASSISTANT     core
+ASSISTANT     fusion_auth
+ASSISTANT     modules
+ASSISTANT # Required because the domain contract forbids external packages
+ASSISTANT # (django, rest_framework, celery).
+ASSISTANT include_external_packages = True
+ASSISTANT 
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.leave.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT =======
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.leave.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+ASSISTANT # and directory at once — so it is a tool, not a bounded context. It
+ASSISTANT # is installed in dev/test settings only. Declaring the exemption here keeps it
+ASSISTANT # visible instead of it quietly becoming a back door.
+ASSISTANT 
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT =======
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT 
+ASSISTANT # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+ASSISTANT # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+ASSISTANT # and directory at once — so it is a tool, not a bounded context. It
+ASSISTANT # is installed in dev/test settings only. Declaring the exemption here keeps it
+ASSISTANT # visible instead of it quietly becoming a back door.
+ASSISTANT 
+ASSISTANT [importlinter:contract:leave-layers]
+ASSISTANT name = Layering inside leave
+ASSISTANT type = layers
+ASSISTANT layers =
+ASSISTANT     modules.leave.api
+ASSISTANT     modules.leave.services
+ASSISTANT     modules.leave.selectors
+ASSISTANT     modules.leave.models
+ASSISTANT     modules.leave.domain
+ASSISTANT 
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I updated the files.
+-------
+ASSISTANT Ok.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER .importlinter
+USER ```
+USER [importlinter]
+USER root_packages =
+USER     config
+USER     core
+USER     fusion_auth
+USER     modules
+USER # Required because the domain contract forbids external packages
+USER # (django, rest_framework, celery).
+USER include_external_packages = True
+USER 
+USER [importlinter:contract:modules-only-touch-contracts]
+USER name = Modules may reach each other ONLY through contracts.py
+USER type = forbidden
+USER source_modules =
+USER     modules.placement
+USER     modules.directory
+USER     modules.accesscontrol
+USER forbidden_modules =
+USER     modules.placement.models
+USER     modules.placement.services
+USER     modules.placement.selectors
+USER     modules.placement.api
+USER     modules.placement.domain
+USER     modules.directory.models
+USER     modules.directory.services
+USER     modules.directory.api
+USER     modules.accesscontrol.models
+USER # DIRECT imports only. contracts.py legitimately imports its OWN module's
+USER # models and services, so following the chain transitively would make this
+USER # contract impossible to satisfy. What we forbid is a module reaching straight
+USER # into another module's internals.
+USER allow_indirect_imports = true
+USER # contracts.py is deliberately absent from the list above — it is the door.
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER # Every module's domain, not just the first one written.
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER 
+USER [importlinter:contract:core-is-a-leaf]
+USER name = core/ must not import any module
+USER type = forbidden
+USER source_modules = core
+USER forbidden_modules =
+USER     modules
+USER     fusion_auth
+USER 
+USER [importlinter:contract:placement-layers]
+USER name = Layering inside placement
+USER type = layers
+USER layers =
+USER     modules.placement.api
+USER     modules.placement.services
+USER     modules.placement.selectors
+USER     modules.placement.models
+USER     modules.placement.domain
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER # 3 SEARCH/REPLACE blocks failed to match!
+USER 
+USER ## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+USER <<<<<<< SEARCH
+USER [importlinter:contract:modules-only-touch-contracts]
+USER name = Modules may reach each other ONLY through contracts.py
+USER type = forbidden
+USER source_modules =
+USER     config
+USER     core
+USER     fusion_auth
+USER     modules
+USER # Required because the domain contract forbids external packages
+USER # (django, rest_framework, celery).
+USER include_external_packages = True
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER =======
+USER [importlinter:contract:modules-only-touch-contracts]
+USER name = Modules may reach each other ONLY through contracts.py
+USER type = forbidden
+USER source_modules =
+USER     config
+USER     core
+USER     fusion_auth
+USER     modules
+USER # Required because the domain contract forbids external packages
+USER # (django, rest_framework, celery).
+USER include_external_packages = True
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER     modules.leave.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER >>>>>>> REPLACE
+USER 
+USER 
+USER ## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+USER <<<<<<< SEARCH
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER =======
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER     modules.leave.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER >>>>>>> REPLACE
+USER 
+USER Did you mean to match some of these actual lines from .importlinter?
+USER 
+USER ```
+USER # contract impossible to satisfy. What we forbid is a module reaching straight
+USER # into another module's internals.
+USER allow_indirect_imports = true
+USER # contracts.py is deliberately absent from the list above — it is the door.
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER # Every module's domain, not just the first one written.
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER ```
+USER 
+USER 
+USER ## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+USER <<<<<<< SEARCH
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER 
+USER [importlinter:contract:core-is-a-leaf]
+USER =======
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER 
+USER [importlinter:contract:leave-layers]
+USER name = Layering inside leave
+USER type = layers
+USER layers =
+USER     modules.leave.api
+USER     modules.leave.services
+USER     modules.leave.selectors
+USER     modules.leave.models
+USER     modules.leave.domain
+USER 
+USER [importlinter:contract:core-is-a-leaf]
+USER >>>>>>> REPLACE
+USER 
+USER Did you mean to match some of these actual lines from .importlinter?
+USER 
+USER ```
+USER # contract impossible to satisfy. What we forbid is a module reaching straight
+USER # into another module's internals.
+USER allow_indirect_imports = true
+USER # contracts.py is deliberately absent from the list above — it is the door.
+USER 
+USER [importlinter:contract:domain-is-pure-python]
+USER name = domain/ must not import Django, DRF or Celery
+USER type = forbidden
+USER source_modules =
+USER # Every module's domain, not just the first one written.
+USER     modules.placement.domain
+USER forbidden_modules =
+USER     django
+USER     rest_framework
+USER     celery
+USER 
+USER # NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+USER # this file. Seeding fixtures is cross-cutting by nature — it touches placement
+USER # and directory at once — so it is a tool, not a bounded context. It
+USER # is installed in dev/test settings only. Declaring the exemption here keeps it
+USER # visible instead of it quietly becoming a back door.
+USER 
+USER [importlinter:contract:core-is-a-leaf]
+USER name = core/ must not import any module
+USER type = forbidden
+USER source_modules = core
+USER forbidden_modules =
+USER ```
+USER 
+USER The SEARCH section must exactly match an existing block of lines including all white space, comments, indentation, docstrings, etc
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-10-26T09:04:16
+ASSISTANT To update `.importlinter` to include `modules.leave` in the import contracts and layering rules as requested, I will make the following changes:
+ASSISTANT 
+ASSISTANT 1.  Update `[importlinter:contract:modules-only-touch-contracts]` to add `modules.leave` to `source_modules` and its internal modules to `forbidden_modules`.
+ASSISTANT 2.  Update `[importlinter:contract:domain-is-pure-python]` to add `modules.leave.domain` to `source_modules`.
+ASSISTANT 3.  Add a new contract `[importlinter:contract:leave-layers]` at the end of the file.
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement
+ASSISTANT     modules.directory
+ASSISTANT     modules.accesscontrol
+ASSISTANT forbidden_modules =
+ASSISTANT     modules.placement.models
+ASSISTANT     modules.placement.services
+ASSISTANT     modules.placement.selectors
+ASSISTANT     modules.placement.api
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.directory.models
+ASSISTANT     modules.directory.services
+ASSISTANT     modules.directory.api
+ASSISTANT     modules.accesscontrol.models
+ASSISTANT =======
+ASSISTANT [importlinter:contract:modules-only-touch-contracts]
+ASSISTANT name = Modules may reach each other ONLY through contracts.py
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT     modules.placement
+ASSISTANT     modules.directory
+ASSISTANT     modules.accesscontrol
+ASSISTANT     modules.leave
+ASSISTANT forbidden_modules =
+ASSISTANT     modules.placement.models
+ASSISTANT     modules.placement.services
+ASSISTANT     modules.placement.selectors
+ASSISTANT     modules.placement.api
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.directory.models
+ASSISTANT     modules.directory.services
+ASSISTANT     modules.directory.api
+ASSISTANT     modules.accesscontrol.models
+ASSISTANT     modules.leave.models
+ASSISTANT     modules.leave.services
+ASSISTANT     modules.leave.selectors
+ASSISTANT     modules.leave.api
+ASSISTANT     modules.leave.domain
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT # Every module's domain, not just the first one written.
+ASSISTANT     modules.placement.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT =======
+ASSISTANT [importlinter:contract:domain-is-pure-python]
+ASSISTANT name = domain/ must not import Django, DRF or Celery
+ASSISTANT type = forbidden
+ASSISTANT source_modules =
+ASSISTANT # Every module's domain, not just the first one written.
+ASSISTANT     modules.placement.domain
+ASSISTANT     modules.leave.domain
+ASSISTANT forbidden_modules =
+ASSISTANT     django
+ASSISTANT     rest_framework
+ASSISTANT     celery
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT .importlinter
+ASSISTANT ```ini
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT name = core/ must not import any module
+ASSISTANT type = forbidden
+ASSISTANT source_modules = core
+ASSISTANT forbidden_modules =
+ASSISTANT =======
+ASSISTANT [importlinter:contract:core-is-a-leaf]
+ASSISTANT name = core/ must not import any module
+ASSISTANT type = forbidden
+ASSISTANT source_modules = core
+ASSISTANT forbidden_modules =
+ASSISTANT 
+ASSISTANT [importlinter:contract:leave-layers]
+ASSISTANT name = Layering inside leave
+ASSISTANT type = layers
+ASSISTANT layers =
+ASSISTANT     modules.leave.api
+ASSISTANT     modules.leave.services
+ASSISTANT     modules.leave.selectors
+ASSISTANT     modules.leave.models
+ASSISTANT     modules.leave.domain
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```

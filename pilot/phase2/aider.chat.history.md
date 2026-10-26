@@ -8713,3 +8713,478 @@ modules/leave/services/applications.py
 
 > Tokens: 8.6k sent, 204 received.  
 > Applied edit to modules/leave/services/applications.py  
+
+# aider chat started at 2026-10-26 08:58:57
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file .importlinter --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --message-file pilot/phase2/prompts/017-importlinter-leave.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added .importlinter to the chat.  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+
+#### Review finding: lint-imports passes on the Phase-1 code only because .importlinter never mentions modules.leave. Phase 1 imported modules.directory.models from inside leave, which the first contract exists to forbid, and nothing caught it. Add leave to the existing contracts and give it the same layering contract that placement has. Fix only this, with SEARCH/REPLACE edits in .importlinter:  
+####   
+#### 1. In [importlinter:contract:modules-only-touch-contracts], add `    modules.leave` as the last line of source_modules (after `    modules.accesscontrol`), and add these five lines at the end of forbidden_modules (after `    modules.accesscontrol.models`):  
+####     modules.leave.models  
+####     modules.leave.services  
+####     modules.leave.selectors  
+####     modules.leave.api  
+####     modules.leave.domain  
+####   
+#### 2. In [importlinter:contract:domain-is-pure-python], add `    modules.leave.domain` to source_modules directly after `    modules.placement.domain`.  
+####   
+#### 3. At the end of the file add a blank line and this contract:  
+#### [importlinter:contract:leave-layers]  
+#### name = Layering inside leave  
+#### type = layers  
+#### layers =  
+####     modules.leave.api  
+####     modules.leave.services  
+####     modules.leave.selectors  
+####     modules.leave.models  
+####     modules.leave.domain  
+####   
+#### Do not change anything else.  
+
+To update `.importlinter` and enforce the same import contracts and layering rules for `modules.leave` as exist for `modules.placement`, I will make the following changes:
+
+1.  Add `modules.leave` to the `source_modules` list in `[importlinter:contract:modules-only-touch-contracts]`.
+2.  Add the corresponding `forbidden_modules` entries for `leave` in the same section.
+3.  Add `modules.leave.domain` to the `source_modules` list in `[importlinter:contract:domain-is-pure-python]`.
+4.  Add a new contract `[importlinter:contract:leave-layers]` at the end of the file to define the layering order for the leave module.
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    config
+    core
+    fusion_auth
+    modules
+# Required because the domain contract forbids external packages
+# (django, rest_framework, celery).
+include_external_packages = True
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+=======
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    config
+    core
+    fusion_auth
+    modules
+# Required because the domain contract forbids external packages
+# (django, rest_framework, celery).
+include_external_packages = True
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+    modules.leave.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+>>>>>>> REPLACE
+```
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+=======
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+    modules.leave.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+>>>>>>> REPLACE
+```
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+
+[importlinter:contract:core-is-a-leaf]
+=======
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+
+[importlinter:contract:leave-layers]
+name = Layering inside leave
+type = layers
+layers =
+    modules.leave.api
+    modules.leave.services
+    modules.leave.selectors
+    modules.leave.models
+    modules.leave.domain
+
+[importlinter:contract:core-is-a-leaf]
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.5k sent, 962 received.  
+> The LLM did not conform to the edit format.  
+> https://aider.chat/docs/troubleshooting/edit-errors.html  
+> # 3 SEARCH/REPLACE blocks failed to match!
+
+## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+<<<<<<< SEARCH
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    config
+    core
+    fusion_auth
+    modules
+# Required because the domain contract forbids external packages
+# (django, rest_framework, celery).
+include_external_packages = True
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+=======
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    config
+    core
+    fusion_auth
+    modules
+# Required because the domain contract forbids external packages
+# (django, rest_framework, celery).
+include_external_packages = True
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+    modules.leave.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+>>>>>>> REPLACE
+
+
+## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+<<<<<<< SEARCH
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+=======
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+    modules.leave.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+>>>>>>> REPLACE
+
+Did you mean to match some of these actual lines from .importlinter?
+
+```
+# contract impossible to satisfy. What we forbid is a module reaching straight
+# into another module's internals.
+allow_indirect_imports = true
+# contracts.py is deliberately absent from the list above — it is the door.
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+# Every module's domain, not just the first one written.
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+```
+
+
+## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in .importlinter
+<<<<<<< SEARCH
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+
+[importlinter:contract:core-is-a-leaf]
+=======
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+
+[importlinter:contract:leave-layers]
+name = Layering inside leave
+type = layers
+layers =
+    modules.leave.api
+    modules.leave.services
+    modules.leave.selectors
+    modules.leave.models
+    modules.leave.domain
+
+[importlinter:contract:core-is-a-leaf]
+>>>>>>> REPLACE
+
+Did you mean to match some of these actual lines from .importlinter?
+
+```
+# contract impossible to satisfy. What we forbid is a module reaching straight
+# into another module's internals.
+allow_indirect_imports = true
+# contracts.py is deliberately absent from the list above — it is the door.
+
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+# Every module's domain, not just the first one written.
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+
+# NOTE on `devtools`: it is intentionally NOT listed as a module anywhere in
+# this file. Seeding fixtures is cross-cutting by nature — it touches placement
+# and directory at once — so it is a tool, not a bounded context. It
+# is installed in dev/test settings only. Declaring the exemption here keeps it
+# visible instead of it quietly becoming a back door.
+
+[importlinter:contract:core-is-a-leaf]
+name = core/ must not import any module
+type = forbidden
+source_modules = core
+forbidden_modules =
+```
+
+The SEARCH section must exactly match an existing block of lines including all white space, comments, indentation, docstrings, etc  
+
+To update `.importlinter` to include `modules.leave` in the import contracts and layering rules as requested, I will make the following changes:
+
+1.  Update `[importlinter:contract:modules-only-touch-contracts]` to add `modules.leave` to `source_modules` and its internal modules to `forbidden_modules`.
+2.  Update `[importlinter:contract:domain-is-pure-python]` to add `modules.leave.domain` to `source_modules`.
+3.  Add a new contract `[importlinter:contract:leave-layers]` at the end of the file.
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    modules.placement
+    modules.directory
+    modules.accesscontrol
+forbidden_modules =
+    modules.placement.models
+    modules.placement.services
+    modules.placement.selectors
+    modules.placement.api
+    modules.placement.domain
+    modules.directory.models
+    modules.directory.services
+    modules.directory.api
+    modules.accesscontrol.models
+=======
+[importlinter:contract:modules-only-touch-contracts]
+name = Modules may reach each other ONLY through contracts.py
+type = forbidden
+source_modules =
+    modules.placement
+    modules.directory
+    modules.accesscontrol
+    modules.leave
+forbidden_modules =
+    modules.placement.models
+    modules.placement.services
+    modules.placement.selectors
+    modules.placement.api
+    modules.placement.domain
+    modules.directory.models
+    modules.directory.services
+    modules.directory.api
+    modules.accesscontrol.models
+    modules.leave.models
+    modules.leave.services
+    modules.leave.selectors
+    modules.leave.api
+    modules.leave.domain
+>>>>>>> REPLACE
+```
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+# Every module's domain, not just the first one written.
+    modules.placement.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+=======
+[importlinter:contract:domain-is-pure-python]
+name = domain/ must not import Django, DRF or Celery
+type = forbidden
+source_modules =
+# Every module's domain, not just the first one written.
+    modules.placement.domain
+    modules.leave.domain
+forbidden_modules =
+    django
+    rest_framework
+    celery
+>>>>>>> REPLACE
+```
+
+.importlinter
+```ini
+<<<<<<< SEARCH
+[importlinter:contract:core-is-a-leaf]
+name = core/ must not import any module
+type = forbidden
+source_modules = core
+forbidden_modules =
+=======
+[importlinter:contract:core-is-a-leaf]
+name = core/ must not import any module
+type = forbidden
+source_modules = core
+forbidden_modules =
+
+[importlinter:contract:leave-layers]
+name = Layering inside leave
+type = layers
+layers =
+    modules.leave.api
+    modules.leave.services
+    modules.leave.selectors
+    modules.leave.models
+    modules.leave.domain
+>>>>>>> REPLACE
+```
+
+> Tokens: 7.5k sent, 670 received.  
+> Applied edit to .importlinter  
