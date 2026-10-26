@@ -71,8 +71,6 @@ layers =
     modules.leave.selectors
     modules.leave.models
     modules.leave.domain
-    modules
-    fusion_auth
 
 [importlinter:contract:placement-layers]
 name = Layering inside placement

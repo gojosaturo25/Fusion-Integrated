@@ -107,7 +107,8 @@ def overlaps(
     Check if two leave requests overlap.
 
     True when the date ranges intersect.
-    Exception: A single shared date where both halves are set and different does not count as overlap.
+    Exception: A single shared date where both halves are set
+    and different does not count as overlap.
     BR-EL-012: Applicant non-overlap with half-day CL exception.
     """
     # Determine if ranges intersect
@@ -120,10 +121,13 @@ def overlaps(
     # Check for the half-day exception on the same date
     # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
     # If both are on the same day and have different halves, they do NOT overlap.
-    if a_start == b_start and a_half != "none" and b_half != "none" and a_half != b_half:
-        return False  # Different halves of the same day do not overlap (BR-EL-012)
-
-    return True
+    # Different halves of the same day do not overlap (BR-EL-012)
+    return not (
+        a_start == b_start
+        and a_half != "none"
+        and b_half != "none"
+        and a_half != b_half
+    )
 
 
 def unit_head_is_final(category: str) -> bool:

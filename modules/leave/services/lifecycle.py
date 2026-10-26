@@ -109,8 +109,8 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
 
     - Set status to APPROVED/REJECTED, stage DONE, assignee None, decided_at.
     - On LEAVE approval: add days to user's LeaveBalance.used for the start year.
-    - On CANCELLATION approval: set parent status to CANCELLED and subtract parent's days from balance.
-        # Only a LEAVE request can be cancelled; a cancellation cannot be.
+    - On CANCELLATION approval: set parent status to CANCELLED
+    -   and subtract parent's days from balance.
     - Rejection: no balance change.
     """
     app.status = Status.APPROVED.value if approved else Status.REJECTED.value

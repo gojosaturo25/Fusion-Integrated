@@ -134,9 +134,11 @@ class DecideView(APIView):
 
         app = selectors.visible_application(request.principal.user_id, pk)
 
-        if app.stage == "establishment" and not request.principal.has_permission("leave.application.verify"):
+        has_verify = request.principal.has_permission("leave.application.verify")
+        if app.stage == "establishment" and not has_verify:
             raise NotFoundError("You do not have permission to decide at this stage.")
-        if app.stage == "sanction" and not request.principal.has_permission("leave.application.sanction"):
+        has_sanction = request.principal.has_permission("leave.application.sanction")
+        if app.stage == "sanction" and not has_sanction:
             raise NotFoundError("You do not have permission to decide at this stage.")
 
         app = lifecycle.decide(request.principal.user_id, pk, decision, remark)
