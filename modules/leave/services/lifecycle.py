@@ -110,6 +110,7 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
     - Set status to APPROVED/REJECTED, stage DONE, assignee None, decided_at.
     - On LEAVE approval: add days to user's LeaveBalance.used for the start year.
     - On CANCELLATION approval: set parent status to CANCELLED and subtract parent's days from balance.
+        # Only a LEAVE request can be cancelled; a cancellation cannot be.
     - Rejection: no balance change.
     """
     app.status = Status.APPROVED.value if approved else Status.REJECTED.value
@@ -139,7 +140,7 @@ def finalize(app: LeaveApplication, actor_id: int, approved: bool) -> None:
         # BR-EL-023: Cancellation of an approved LEAVE subtracts days from used
         parent_app = LeaveApplication.objects.get(id=app.parent_id)
 
-        # Ensure parent is a LEAVE request (cancellations of cancellations are not expected per workflow)
+        # Only a LEAVE request can be cancelled; a cancellation cannot be.
         if parent_app.kind != RequestKind.LEAVE.value:
             raise LeaveError("Cannot cancel a cancellation request.")
 

@@ -43,7 +43,7 @@ def get_balance(user_id: int, kind: str, category: str, year: int) -> LeaveBalan
     try:
         entitlement = policy.entitlement(category, kind)
     except policy.PolicyError as e:
-        raise LeaveError(str(e))
+        raise LeaveError(str(e)) from e
 
     if entitlement is None:
         raise LeaveError(f"Not eligible for {category} leave as {kind}.")
@@ -153,16 +153,13 @@ def apply_leave(user_id: int, kind: str, data: dict) -> LeaveApplication:
     try:
         days = policy.count_days(category, start_date, end_date, half_day)
     except policy.PolicyError as e:
-        raise LeaveError(str(e))
+        raise LeaveError(str(e)) from e
 
     if days <= 0:
         raise LeaveError(f"Invalid leave duration: {days} days.")
 
     # 3. Check balance (BR-EL-025)
-    try:
-        balance = get_balance(user_id, kind, category, start_date.year)
-    except LeaveError as e:
-        raise LeaveError(str(e))
+    balance = get_balance(user_id, kind, category, start_date.year)
 
     if balance.available < days:
         raise LeaveError(
@@ -256,9 +253,7 @@ def respond_to_substitute(actor_id: int, application_id: int, accept: bool) -> L
         raise NotFound("Only the assigned substitute can respond to this application.")
 
     if app.status != Status.PENDING.value or app.stage != Stage.SUBSTITUTE.value:
-        raise NotFound(
-            f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}."
-        )
+        raise NotFound(f"Cannot respond to substitute request for application in status {app.status} and stage {app.stage}.")
 
     if accept:
         description = "Substitute consent accepted."
