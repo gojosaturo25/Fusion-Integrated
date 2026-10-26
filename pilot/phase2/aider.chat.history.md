@@ -9525,3 +9525,109 @@ client/src/modules/leave/pages/MyLeavesPage.tsx
 
 > Tokens: 4.6k sent, 167 received.  
 > Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  
+
+# aider chat started at 2026-10-26 09:14:04
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/api.ts --read modules/leave/api/serializers.py --message-file pilot/phase2/prompts/021-admin-api-hooks.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 261 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/api.ts to the chat.  
+> Added modules/leave/api/serializers.py to the chat (read-only).  
+
+#### Found in the end-to-end browser test: the Leave Administrator has no screen at all. Reporting lines (who a person's Unit Head, Establishment officer and Sanctioning Authority are, EL-UC-014) can only be set by calling the API by hand, so a new employee cannot be routed. The next tasks add an admin page; this one adds its data hooks. Fix only this, with one SEARCH/REPLACE edit that appends to the END of client/src/modules/leave/api.ts (after the last function) exactly these declarations:  
+####   
+#### /** Who decides a person's leave (ReportingLineSerializer). */  
+#### export interface ReportingLine {  
+####   user_id: number;  
+####   unit_head_id: number;  
+####   establishment_id: number | null;  
+####   sanctioning_authority_id: number | null;  
+#### }  
+####   
+#### /** Load one person's reporting line; a 404 means none is configured yet. */  
+#### export function useReportingLine(userId: number | null) {  
+####   return useQuery({  
+####     queryKey: ["leave", "reporting-line", userId],  
+####     queryFn: async () => (await http.get<ReportingLine>(`/leave/reporting-lines/${userId}/`)).data,  
+####     enabled: userId !== null,  
+####     retry: false,  
+####   });  
+#### }  
+####   
+#### /** Create or replace a person's reporting line (Leave Administrator only). */  
+#### export function useSetReportingLine() {  
+####   const qc = useQueryClient();  
+####   return useMutation({  
+####     mutationFn: async (vars: ReportingLine) =>  
+####       (await http.put<ReportingLine>(`/leave/reporting-lines/${vars.user_id}/`, vars)).data,  
+####     onSuccess: () => qc.invalidateQueries({ queryKey: ["leave"] }),  
+####   });  
+#### }  
+####   
+#### Do not change anything else.  
+
+client/src/modules/leave/api.ts
+```typescript
+<<<<<<< SEARCH
+/** Make a decision on an application (approve/reject/recommend). */
+export function useDecide() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: number; decision: Decision; remark: string }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/decide/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+=======
+/** Make a decision on an application (approve/reject/recommend). */
+export function useDecide() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: number; decision: Decision; remark: string }) => {
+      const response = await http.post(`/leave/applications/${vars.id}/decide/`, vars);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leave"] });
+    },
+  });
+}
+
+/** Who decides a person's leave (ReportingLineSerializer). */
+export interface ReportingLine {
+  user_id: number;
+  unit_head_id: number;
+  establishment_id: number | null;
+  sanctioning_authority_id: number | null;
+}
+
+/** Load one person's reporting line; a 404 means none is configured yet. */
+export function useReportingLine(userId: number | null) {
+  return useQuery({
+    queryKey: ["leave", "reporting-line", userId],
+    queryFn: async () => (await http.get<ReportingLine>(`/leave/reporting-lines/${userId}/`)).data,
+    enabled: userId !== null,
+    retry: false,
+  });
+}
+
+/** Create or replace a person's reporting line (Leave Administrator only). */
+export function useSetReportingLine() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: ReportingLine) =>
+      (await http.put<ReportingLine>(`/leave/reporting-lines/${vars.user_id}/`, vars)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["leave"] }),
+  });
+}
+>>>>>>> REPLACE
+```
+
+> Tokens: 5.6k sent, 472 received.  
+> Applied edit to client/src/modules/leave/api.ts  
