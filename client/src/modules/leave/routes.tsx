@@ -7,6 +7,7 @@ const ApplyLeavePage = lazy(() => import("./pages/ApplyLeavePage"));
 const MyLeavesPage = lazy(() => import("./pages/MyLeavesPage"));
 const ApprovalsPage = lazy(() => import("./pages/ApprovalsPage"));
 const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));
+const ReportingLinesPage = lazy(() => import("./pages/ReportingLinesPage"));
 
 /** Paths are RELATIVE — the shell mounts them under the manifest's basePath.
  *
@@ -19,4 +20,5 @@ export const routes: RouteObject[] = [
   { path: "mine", element: <MyLeavesPage /> },
   { path: "approvals", element: <ApprovalsPage /> },
   { path: "substitute", element: <SubstituteRequestsPage /> },
+  { path: "admin", element: <ReportingLinesPage /> },
 ];

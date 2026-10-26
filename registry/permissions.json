@@ -108,6 +108,14 @@
             "required_permission": "leave.application.review",
             "sort_order": 20,
             "to": "/leave/approvals"
+          },
+          {
+            "code": "leave.admin",
+            "icon": "Gear",
+            "label": "Reporting Lines",
+            "required_permission": "leave.admin.manage",
+            "sort_order": 30,
+            "to": "/leave/admin"
           }
         ],
         "label": "Leave Management",

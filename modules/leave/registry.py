@@ -50,6 +50,14 @@ NAV_ITEMS = [
         "required_permission": "leave.application.review",
         "sort_order": 20,
     },
+    {
+        "code": "leave.admin",
+        "label": "Reporting Lines",
+        "icon": "Gear",
+        "to": "/leave/admin",
+        "required_permission": "leave.admin.manage",
+        "sort_order": 30,
+    },
 ]
 
 #: Every permission this module recognises; ROLE_GRANTS below says who holds each.

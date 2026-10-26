@@ -9812,3 +9812,94 @@ export default function ReportingLinesPage() {
 
 > Tokens: 5.5k sent, 968 received.  
 > Applied edit to client/src/modules/leave/pages/ReportingLinesPage.tsx  
+
+# aider chat started at 2026-10-26 09:17:57
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/routes.tsx --file modules/leave/registry.py --message-file pilot/phase2/prompts/023-admin-route-nav.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 262 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/routes.tsx to the chat.  
+> Added modules/leave/registry.py to the chat.  
+
+#### Wire the new ReportingLinesPage into the module. Fusion requires every sidebar item to have a client route and vice versa (ops/checks/nav_matches_routes.py). Fix only this, with SEARCH/REPLACE edits:  
+####   
+#### 1. client/src/modules/leave/routes.tsx: after the line  
+#### const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));  
+#### add  
+#### const ReportingLinesPage = lazy(() => import("./pages/ReportingLinesPage"));  
+#### and after the route entry `  { path: "substitute", element: <SubstituteRequestsPage /> },` add  
+####   { path: "admin", element: <ReportingLinesPage /> },  
+####   
+#### 2. modules/leave/registry.py: add a fifth entry at the end of NAV_ITEMS (after the leave.approvals entry, inside the list):  
+####     {"code": "leave.admin", "label": "Reporting Lines", "icon": "Gear", "to": "/leave/admin", "required_permission": "leave.admin.manage", "sort_order": 30},  
+#### (keep the same dict style and line breaks as the other entries).  
+####   
+#### Do not change anything else.  
+
+To wire the new `ReportingLinesPage` into the leave module, I will make two changes:
+
+1.  In `client/src/modules/leave/routes.tsx`, add the import for `ReportingLinesPage` and a corresponding route entry.
+2.  In `modules/leave/registry.py`, add the new navigation item to `NAV_ITEMS`.
+
+Here are the *SEARCH/REPLACE* blocks:
+
+client/src/modules/leave/routes.tsx
+```typescript
+<<<<<<< SEARCH
+const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));
+=======
+const SubstituteRequestsPage = lazy(() => import("./pages/SubstituteRequestsPage"));
+const ReportingLinesPage = lazy(() => import("./pages/ReportingLinesPage"));
+>>>>>>> REPLACE
+```
+
+client/src/modules/leave/routes.tsx
+```typescript
+<<<<<<< SEARCH
+  { path: "substitute", element: <SubstituteRequestsPage /> },
+];
+=======
+  { path: "substitute", element: <SubstituteRequestsPage /> },
+  { path: "admin", element: <ReportingLinesPage /> },
+];
+>>>>>>> REPLACE
+```
+
+modules/leave/registry.py
+```python
+<<<<<<< SEARCH
+    {
+        "code": "leave.approvals",
+        "label": "Leave Approvals",
+        "icon": "CheckCircle",
+        "to": "/leave/approvals",
+        "required_permission": "leave.application.review",
+        "sort_order": 20,
+    },
+]
+=======
+    {
+        "code": "leave.approvals",
+        "label": "Leave Approvals",
+        "icon": "CheckCircle",
+        "to": "/leave/approvals",
+        "required_permission": "leave.application.review",
+        "sort_order": 20,
+    },
+    {
+        "code": "leave.admin",
+        "label": "Reporting Lines",
+        "icon": "Gear",
+        "to": "/leave/admin",
+        "required_permission": "leave.admin.manage",
+        "sort_order": 30,
+    },
+]
+>>>>>>> REPLACE
+```
+
+> Tokens: 4.4k sent, 414 received.  
+> Applied edit to client/src/modules/leave/routes.tsx  
+> Applied edit to modules/leave/registry.py  
