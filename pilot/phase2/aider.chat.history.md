@@ -9492,3 +9492,36 @@ def test_unknown_application_is_404(stub_iam):
 
 > Tokens: 8.2k sent, 2.4k received.  
 > Applied edit to modules/leave/tests/test_api.py  
+
+# aider chat started at 2026-10-26 09:12:47
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format diff --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/MyLeavesPage.tsx --message-file pilot/phase2/prompts/020-substitute-status-label.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 261 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/MyLeavesPage.tsx to the chat.  
+
+#### Found in the end-to-end browser test: after the substitute ACCEPTED, the Substitute column on My Leaves reads "Replaced by user 102", which tells the applicant the opposite of what happened (EL-UC-002 says the applicant must see the substitute's consent status). Fix only this, with one SEARCH/REPLACE edit in the ReplaceSubstitute component: replace  
+####           {substituteId ? `Replaced by user ${substituteId}` : "-"}  
+#### with  
+####           {substituteId ? `User ${substituteId} (${status.replace(/_/g, " ")})` : "-"}  
+#### Do not change anything else.  
+
+To fix the issue where the substitute column displays "Replaced by user 102" instead of the user's consent status (e.g., "Accepted"), I will modify the `ReplaceSubstitute` component in `client/src/modules/leave/pages/MyLeavesPage.tsx`. The change involves updating the text rendering logic to include the formatted `status` property.
+
+client/src/modules/leave/pages/MyLeavesPage.tsx
+```typescript
+<<<<<<< SEARCH
+        <Text size="sm">
+          {substituteId ? `Replaced by user ${substituteId}` : "-"}
+        </Text>
+=======
+        <Text size="sm">
+          {substituteId ? `User ${substituteId} (${status.replace(/_/g, " ")})` : "-"}
+        </Text>
+>>>>>>> REPLACE
+```
+
+> Tokens: 4.6k sent, 167 received.  
+> Applied edit to client/src/modules/leave/pages/MyLeavesPage.tsx  

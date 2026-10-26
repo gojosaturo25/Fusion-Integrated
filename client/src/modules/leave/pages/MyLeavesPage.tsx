@@ -41,7 +41,7 @@ function ReplaceSubstitute({ id, substituteId, status }: { id: number; substitut
         </>
       ) : (
         <Text size="sm">
-          {substituteId ? `Replaced by user ${substituteId}` : "-"}
+          {substituteId ? `User ${substituteId} (${status.replace(/_/g, " ")})` : "-"}
         </Text>
       )}
     </Group>
