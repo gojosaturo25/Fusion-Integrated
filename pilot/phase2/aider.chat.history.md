@@ -9631,3 +9631,184 @@ export function useSetReportingLine() {
 
 > Tokens: 5.6k sent, 472 received.  
 > Applied edit to client/src/modules/leave/api.ts  
+
+# aider chat started at 2026-10-26 09:15:40
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file client/src/modules/leave/pages/ReportingLinesPage.tsx --read client/src/modules/leave/api.ts --read client/src/modules/leave/pages/ApplyLeavePage.tsx --message-file pilot/phase2/prompts/022-admin-page.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/client/src/modules/leave/pages/ReportingLinesPage.tsx  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 261 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added client/src/modules/leave/pages/ReportingLinesPage.tsx to the chat.  
+> Added client/src/modules/leave/api.ts to the chat (read-only).  
+> Added client/src/modules/leave/pages/ApplyLeavePage.tsx to the chat (read-only).  
+
+#### Create a new file client/src/modules/leave/pages/ReportingLinesPage.tsx: a default-exported ReportingLinesPage component where the Leave Administrator looks up a person by user id and sets who decides their leave. Follow the style of ApplyLeavePage.tsx (read-only). Use exactly these imports:  
+####   
+#### import { useState } from "react";  
+#### import { Button, Card, Container, Group, NumberInput, Stack, Text } from "@mantine/core";  
+#### import { notifications } from "@mantine/notifications";  
+####   
+#### import { errorMessage, errorStatus } from "../../../lib/http";  
+#### import { PageHeader } from "../../../ui/components/PageHeader";  
+#### import { useReportingLine, useSetReportingLine } from "../api";  
+####   
+#### Behaviour:  
+#### - State: lookupId (string, the NumberInput value), userId (number | null, set by a "Load" button from lookupId), unitHeadId, establishmentId, sanctioningId (strings).  
+#### - const line = useReportingLine(userId); const save = useSetReportingLine();  
+#### - When line.data arrives, copy its three ids into the three inputs (do it in the Load button's flow by calling line.refetch() and, in its .then, setting the state from the result's data; empty string for null).  
+#### - If line.error has errorStatus(line.error) === 404, show <Text c="dimmed">No reporting line yet for user {userId}. Fill in the fields below and save.</Text>.  
+#### - Three NumberInputs: "Unit Head (user id)" (required), "Establishment officer (user id, optional)", "Sanctioning Authority (user id, optional)". Each onChange={(v) => setX(String(v))}.  
+#### - A "Save" Button (disabled until userId and unitHeadId are set, loading={save.isPending}) calls save.mutate({ user_id: userId, unit_head_id: Number(unitHeadId), establishment_id: establishmentId ? Number(establishmentId) : null, sanctioning_authority_id: sanctioningId ? Number(sanctioningId) : null }) with onSuccess -> notifications.show({ color: "green", title: "Saved", message: `Reporting line for user ${userId} saved.` }) and onError -> notifications.show({ color: "red", title: "Could not save", message: errorMessage(e) }).  
+#### - Layout: <Container size="sm"> with <PageHeader title="Reporting Lines" subtitle="Who decides each person's leave" />, then a Card with a Group (lookup NumberInput "User id" + "Load" Button), then a Stack with the three inputs and the Save button.  
+#### tsconfig has noUnusedLocals, so remove any import you end up not using. Write the whole file. Do not ask for more files.  
+
+client/src/modules/leave/pages/ReportingLinesPage.tsx
+```tsx
+import { useState } from "react";
+import { Button, Card, Container, Group, NumberInput, Stack, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+
+import { errorMessage, errorStatus } from "../../../lib/http";
+import { PageHeader } from "../../../ui/components/PageHeader";
+import { useReportingLine, useSetReportingLine } from "../api";
+
+export default function ReportingLinesPage() {
+  const [lookupId, setLookupId] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
+  const [unitHeadId, setUnitHeadId] = useState("");
+  const [establishmentId, setEstablishmentId] = useState("");
+  const [sanctioningId, setSanctioningId] = useState("");
+
+  const line = useReportingLine(userId);
+  const save = useSetReportingLine();
+
+  const handleLoad = async () => {
+    if (!lookupId) return;
+    const newUserId = Number(lookupId);
+    if (isNaN(newUserId)) return;
+
+    setUserId(newUserId);
+    setUnitHeadId("");
+    setEstablishmentId("");
+    setSanctioningId("");
+
+    try {
+      await line.refetch();
+      if (line.data) {
+        const data = line.data;
+        setUnitHeadId(String(data.unit_head_id || ""));
+        setEstablishmentId(String(data.establishment_id || ""));
+        setSanctioningId(String(data.sanctioning_authority_id || ""));
+      }
+    } catch (e) {
+      // Handle error below if needed, but refetch usually handles display
+    }
+  };
+
+  const handleSave = () => {
+    if (!userId || !unitHeadId) {
+      notifications.show({
+        color: "red",
+        title: "Missing Information",
+        message: "Please select a User ID and a Unit Head.",
+      });
+      return;
+    }
+
+    save.mutate(
+      {
+        user_id: userId,
+        unit_head_id: Number(unitHeadId),
+        establishment_id: establishmentId ? Number(establishmentId) : null,
+        sanctioning_authority_id: sanctioningId ? Number(sanctioningId) : null,
+      },
+      {
+        onSuccess: () => {
+          notifications.show({
+            color: "green",
+            title: "Saved",
+            message: `Reporting line for user ${userId} saved.`,
+          });
+        },
+        onError: (e) => {
+          notifications.show({
+            color: "red",
+            title: "Could not save",
+            message: errorMessage(e),
+          });
+        },
+      }
+    );
+  };
+
+  const handle404 = () => {
+    if (line.error && errorStatus(line.error) === 404) {
+      return (
+        <Text c="dimmed" size="sm" mt={8}>
+          No reporting line yet for user {userId}. Fill in the fields below and save.
+        </Text>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <Container size="sm">
+      <PageHeader title="Reporting Lines" subtitle="Who decides each person's leave" />
+      <Card padding="lg">
+        <Group justify="space-between" align="flex-end" mb={20}>
+          <NumberInput
+            label="User id"
+            value={lookupId}
+            onChange={(value) => setLookupId(value)}
+            placeholder="Enter user ID to load"
+          />
+          <Button onClick={handleLoad} disabled={!lookupId} loading={line.isPending}>
+            Load
+          </Button>
+        </Group>
+
+        {handle404()}
+
+        <Stack gap={10}>
+          <NumberInput
+            label="Unit Head (user id)"
+            value={unitHeadId}
+            onChange={(value) => setUnitHeadId(value)}
+            placeholder="Enter unit head user ID"
+            required
+          />
+
+          <NumberInput
+            label="Establishment officer (user id, optional)"
+            value={establishmentId}
+            onChange={(value) => setEstablishmentId(value)}
+            placeholder="Enter establishment officer user ID"
+          />
+
+          <NumberInput
+            label="Sanctioning Authority (user id, optional)"
+            value={sanctioningId}
+            onChange={(value) => setSanctioningId(value)}
+            placeholder="Enter sanctioning authority user ID"
+          />
+
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={!userId || !unitHeadId}
+            loading={save.isPending}
+          >
+            Save
+          </Button>
+        </Stack>
+      </Card>
+    </Container>
+  );
+}
+```
+
+> Tokens: 5.5k sent, 968 received.  
+> Applied edit to client/src/modules/leave/pages/ReportingLinesPage.tsx  
