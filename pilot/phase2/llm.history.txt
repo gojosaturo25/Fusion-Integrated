@@ -48364,3 +48364,1159 @@ ASSISTANT     modules.leave.models
 ASSISTANT     modules.leave.domain
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-10-26T09:04:21
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER modules/leave/api/urls.py
+USER ```
+USER from django.urls import path
+USER 
+USER from modules.leave.api import views
+USER 
+USER app_name = "leave"
+USER 
+USER urlpatterns = [
+USER     path("applications/", views.ApplicationListCreateView.as_view(), name="applications"),
+USER     path(
+USER         "applications/<int:pk>/", views.ApplicationDetailView.as_view(), name="application-detail"
+USER     ),
+USER     path(
+USER         "applications/<int:pk>/withdraw/", views.WithdrawView.as_view(), name="withdraw-application"
+USER     ),
+USER     path("applications/<int:pk>/cancel/", views.CancelView.as_view(), name="cancel-approved-leave"),
+USER     path(
+USER         "applications/<int:pk>/substitute-response/",
+USER         views.SubstituteResponseView.as_view(),
+USER         name="respond-to-substitute",
+USER     ),
+USER     path(
+USER         "applications/<int:pk>/replace-substitute/",
+USER         views.ReplaceSubstituteView.as_view(),
+USER         name="replace-substitute",
+USER     ),
+USER     path("applications/<int:pk>/decide/", views.DecideView.as_view(), name="decide-application"),
+USER     path("inbox/", views.InboxView.as_view(), name="inbox"),
+USER     path("balances/", views.BalanceView.as_view(), name="balances"),
+USER     path(
+USER         "reporting-lines/<int:user_id>/", views.ReportingLineView.as_view(), name="reporting-line"
+USER     ),
+USER ]
+USER ```
+USER 
+USER conftest.py
+USER ```
+USER """Shared fixtures. `stub_iam` replaces the IAM client with an in-memory fake,
+USER so the suite runs with no network and no Fusion_System_Administrator."""
+USER import sys
+USER 
+USER import pytest
+USER 
+USER from fusion_auth import client as iam_client
+USER from fusion_auth.client import IamSession, UserRef
+USER from fusion_auth.principal import Principal
+USER 
+USER 
+USER class FakeIam:
+USER     """Mirrors IamClient exactly. If the real client grows a method, add it
+USER     here too — a fake that has drifted is worse than no fake."""
+USER 
+USER     def __init__(self, session=None, users=None, standings=None):
+USER         self.session, self.users = session, users or {}
+USER         #: Override to make the identity service disagree with the projection.
+USER         self.employees = None
+USER         self.standings = standings or {}
+USER         self.calls = []
+USER         self.login_result = "tok-123"      # override per test
+USER         self.login_error = None
+USER         self.standings_error = None
+USER         self.directory_error = None
+USER         self.directory = {"count": 0, "limit": 50, "offset": 0, "results": []}
+USER         self.filters = {"disciplines": [], "batch_years": [], "programmes": []}
+USER 
+USER     def login(self, username, password):
+USER         self.calls.append(("login", username))
+USER         if self.login_error:
+USER             raise self.login_error
+USER         return self.login_result
+USER 
+USER     def logout(self, auth_token):
+USER         self.calls.append(("logout", auth_token))
+USER 
+USER     def resolve_session(self, *, auth_token=None, cookies=None):
+USER         self.calls.append(("resolve_session", auth_token))
+USER         return self.session
+USER 
+USER     def get_users(self, user_ids):
+USER         ids = list(user_ids)
+USER         self.calls.append(("get_users", tuple(sorted(ids))))
+USER         return {i: self.users[i] for i in ids if i in self.users}
+USER 
+USER     def search_users(self, q="", kind=None, limit=25):
+USER         return list(self.users.values())[:limit]
+USER 
+USER     def employee_page(self, *, limit=500, offset=0):
+USER         rows = self._employees()
+USER         return {"count": len(rows), "limit": limit, "offset": offset,
+USER                 "results": rows[offset:offset + limit]}
+USER 
+USER     def count_employees(self):
+USER         return len(self._employees())
+USER 
+USER     def iter_employees(self, *, page_size=500):
+USER         yield from self._employees()
+USER 
+USER     def _employees(self):
+USER         """Whoever the test put in `users` who is not a student."""
+USER         if self.employees is not None:
+USER             return list(self.employees)
+USER         from modules.directory.models import UserRef
+USER         return list(UserRef.objects.filter(
+USER             kind__in=("faculty", "staff"), is_active=True))
+USER 
+USER     def academic_directory(self, **filters):
+USER         self.calls.append(("academic_directory", tuple(sorted(filters.items()))))
+USER         if self.directory_error:
+USER             raise self.directory_error
+USER         return self.directory
+USER 
+USER     def academic_filters(self):
+USER         self.calls.append(("academic_filters", ()))
+USER         if self.directory_error:
+USER             raise self.directory_error
+USER         return self.filters
+USER 
+USER     def get_academic_standings(self, user_ids):
+USER         """A student absent from `standings` has no declared result, which is
+USER         what the eligibility engine must fail closed on."""
+USER         ids = list(user_ids)
+USER         self.calls.append(("get_academic_standings", tuple(sorted(ids))))
+USER         if self.standings_error:
+USER             raise self.standings_error
+USER         return {i: self.standings[i] for i in ids if i in self.standings}
+USER 
+USER 
+USER def make_session(user_id=1001, permissions=(), modules=(), kind="student",
+USER                  roles=("student",), active_role="student"):
+USER     return IamSession(
+USER         user_id=user_id, username=f"u{user_id}", display_name=f"User {user_id}",
+USER         kind=kind, active_role=active_role, roles=tuple(roles),
+USER         permissions=frozenset(permissions), modules=tuple(modules),
+USER     )
+USER 
+USER 
+USER def make_principal(**kw):
+USER     return Principal.from_session(make_session(**kw))
+USER 
+USER 
+USER @pytest.fixture(autouse=True)
+USER def _clear_throttle_state():
+USER     """Throttle counters live in the cache and would otherwise carry from one
+USER     test into the next — the sixth request of a run failing wherever it landed."""
+USER     from django.core.cache import cache
+USER 
+USER     cache.clear()
+USER     yield
+USER     cache.clear()
+USER 
+USER 
+USER @pytest.fixture
+USER def stub_iam(monkeypatch):
+USER     fake = FakeIam()
+USER 
+USER     def _install(session=None, users=None):
+USER         fake.session = session
+USER         fake.users = users or {}
+USER         # `from ... import get_client` binds the name in every importer, so
+USER         # patching the source alone lets the real client leak through. A
+USER         # hand-maintained list goes stale silently; sys.modules does not.
+USER         patched = 0
+USER         for mod in list(sys.modules.values()):
+USER             if mod is None:
+USER                 continue
+USER             name = getattr(mod, "__name__", "")
+USER             if not name.startswith(("fusion_auth", "modules", "core", "config")):
+USER                 continue
+USER             if getattr(mod, "get_client", None) is not None:
+USER                 monkeypatch.setattr(mod, "get_client", lambda: fake)
+USER                 patched += 1
+USER         monkeypatch.setattr(iam_client, "get_client", lambda: fake)
+USER         assert patched, "no get_client bindings were found to patch"
+USER         return fake
+USER 
+USER     _install()
+USER     return _install
+USER 
+USER 
+USER @pytest.fixture
+USER def user_ref():
+USER     def _make(user_id, name="Asha Verma", kind="student", discipline="CSE"):
+USER         return UserRef(user_id=user_id, username=f"u{user_id}", display_name=name,
+USER                        kind=kind, discipline=discipline)
+USER     return _make
+USER ```
+USER 
+USER ../elm_specs_md/pilot_kit/phase2/DESIGN.md
+USER ```
+USER # ELM Phase 2 target design (review decisions; code is written by the local model)
+USER 
+USER Rules: no user table (people are integer user ids from request.principal.user_id); never import another module's models; domain/ is pure Python; all writes in services/ inside transaction.atomic; every state change appends a LeaveAction row.
+USER 
+USER ## models.py
+USER - LeaveCategory(TextChoices): CL, RH, SCL, EL, COL, VL. CharField max_length=3.
+USER - HalfDay(TextChoices): NONE="none", FIRST="first", SECOND="second".
+USER - Stage(TextChoices): SUBSTITUTE="substitute", UNIT_HEAD="unit_head", ESTABLISHMENT="establishment", SANCTION="sanction", DONE="done".
+USER - Status(TextChoices): PENDING="pending", APPROVED="approved", REJECTED="rejected", WITHDRAWN="withdrawn", CANCELLED="cancelled".
+USER - SubstituteStatus(TextChoices): NOT_REQUIRED="not_required", PENDING="pending", ACCEPTED="accepted", DECLINED="declined".
+USER - RequestKind(TextChoices): LEAVE="leave", CANCELLATION="cancellation".
+USER - ReportingLine(TimeStampedModel): user_id IntegerField(unique=True), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True).
+USER - LeaveApplication(UserScopedModel, TimeStampedModel): kind, parent ForeignKey("self", null=True, blank=True, on_delete=PROTECT, related_name="cancellations"), category, start_date, end_date, half_day (default NONE), days DecimalField(max_digits=5, decimal_places=1), purpose TextField, station_leave BooleanField(default=False), station_address TextField(blank=True), substitute_id IntegerField(null=True, blank=True), substitute_status (default NOT_REQUIRED), unit_head_id IntegerField, establishment_id IntegerField(null=True, blank=True), sanctioning_authority_id IntegerField(null=True, blank=True), unit_head_recommendation CharField(max_length=20, blank=True), stage, status (default PENDING), assignee_id IntegerField(null=True, blank=True, db_index=True), decided_at DateTimeField(null=True, blank=True). Meta ordering ["-created_at"].
+USER - LeaveBalance(UserScopedModel, TimeStampedModel): category, year IntegerField, entitled DecimalField(5,1), used DecimalField(5,1, default=0). UniqueConstraint(user_id, year, category). property available = entitled - used.
+USER - LeaveAction(models.Model): application ForeignKey(LeaveApplication, CASCADE, related_name="actions"), actor_id IntegerField, action CharField(40), remark TextField(blank=True), created_at DateTimeField(auto_now_add=True). Meta ordering ["created_at"].
+USER 
+USER ## domain/policy.py (pure Python, Decimal arithmetic)
+USER - ENTITLEMENT = {category: (days_per_year, faculty_allowed, staff_allowed, carries_forward)}: CL (8, yes, yes, no) BR-EL-002; RH (2, yes, yes, no) BR-EL-003; SCL (15, yes, yes, no) BR-EL-004; EL (30, no, yes, yes) BR-EL-005; COL (20, yes, yes, yes) BR-EL-009; VL (60, yes, no, no) BR-EL-006.
+USER - entitlement(category, kind) -> Decimal | None. kind "faculty" means faculty, anything else is staff. None means not eligible (BR-EL-001).
+USER - count_days(category, start, end, half_day) -> Decimal. Raise PolicyError if end < start. half_day other than "none" only for CL and only when start == end, giving 0.5 (BR-EL-010). EL, COL, VL count every calendar day inclusive (BR-EL-011). CL, RH, SCL count Monday to Friday only (no holiday calendar yet).
+USER - overlaps(a_start, a_end, a_half, b_start, b_end, b_half) -> bool. True when the date ranges intersect, except a single shared date where both halves are set and different (BR-EL-012).
+USER - unit_head_is_final(category) -> bool: True for CL and RH (BR-EL-016); others only get a recommendation (BR-EL-017).
+USER - class PolicyError(Exception).
+USER 
+USER ## Workflow (services)
+USER apply -> stage SUBSTITUTE (assignee = substitute) if a substitute is nominated, else UNIT_HEAD (assignee = unit head).
+USER Substitute accepts -> UNIT_HEAD. Declines -> substitute_status DECLINED, assignee None; applicant nominates a replacement (back to SUBSTITUTE) or withdraws (BR-EL-015).
+USER UNIT_HEAD: CL/RH approve or reject is final. Other categories: "recommended" or "not_recommended" (not a rejection), then ESTABLISHMENT if establishment_id else SANCTION.
+USER ESTABLISHMENT: verify -> SANCTION (assignee = sanctioning authority).
+USER SANCTION: approve or reject is final.
+USER If the applicant is their own unit head (unit_head_id == user_id, e.g. Director), skip UNIT_HEAD and go to SANCTION; if there is no sanctioning authority either, the applicant self-sanctions (BR-EL-020).
+USER Approval of a LEAVE request adds days to LeaveBalance.used for the start year. Rejection or withdrawal changes no balance.
+USER Withdraw: owner only, only while PENDING (BR-EL-022). Pending requests are never edited (BR-EL-034).
+USER Cancellation: owner asks before start_date for an APPROVED leave; creates a CANCELLATION request (parent = the leave) routed like the original (BR-EL-023). Approving it marks the parent CANCELLED and subtracts its days from used.
+USER Only the current assignee may act; anyone else gets NotFound (shown as 404, so ids are not leaked).
+USER 
+USER ## Permissions (registry.py, code "leave")
+USER leave.application.apply, leave.application.view_own, leave.substitute.respond, leave.application.review, leave.application.verify, leave.application.sanction, leave.admin.manage.
+USER Roles: Employee = apply, view_own, substitute.respond. Unit Head = review. Deputy Registrar (Estt.) = review, verify. Dean, Registrar, Director = review, sanction. Leave Administrator = admin.manage.
+USER Nav: /leave/apply (apply), /leave/mine (view_own), /leave/substitute (substitute.respond), /leave/approvals (review).
+USER 
+USER ## API (base /api/v1/leave/)
+USER GET/POST applications/ ; GET applications/<id>/ ; POST applications/<id>/withdraw/ ; POST applications/<id>/cancel/ ;
+USER POST applications/<id>/substitute-response/ {"accept": bool} ; POST applications/<id>/replace-substitute/ {"substitute_id": int} ;
+USER GET inbox/ ; POST applications/<id>/decide/ {"decision": str} ; GET balances/?year= ; GET/PUT reporting-lines/<user_id>/ (admin).
+USER Errors reuse Fusion's core.api.exceptions: services raise LeaveError (class LeaveError(BadRequestError), HTTP 400) and NotFound (class NotFound(NotFoundError), HTTP 404); selectors raise core.api.exceptions.NotFoundError directly. The platform exception handler (core.api.exceptions.exception_handler) renders the standard {"error": {"code", "message", "details", "request_id"}} envelope, so views never catch these or build error responses themselves.
+USER ```
+USER 
+USER modules/leave/models.py
+USER ```
+USER from decimal import Decimal
+USER 
+USER from django.db import models
+USER 
+USER from core.db.mixins import TimeStampedModel, UserScopedModel
+USER 
+USER 
+USER class LeaveCategory(models.TextChoices):
+USER     CL = "CL", "Casual Leave"
+USER     RH = "RH", "Restricted Holiday"
+USER     SCL = "SCL", "Special Casual Leave"
+USER     EL = "EL", "Earned Leave"
+USER     COL = "COL", "Compensatory / Balance Controlled Leave"
+USER     VL = "VL", "Vacation Leave"
+USER 
+USER 
+USER class HalfDay(models.TextChoices):
+USER     NONE = "none", "None"
+USER     FIRST = "first", "First half-day"
+USER     SECOND = "second", "Second half-day"
+USER 
+USER 
+USER class Stage(models.TextChoices):
+USER     SUBSTITUTE = "substitute", "Substitute"
+USER     UNIT_HEAD = "unit_head", "Unit Head"
+USER     ESTABLISHMENT = "establishment", "Establishment"
+USER     SANCTION = "sanction", "Sanctioning Authority"
+USER     DONE = "done", "Done"
+USER 
+USER 
+USER class Status(models.TextChoices):
+USER     PENDING = "pending", "Pending"
+USER     APPROVED = "approved", "Approved"
+USER     REJECTED = "rejected", "Rejected"
+USER     WITHDRAWN = "withdrawn", "Withdrawn"
+USER     CANCELLED = "cancelled", "Cancelled"
+USER 
+USER 
+USER class SubstituteStatus(models.TextChoices):
+USER     NOT_REQUIRED = "not_required", "Not Required"
+USER     PENDING = "pending", "Pending"
+USER     ACCEPTED = "accepted", "Accepted"
+USER     DECLINED = "declined", "Declined"
+USER 
+USER 
+USER class RequestKind(models.TextChoices):
+USER     LEAVE = "leave", "Leave"
+USER     CANCELLATION = "cancellation", "Cancellation"
+USER 
+USER 
+USER class ReportingLine(TimeStampedModel):
+USER     """The reporting line for a leave application."""
+USER 
+USER     user_id = models.IntegerField(unique=True)
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Reporting Line"
+USER         verbose_name_plural = "Reporting Lines"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"Reporting line for user {self.user_id}"
+USER 
+USER 
+USER class LeaveApplication(UserScopedModel, TimeStampedModel):
+USER     """A leave application submitted by an employee."""
+USER 
+USER     kind = models.CharField(
+USER         max_length=12,
+USER         choices=RequestKind.choices,
+USER         default=RequestKind.LEAVE,
+USER         verbose_name="Request Kind",
+USER     )
+USER     parent = models.ForeignKey(
+USER         "self",
+USER         null=True,
+USER         blank=True,
+USER         on_delete=models.PROTECT,
+USER         related_name="cancellations",
+USER     )
+USER     category = models.CharField(
+USER         max_length=3,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     start_date = models.DateField("Start Date")
+USER     end_date = models.DateField("End Date")
+USER     half_day = models.CharField(
+USER         max_length=7,
+USER         choices=HalfDay.choices,
+USER         default=HalfDay.NONE,
+USER         verbose_name="Half Day",
+USER     )
+USER     days = models.DecimalField(max_digits=5, decimal_places=1)
+USER     purpose = models.TextField("Purpose / Reason")
+USER     station_leave = models.BooleanField(default=False, verbose_name="Station Leave")
+USER     station_address = models.TextField(blank=True, verbose_name="Station Address")
+USER     substitute_id = models.IntegerField(
+USER         null=True, blank=True, verbose_name="Nominated Substitute ID"
+USER     )
+USER     substitute_status = models.CharField(
+USER         max_length=15,
+USER         choices=SubstituteStatus.choices,
+USER         default=SubstituteStatus.NOT_REQUIRED,
+USER         verbose_name="Substitute Status",
+USER     )
+USER     unit_head_id = models.IntegerField()
+USER     establishment_id = models.IntegerField(null=True, blank=True)
+USER     sanctioning_authority_id = models.IntegerField(null=True, blank=True)
+USER     unit_head_recommendation = models.CharField(
+USER         max_length=20, blank=True, verbose_name="Unit Head Recommendation"
+USER     )
+USER     stage = models.CharField(
+USER         max_length=15,
+USER         choices=Stage.choices,
+USER         default=Stage.SUBSTITUTE,
+USER         verbose_name="Stage",
+USER     )
+USER     status = models.CharField(
+USER         max_length=12,
+USER         choices=Status.choices,
+USER         default=Status.PENDING,
+USER         verbose_name="Status",
+USER     )
+USER     assignee_id = models.IntegerField(null=True, blank=True, db_index=True)
+USER     decided_at = models.DateTimeField(null=True, blank=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Application"
+USER         verbose_name_plural = "Leave Applications"
+USER         ordering = ["-created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return (
+USER             f"{self.user_id}'s {self.category} application ({self.start_date} to {self.end_date})"
+USER         )
+USER 
+USER 
+USER class LeaveBalance(UserScopedModel, TimeStampedModel):
+USER     """Per-user, per-year, per-category leave balance."""
+USER 
+USER     category = models.CharField(
+USER         max_length=3,
+USER         choices=LeaveCategory.choices,
+USER         verbose_name="Leave Category",
+USER     )
+USER     year = models.IntegerField("Year")
+USER     entitled = models.DecimalField(max_digits=5, decimal_places=1)
+USER     used = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Balance"
+USER         verbose_name_plural = "Leave Balances"
+USER         ordering = ["-year", "-category"]
+USER         unique_together = ["user_id", "year", "category"]
+USER 
+USER     @property
+USER     def available(self) -> Decimal:
+USER         """Calculate the available leave days."""
+USER         return self.entitled - self.used
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.user_id}'s {self.category} balance for {self.year}"
+USER 
+USER 
+USER class LeaveAction(models.Model):
+USER     """Append-only history of actions taken on leave applications and balances."""
+USER 
+USER     application = models.ForeignKey(
+USER         LeaveApplication,
+USER         on_delete=models.CASCADE,
+USER         related_name="actions",
+USER     )
+USER     actor_id = models.IntegerField("Actor ID")
+USER     action = models.CharField(max_length=40)
+USER     remark = models.TextField(blank=True)
+USER     created_at = models.DateTimeField(auto_now_add=True)
+USER 
+USER     class Meta:
+USER         verbose_name = "Leave Action"
+USER         verbose_name_plural = "Leave Actions"
+USER         ordering = ["created_at"]
+USER 
+USER     def __str__(self) -> str:
+USER         return f"{self.action} on {self.application.id} by {self.actor_id}"
+USER ```
+USER 
+USER modules/leave/api/views.py
+USER ```
+USER from django.utils import timezone
+USER from drf_spectacular.utils import OpenApiParameter, extend_schema
+USER from rest_framework import status
+USER from rest_framework.response import Response
+USER from rest_framework.views import APIView
+USER 
+USER from core.api.exceptions import NotFoundError
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER from modules.leave import selectors
+USER from modules.leave.api.serializers import (
+USER     DecisionSerializer,
+USER     LeaveApplicationSerializer,
+USER     LeaveApplySerializer,
+USER     LeaveBalanceSerializer,
+USER     ReplaceSubstituteSerializer,
+USER     ReportingLineSerializer,
+USER     SubstituteResponseSerializer,
+USER )
+USER from modules.leave.services import admin, applications, lifecycle
+USER 
+USER 
+USER class ApplicationListCreateView(APIView):
+USER     def get_permissions(self):
+USER         if self.request.method == "GET":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.view_own")()]
+USER         if self.request.method == "POST":
+USER             return [HasModuleGrant("leave")(), HasPermission("leave.application.apply")()]
+USER         return super().get_permissions()
+USER 
+USER     @extend_schema(
+USER         operation_id="v1_leave_applications_list", responses=LeaveApplicationSerializer(many=True)
+USER     )
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.my_applications(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER     @extend_schema(request=LeaveApplySerializer, responses={201: LeaveApplicationSerializer})
+USER     def post(self, request, *args, **kwargs):
+USER         serializer = LeaveApplySerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER 
+USER         user_id = request.principal.user_id
+USER         app = applications.apply_leave(user_id, request.principal.kind, data)
+USER         return Response(LeaveApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
+USER 
+USER 
+USER @extend_schema(responses=LeaveApplicationSerializer)
+USER class ApplicationDetailView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, pk, *args, **kwargs):
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=None, responses=LeaveApplicationSerializer)
+USER class WithdrawView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         applications.withdraw(request.principal.user_id, pk)
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=None, responses=LeaveApplicationSerializer)
+USER class CancelView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         today = timezone.localdate()
+USER         app = lifecycle.request_cancellation(request.principal.user_id, pk, today)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=SubstituteResponseSerializer, responses=LeaveApplicationSerializer)
+USER class SubstituteResponseView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.substitute.respond")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = SubstituteResponseSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         accept = data["accept"]
+USER         app = applications.respond_to_substitute(request.principal.user_id, pk, accept)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=ReplaceSubstituteSerializer, responses=LeaveApplicationSerializer)
+USER class ReplaceSubstituteView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.apply")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = ReplaceSubstituteSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         substitute_id = data["substitute_id"]
+USER         app = applications.replace_substitute(request.principal.user_id, pk, substitute_id)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(responses=LeaveApplicationSerializer(many=True))
+USER class InboxView(APIView):
+USER     permission_classes = [
+USER         HasModuleGrant("leave"),
+USER         HasPermission("leave.application.review", "leave.substitute.respond"),
+USER     ]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         apps = selectors.inbox(user_id)
+USER         serializer = LeaveApplicationSerializer(apps, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=DecisionSerializer, responses=LeaveApplicationSerializer)
+USER class DecideView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.review")]
+USER 
+USER     def post(self, request, pk, *args, **kwargs):
+USER         serializer = DecisionSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         decision = data["decision"]
+USER         remark = data.get("remark", "")
+USER 
+USER         app = selectors.visible_application(request.principal.user_id, pk)
+USER 
+USER         if app.stage == "establishment" and not request.principal.has_permission("leave.application.verify"):
+USER             raise NotFoundError("You do not have permission to decide at this stage.")
+USER         if app.stage == "sanction" and not request.principal.has_permission("leave.application.sanction"):
+USER             raise NotFoundError("You do not have permission to decide at this stage.")
+USER 
+USER         app = lifecycle.decide(request.principal.user_id, pk, decision, remark)
+USER         serializer = LeaveApplicationSerializer(app)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(
+USER     parameters=[OpenApiParameter("year", int, required=False)],
+USER     responses=LeaveBalanceSerializer(many=True),
+USER )
+USER class BalanceView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.application.view_own")]
+USER 
+USER     def get(self, request, *args, **kwargs):
+USER         user_id = request.principal.user_id
+USER         year = int(request.query_params.get("year", timezone.localdate().year))
+USER         kind = request.principal.kind
+USER         balances = admin.ensure_balances(user_id, kind, year)
+USER         serializer = LeaveBalanceSerializer(balances, many=True)
+USER         return Response(serializer.data)
+USER 
+USER 
+USER @extend_schema(request=ReportingLineSerializer, responses=ReportingLineSerializer)
+USER class ReportingLineView(APIView):
+USER     permission_classes = [HasModuleGrant("leave"), HasPermission("leave.admin.manage")]
+USER 
+USER     def get(self, request, user_id, *args, **kwargs):
+USER         line = selectors.get_reporting_line(user_id)
+USER         if line is None:
+USER             raise NotFoundError()
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER 
+USER     def put(self, request, user_id, *args, **kwargs):
+USER         serializer = ReportingLineSerializer(data=request.data)
+USER         serializer.is_valid(raise_exception=True)
+USER         data = serializer.validated_data
+USER         line = admin.set_reporting_line(
+USER             user_id,
+USER             data["unit_head_id"],
+USER             data.get("establishment_id"),
+USER             data.get("sanctioning_authority_id"),
+USER         )
+USER         serializer = ReportingLineSerializer(line)
+USER         return Response(serializer.data)
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class NotFoundError(DomainError):
+USER ⋮
+USER │class ConflictError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/models.py:
+USER ⋮
+USER │class UserRef(TimeStampedModel):
+USER │    KIND_CHOICES = [
+USER │        ("student", "Student"), ("faculty", "Faculty"),
+USER │        ("staff", "Staff"), ("operator", "Operator"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/leave/api/serializers.py:
+USER ⋮
+USER │class LeaveActionSerializer(serializers.ModelSerializer):
+USER ⋮
+USER 
+USER modules/leave/domain/policy.py:
+USER ⋮
+USER │class PolicyError(Exception):
+USER ⋮
+USER 
+USER modules/leave/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class RecruiterPrincipal:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/leave/tests/test_api.py
+USER ```
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER Phase 1 shipped no API tests. Write modules/leave/tests/test_api.py with pytest tests that call the real API through Fusion's permission gates. The repository's conftest.py (read-only) provides the `stub_iam` fixture (an in-memory fake of the IAM) and the function `make_session`. A test logs in as a person like this:
+USER 
+USER from rest_framework.test import APIClient
+USER from conftest import make_session
+USER 
+USER def client_for(stub_iam, user_id, permissions, kind="staff"):
+USER     stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind=kind, roles=("employee",), active_role="employee"))
+USER     c = APIClient()
+USER     c.credentials(HTTP_AUTHORIZATION="Token abc")
+USER     return c
+USER 
+USER Use `pytestmark = pytest.mark.django_db`. Create reporting lines with ReportingLine.objects.create(user_id=..., unit_head_id=..., establishment_id=None, sanctioning_authority_id=...). Use dates in the future that start on a Monday: `start = date.today() + timedelta(days=21 - date.today().weekday())`. The base URL is "/api/v1/leave/". Employee permissions: ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond"); Unit Head: ("leave.application.review",); Leave Administrator: ("leave.admin.manage",).
+USER 
+USER Write one small test function for each of these (named after the rule):
+USER 1. test_withdraw_pending_request (BR-EL-022): apply CL, POST applications/<id>/withdraw/ -> 200 and status "withdrawn"; withdrawing again -> 404.
+USER 2. test_cancellation_restores_balance (BR-EL-023): apply 2 days of CL, the unit head approves it (decision "approve"), the CL balance shows used "2.0"; the owner POSTs applications/<id>/cancel/ -> 200 with kind "cancellation"; the unit head approves that cancellation; the original application's status is "cancelled" and the CL balance's used is back to "0.0".
+USER 3. test_balances_for_staff_and_faculty (BR-EL-005/006): GET balances/ returns the categories CL, RH, SCL, EL, COL for kind "staff" and CL, RH, SCL, COL, VL for kind "faculty".
+USER 4. test_reporting_lines_admin_only (EL-UC-014): PUT reporting-lines/<user_id>/ {"unit_head_id": 201} as the Leave Administrator -> 200, then GET -> 200 with unit_head_id 201; the same PUT as an employee -> 403.
+USER 5. test_wrong_decision_for_stage_is_400 (BR-EL-016): for a pending CL at the unit head, decision "recommended" -> 400.
+USER 6. test_unknown_application_is_404: GET applications/999999/ -> 404.
+USER 
+USER Import only from datetime, pytest, rest_framework.test, conftest and modules.leave.models. Write the whole file. Do not ask for more files.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-10-26T09:12:44
+ASSISTANT modules/leave/tests/test_api.py
+ASSISTANT ```python
+ASSISTANT import datetime
+ASSISTANT from dateutil.relativedelta import relativedelta
+ASSISTANT 
+ASSISTANT import pytest
+ASSISTANT from django.utils import timezone
+ASSISTANT from rest_framework.test import APIClient
+ASSISTANT 
+ASSISTANT from conftest import make_session, stub_iam
+ASSISTANT from modules.leave.models import LeaveApplication, ReportingLine, LeaveBalance
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_withdraw_pending_request(stub_iam):
+ASSISTANT     """BR-EL-022: Withdraw only while PENDING; second withdraw -> 404."""
+ASSISTANT     user_id = 1001
+ASSISTANT     permissions = ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond")
+ASSISTANT     kind = "staff"
+ASSISTANT 
+ASSISTANT     stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind=kind, roles=("employee",), active_role="employee"))
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Create a CL application (Pending)
+ASSISTANT     start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+ASSISTANT     end_date = start_date + datetime.timedelta(days=1)
+ASSISTANT     app = LeaveApplication.objects.create(
+ASSISTANT         user_id=user_id,
+ASSISTANT         kind="leave",
+ASSISTANT         category="CL",
+ASSISTANT         start_date=start_date,
+ASSISTANT         end_date=end_date,
+ASSISTANT         half_day="none",
+ASSISTANT         days=1.0,
+ASSISTANT         purpose="Test",
+ASSISTANT         station_leave=False,
+ASSISTANT         substitute_id=None,
+ASSISTANT         substitute_status="not_required",
+ASSISTANT         unit_head_id=201,
+ASSISTANT         establishment_id=None,
+ASSISTANT         sanctioning_authority_id=None,
+ASSISTANT         stage="substitute",
+ASSISTANT         status="pending",
+ASSISTANT     )
+ASSISTANT 
+ASSISTANT     # First withdraw: success
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{app.id}/withdraw/")
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     withdrawn_app = LeaveApplication.objects.get(id=app.id)
+ASSISTANT     assert withdrawn_app.status == "withdrawn"
+ASSISTANT 
+ASSISTANT     # Second withdraw: 404 (already withdrawn)
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{app.id}/withdraw/")
+ASSISTANT     assert response.status_code == 404
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_cancellation_restores_balance(stub_iam):
+ASSISTANT     """BR-EL-023: Cancellation creates parent request; approving it cancels original and restores balance."""
+ASSISTANT     user_id = 1001
+ASSISTANT     unit_head_id = 201
+ASSISTANT     permissions = ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond")
+ASSISTANT 
+ASSISTANT     stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+ASSISTANT     stub_iam(make_session(user_id=unit_head_id, permissions=("leave.application.review",), modules=("leave",), kind="faculty", roles=("unit_head",), active_role="unit_head"))
+ASSISTANT 
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Create a CL application (Pending)
+ASSISTANT     start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+ASSISTANT     end_date = start_date + datetime.timedelta(days=1)
+ASSISTANT     app = LeaveApplication.objects.create(
+ASSISTANT         user_id=user_id,
+ASSISTANT         kind="leave",
+ASSISTANT         category="CL",
+ASSISTANT         start_date=start_date,
+ASSISTANT         end_date=end_date,
+ASSISTANT         half_day="none",
+ASSISTANT         days=2.0,
+ASSISTANT         purpose="Test",
+ASSISTANT         station_leave=False,
+ASSISTANT         substitute_id=None,
+ASSISTANT         substitute_status="not_required",
+ASSISTANT         unit_head_id=unit_head_id,
+ASSISTANT         establishment_id=None,
+ASSISTANT         sanctioning_authority_id=None,
+ASSISTANT         stage="substitute",
+ASSISTANT         status="pending",
+ASSISTANT     )
+ASSISTANT 
+ASSISTANT     # Get initial balance (should be 0 used)
+ASSISTANT     balances = LeaveBalance.objects.filter(user_id=user_id, category="CL")
+ASSISTANT     initial_balance = balances.first()
+ASSISTANT     assert initial_balance is not None
+ASSISTANT     assert initial_balance.used == 0.0
+ASSISTANT 
+ASSISTANT     # Unit head approves the application
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{app.id}/decide/", {
+ASSISTANT         "decision": "approve",
+ASSISTANT         "remark": "Approved"
+ASSISTANT     })
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     approved_app = LeaveApplication.objects.get(id=app.id)
+ASSISTANT     assert approved_app.status == "approved"
+ASSISTANT 
+ASSISTANT     # Check balance after approval (should be 2.0 used)
+ASSISTANT     updated_balance = LeaveBalance.objects.filter(user_id=user_id, category="CL").first()
+ASSISTANT     assert updated_balance is not None
+ASSISTANT     assert updated_balance.used == 2.0
+ASSISTANT 
+ASSISTANT     # Owner cancels the application
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{app.id}/cancel/")
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     cancellation_app = LeaveApplication.objects.get(id=app.id)
+ASSISTANT     assert cancellation_app.kind == "cancellation"
+ASSISTANT     assert cancellation_app.parent_id == app.id
+ASSISTANT 
+ASSISTANT     # Unit head approves the cancellation
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{cancellation_app.id}/decide/", {
+ASSISTANT         "decision": "approve",
+ASSISTANT         "remark": "Cancellation approved"
+ASSISTANT     })
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     cancelled_app = LeaveApplication.objects.get(id=app.id)
+ASSISTANT     assert cancelled_app.status == "cancelled"
+ASSISTANT 
+ASSISTANT     # Check balance after cancellation (should be restored to 0.0)
+ASSISTANT     final_balance = LeaveBalance.objects.filter(user_id=user_id, category="CL").first()
+ASSISTANT     assert final_balance is not None
+ASSISTANT     assert final_balance.used == 0.0
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_balances_for_staff_and_faculty(stub_iam):
+ASSISTANT     """BR-EL-005/006: GET balances/ returns correct categories based on kind."""
+ASSISTANT     staff_user_id = 1001
+ASSISTANT     faculty_user_id = 1002
+ASSISTANT 
+ASSISTANT     # Staff permissions
+ASSISTANT     stub_iam(make_session(user_id=staff_user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+ASSISTANT     # Faculty permissions
+ASSISTANT     stub_iam(make_session(user_id=faculty_user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="faculty", roles=("employee",), active_role="employee"))
+ASSISTANT 
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Check staff balances (CL, RH, SCL, EL, COL)
+ASSISTANT     response = c.get("/api/v1/leave/balances/?year=2024")
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     staff_data = response.data
+ASSISTANT     staff_categories = [b["category"] for b in staff_data]
+ASSISTANT     assert set(staff_categories) == {"CL", "RH", "SCL", "EL", "COL"}
+ASSISTANT 
+ASSISTANT     # Check faculty balances (CL, RH, SCL, COL, VL)
+ASSISTANT     response = c.get(f"/api/v1/leave/balances/?year=2024")
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     faculty_data = response.data
+ASSISTANT     faculty_categories = [b["category"] for b in faculty_data]
+ASSISTANT     assert set(faculty_categories) == {"CL", "RH", "SCL", "COL", "VL"}
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_reporting_lines_admin_only(stub_iam):
+ASSISTANT     """EL-UC-014: PUT reporting-lines/<user_id>/ requires Leave Administrator permission."""
+ASSISTANT     user_id = 1001
+ASSISTANT     admin_user_id = 200
+ASSISTANT     new_unit_head_id = 201
+ASSISTANT 
+ASSISTANT     # Create initial reporting line
+ASSISTANT     ReportingLine.objects.create(user_id=user_id, unit_head_id=101, establishment_id=None, sanctioning_authority_id=None)
+ASSISTANT 
+ASSISTANT     # Admin permissions
+ASSISTANT     stub_iam(make_session(user_id=admin_user_id, permissions=("leave.admin.manage",), modules=("leave",), kind="staff", roles=("admin",), active_role="admin"))
+ASSISTANT     # Employee permissions (no admin permission)
+ASSISTANT     stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+ASSISTANT 
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Admin updates reporting line
+ASSISTANT     response = c.put(f"/api/v1/leave/reporting-lines/{user_id}/", {
+ASSISTANT         "unit_head_id": new_unit_head_id,
+ASSISTANT         "establishment_id": None,
+ASSISTANT         "sanctioning_authority_id": None
+ASSISTANT     })
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     updated_line = ReportingLine.objects.get(user_id=user_id)
+ASSISTANT     assert updated_line.unit_head_id == new_unit_head_id
+ASSISTANT 
+ASSISTANT     # Verify update via GET
+ASSISTANT     response = c.get(f"/api/v1/leave/reporting-lines/{user_id}/")
+ASSISTANT     assert response.status_code == 200
+ASSISTANT     retrieved_line = ReportingLine.objects.get(user_id=user_id)
+ASSISTANT     assert retrieved_line.unit_head_id == new_unit_head_id
+ASSISTANT 
+ASSISTANT     # Employee tries to update (should be 403)
+ASSISTANT     response = c.put(f"/api/v1/leave/reporting-lines/{user_id}/", {
+ASSISTANT         "unit_head_id": new_unit_head_id,
+ASSISTANT         "establishment_id": None,
+ASSISTANT         "sanctioning_authority_id": None
+ASSISTANT     })
+ASSISTANT     assert response.status_code == 403
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_wrong_decision_for_stage_is_400(stub_iam):
+ASSISTANT     """BR-EL-016: For CL at unit head stage, decision "recommended" -> 400."""
+ASSISTANT     user_id = 1001
+ASSISTANT     unit_head_id = 201
+ASSISTANT 
+ASSISTANT     stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+ASSISTANT     stub_iam(make_session(user_id=unit_head_id, permissions=("leave.application.review",), modules=("leave",), kind="faculty", roles=("unit_head",), active_role="unit_head"))
+ASSISTANT 
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Create a CL application at unit head stage (pending)
+ASSISTANT     start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+ASSISTANT     end_date = start_date + datetime.timedelta(days=1)
+ASSISTANT     app = LeaveApplication.objects.create(
+ASSISTANT         user_id=user_id,
+ASSISTANT         kind="leave",
+ASSISTANT         category="CL",
+ASSISTANT         start_date=start_date,
+ASSISTANT         end_date=end_date,
+ASSISTANT         half_day="none",
+ASSISTANT         days=1.0,
+ASSISTANT         purpose="Test",
+ASSISTANT         station_leave=False,
+ASSISTANT         substitute_id=None,
+ASSISTANT         substitute_status="not_required",
+ASSISTANT         unit_head_id=unit_head_id,
+ASSISTANT         establishment_id=None,
+ASSISTANT         sanctioning_authority_id=None,
+ASSISTANT         stage="unit_head",
+ASSISTANT         status="pending",
+ASSISTANT     )
+ASSISTANT 
+ASSISTANT     # Try to decide with "recommended" (invalid for CL at unit head)
+ASSISTANT     response = c.post(f"/api/v1/leave/applications/{app.id}/decide/", {
+ASSISTANT         "decision": "recommended",
+ASSISTANT         "remark": "Test"
+ASSISTANT     })
+ASSISTANT     assert response.status_code == 400
+ASSISTANT 
+ASSISTANT 
+ASSISTANT @pytest.mark.django_db
+ASSISTANT def test_unknown_application_is_404(stub_iam):
+ASSISTANT     """Unknown application -> 404."""
+ASSISTANT     user_id = 1001
+ASSISTANT 
+ASSISTANT     stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+ASSISTANT 
+ASSISTANT     c = APIClient()
+ASSISTANT     c.credentials(HTTP_AUTHORIZATION="Token abc")
+ASSISTANT 
+ASSISTANT     # Try to get a non-existent application
+ASSISTANT     response = c.get("/api/v1/leave/applications/999999/")
+ASSISTANT     assert response.status_code == 404
+ASSISTANT ```

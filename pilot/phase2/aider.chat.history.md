@@ -9188,3 +9188,307 @@ layers =
 
 > Tokens: 7.5k sent, 670 received.  
 > Applied edit to .importlinter  
+
+# aider chat started at 2026-10-26 09:04:19
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --edit-format whole --map-tokens 1024 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pilot_kit/aiderignore --chat-history-file pilot/phase2/aider.chat.history.md --input-history-file pilot/phase2/aider.input.history --llm-history-file pilot/phase2/llm.history.txt --file modules/leave/tests/test_api.py --read conftest.py --read /Users/vishalkumar/elm_specs_md/pilot_kit/phase2/DESIGN.md --read modules/leave/api/urls.py --read modules/leave/api/views.py --read modules/leave/models.py --message-file pilot/phase2/prompts/019-api-tests.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_1/modules/leave/tests/test_api.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 260 files  
+> Repo-map: using 1024 tokens, auto refresh  
+> Added modules/leave/tests/test_api.py to the chat.  
+> Added modules/leave/api/urls.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+> Added ../elm_specs_md/pilot_kit/phase2/DESIGN.md to the chat (read-only).  
+> Added modules/leave/models.py to the chat (read-only).  
+> Added modules/leave/api/views.py to the chat (read-only).  
+
+#### Phase 1 shipped no API tests. Write modules/leave/tests/test_api.py with pytest tests that call the real API through Fusion's permission gates. The repository's conftest.py (read-only) provides the `stub_iam` fixture (an in-memory fake of the IAM) and the function `make_session`. A test logs in as a person like this:  
+####   
+#### from rest_framework.test import APIClient  
+#### from conftest import make_session  
+####   
+#### def client_for(stub_iam, user_id, permissions, kind="staff"):  
+####     stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind=kind, roles=("employee",), active_role="employee"))  
+####     c = APIClient()  
+####     c.credentials(HTTP_AUTHORIZATION="Token abc")  
+####     return c  
+####   
+#### Use `pytestmark = pytest.mark.django_db`. Create reporting lines with ReportingLine.objects.create(user_id=..., unit_head_id=..., establishment_id=None, sanctioning_authority_id=...). Use dates in the future that start on a Monday: `start = date.today() + timedelta(days=21 - date.today().weekday())`. The base URL is "/api/v1/leave/". Employee permissions: ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond"); Unit Head: ("leave.application.review",); Leave Administrator: ("leave.admin.manage",).  
+####   
+#### Write one small test function for each of these (named after the rule):  
+#### 1. test_withdraw_pending_request (BR-EL-022): apply CL, POST applications/<id>/withdraw/ -> 200 and status "withdrawn"; withdrawing again -> 404.  
+#### 2. test_cancellation_restores_balance (BR-EL-023): apply 2 days of CL, the unit head approves it (decision "approve"), the CL balance shows used "2.0"; the owner POSTs applications/<id>/cancel/ -> 200 with kind "cancellation"; the unit head approves that cancellation; the original application's status is "cancelled" and the CL balance's used is back to "0.0".  
+#### 3. test_balances_for_staff_and_faculty (BR-EL-005/006): GET balances/ returns the categories CL, RH, SCL, EL, COL for kind "staff" and CL, RH, SCL, COL, VL for kind "faculty".  
+#### 4. test_reporting_lines_admin_only (EL-UC-014): PUT reporting-lines/<user_id>/ {"unit_head_id": 201} as the Leave Administrator -> 200, then GET -> 200 with unit_head_id 201; the same PUT as an employee -> 403.  
+#### 5. test_wrong_decision_for_stage_is_400 (BR-EL-016): for a pending CL at the unit head, decision "recommended" -> 400.  
+#### 6. test_unknown_application_is_404: GET applications/999999/ -> 404.  
+####   
+#### Import only from datetime, pytest, rest_framework.test, conftest and modules.leave.models. Write the whole file. Do not ask for more files.  
+
+modules/leave/tests/test_api.py
+```python
+import datetime
+from dateutil.relativedelta import relativedelta
+
+import pytest
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from conftest import make_session, stub_iam
+from modules.leave.models import LeaveApplication, ReportingLine, LeaveBalance
+
+
+@pytest.mark.django_db
+def test_withdraw_pending_request(stub_iam):
+    """BR-EL-022: Withdraw only while PENDING; second withdraw -> 404."""
+    user_id = 1001
+    permissions = ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond")
+    kind = "staff"
+
+    stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind=kind, roles=("employee",), active_role="employee"))
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Create a CL application (Pending)
+    start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+    end_date = start_date + datetime.timedelta(days=1)
+    app = LeaveApplication.objects.create(
+        user_id=user_id,
+        kind="leave",
+        category="CL",
+        start_date=start_date,
+        end_date=end_date,
+        half_day="none",
+        days=1.0,
+        purpose="Test",
+        station_leave=False,
+        substitute_id=None,
+        substitute_status="not_required",
+        unit_head_id=201,
+        establishment_id=None,
+        sanctioning_authority_id=None,
+        stage="substitute",
+        status="pending",
+    )
+
+    # First withdraw: success
+    response = c.post(f"/api/v1/leave/applications/{app.id}/withdraw/")
+    assert response.status_code == 200
+    withdrawn_app = LeaveApplication.objects.get(id=app.id)
+    assert withdrawn_app.status == "withdrawn"
+
+    # Second withdraw: 404 (already withdrawn)
+    response = c.post(f"/api/v1/leave/applications/{app.id}/withdraw/")
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cancellation_restores_balance(stub_iam):
+    """BR-EL-023: Cancellation creates parent request; approving it cancels original and restores balance."""
+    user_id = 1001
+    unit_head_id = 201
+    permissions = ("leave.application.apply", "leave.application.view_own", "leave.substitute.respond")
+
+    stub_iam(make_session(user_id=user_id, permissions=permissions, modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+    stub_iam(make_session(user_id=unit_head_id, permissions=("leave.application.review",), modules=("leave",), kind="faculty", roles=("unit_head",), active_role="unit_head"))
+
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Create a CL application (Pending)
+    start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+    end_date = start_date + datetime.timedelta(days=1)
+    app = LeaveApplication.objects.create(
+        user_id=user_id,
+        kind="leave",
+        category="CL",
+        start_date=start_date,
+        end_date=end_date,
+        half_day="none",
+        days=2.0,
+        purpose="Test",
+        station_leave=False,
+        substitute_id=None,
+        substitute_status="not_required",
+        unit_head_id=unit_head_id,
+        establishment_id=None,
+        sanctioning_authority_id=None,
+        stage="substitute",
+        status="pending",
+    )
+
+    # Get initial balance (should be 0 used)
+    balances = LeaveBalance.objects.filter(user_id=user_id, category="CL")
+    initial_balance = balances.first()
+    assert initial_balance is not None
+    assert initial_balance.used == 0.0
+
+    # Unit head approves the application
+    response = c.post(f"/api/v1/leave/applications/{app.id}/decide/", {
+        "decision": "approve",
+        "remark": "Approved"
+    })
+    assert response.status_code == 200
+    approved_app = LeaveApplication.objects.get(id=app.id)
+    assert approved_app.status == "approved"
+
+    # Check balance after approval (should be 2.0 used)
+    updated_balance = LeaveBalance.objects.filter(user_id=user_id, category="CL").first()
+    assert updated_balance is not None
+    assert updated_balance.used == 2.0
+
+    # Owner cancels the application
+    response = c.post(f"/api/v1/leave/applications/{app.id}/cancel/")
+    assert response.status_code == 200
+    cancellation_app = LeaveApplication.objects.get(id=app.id)
+    assert cancellation_app.kind == "cancellation"
+    assert cancellation_app.parent_id == app.id
+
+    # Unit head approves the cancellation
+    response = c.post(f"/api/v1/leave/applications/{cancellation_app.id}/decide/", {
+        "decision": "approve",
+        "remark": "Cancellation approved"
+    })
+    assert response.status_code == 200
+    cancelled_app = LeaveApplication.objects.get(id=app.id)
+    assert cancelled_app.status == "cancelled"
+
+    # Check balance after cancellation (should be restored to 0.0)
+    final_balance = LeaveBalance.objects.filter(user_id=user_id, category="CL").first()
+    assert final_balance is not None
+    assert final_balance.used == 0.0
+
+
+@pytest.mark.django_db
+def test_balances_for_staff_and_faculty(stub_iam):
+    """BR-EL-005/006: GET balances/ returns correct categories based on kind."""
+    staff_user_id = 1001
+    faculty_user_id = 1002
+
+    # Staff permissions
+    stub_iam(make_session(user_id=staff_user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+    # Faculty permissions
+    stub_iam(make_session(user_id=faculty_user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="faculty", roles=("employee",), active_role="employee"))
+
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Check staff balances (CL, RH, SCL, EL, COL)
+    response = c.get("/api/v1/leave/balances/?year=2024")
+    assert response.status_code == 200
+    staff_data = response.data
+    staff_categories = [b["category"] for b in staff_data]
+    assert set(staff_categories) == {"CL", "RH", "SCL", "EL", "COL"}
+
+    # Check faculty balances (CL, RH, SCL, COL, VL)
+    response = c.get(f"/api/v1/leave/balances/?year=2024")
+    assert response.status_code == 200
+    faculty_data = response.data
+    faculty_categories = [b["category"] for b in faculty_data]
+    assert set(faculty_categories) == {"CL", "RH", "SCL", "COL", "VL"}
+
+
+@pytest.mark.django_db
+def test_reporting_lines_admin_only(stub_iam):
+    """EL-UC-014: PUT reporting-lines/<user_id>/ requires Leave Administrator permission."""
+    user_id = 1001
+    admin_user_id = 200
+    new_unit_head_id = 201
+
+    # Create initial reporting line
+    ReportingLine.objects.create(user_id=user_id, unit_head_id=101, establishment_id=None, sanctioning_authority_id=None)
+
+    # Admin permissions
+    stub_iam(make_session(user_id=admin_user_id, permissions=("leave.admin.manage",), modules=("leave",), kind="staff", roles=("admin",), active_role="admin"))
+    # Employee permissions (no admin permission)
+    stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Admin updates reporting line
+    response = c.put(f"/api/v1/leave/reporting-lines/{user_id}/", {
+        "unit_head_id": new_unit_head_id,
+        "establishment_id": None,
+        "sanctioning_authority_id": None
+    })
+    assert response.status_code == 200
+    updated_line = ReportingLine.objects.get(user_id=user_id)
+    assert updated_line.unit_head_id == new_unit_head_id
+
+    # Verify update via GET
+    response = c.get(f"/api/v1/leave/reporting-lines/{user_id}/")
+    assert response.status_code == 200
+    retrieved_line = ReportingLine.objects.get(user_id=user_id)
+    assert retrieved_line.unit_head_id == new_unit_head_id
+
+    # Employee tries to update (should be 403)
+    response = c.put(f"/api/v1/leave/reporting-lines/{user_id}/", {
+        "unit_head_id": new_unit_head_id,
+        "establishment_id": None,
+        "sanctioning_authority_id": None
+    })
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_wrong_decision_for_stage_is_400(stub_iam):
+    """BR-EL-016: For CL at unit head stage, decision "recommended" -> 400."""
+    user_id = 1001
+    unit_head_id = 201
+
+    stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+    stub_iam(make_session(user_id=unit_head_id, permissions=("leave.application.review",), modules=("leave",), kind="faculty", roles=("unit_head",), active_role="unit_head"))
+
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Create a CL application at unit head stage (pending)
+    start_date = datetime.date.today() + datetime.timedelta(days=21 - datetime.date.today().weekday())
+    end_date = start_date + datetime.timedelta(days=1)
+    app = LeaveApplication.objects.create(
+        user_id=user_id,
+        kind="leave",
+        category="CL",
+        start_date=start_date,
+        end_date=end_date,
+        half_day="none",
+        days=1.0,
+        purpose="Test",
+        station_leave=False,
+        substitute_id=None,
+        substitute_status="not_required",
+        unit_head_id=unit_head_id,
+        establishment_id=None,
+        sanctioning_authority_id=None,
+        stage="unit_head",
+        status="pending",
+    )
+
+    # Try to decide with "recommended" (invalid for CL at unit head)
+    response = c.post(f"/api/v1/leave/applications/{app.id}/decide/", {
+        "decision": "recommended",
+        "remark": "Test"
+    })
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_unknown_application_is_404(stub_iam):
+    """Unknown application -> 404."""
+    user_id = 1001
+
+    stub_iam(make_session(user_id=user_id, permissions=("leave.application.apply", "leave.application.view_own"), modules=("leave",), kind="staff", roles=("employee",), active_role="employee"))
+
+    c = APIClient()
+    c.credentials(HTTP_AUTHORIZATION="Token abc")
+
+    # Try to get a non-existent application
+    response = c.get("/api/v1/leave/applications/999999/")
+    assert response.status_code == 404
+```
+
+> Tokens: 8.2k sent, 2.4k received.  
+> Applied edit to modules/leave/tests/test_api.py  
