@@ -5,7 +5,7 @@ from modules.leave.models import LeaveApplication, ReportingLine, Status
 
 
 def my_applications(user_id: int) -> QuerySet:
-    """Return the leave applications belonging to a specific user, ordered by creation date descending."""
+    """Return a user's leave applications, newest first."""
     return (
         LeaveApplication.objects.prefetch_related("actions")
         .filter(user_id=user_id)
@@ -31,10 +31,8 @@ def visible_application(user_id: int, application_id: int) -> LeaveApplication:
     if app is None:
         raise NotFoundError()
 
-    if app.user_id != user_id and app.assignee_id != user_id:
-        # Check if the user is the nominated substitute
-        if app.substitute_id != user_id:
-            raise NotFoundError(f"Access denied to application {application_id}")
+    if user_id not in (app.user_id, app.assignee_id, app.substitute_id):
+        raise NotFoundError(f"Access denied to application {application_id}")
 
     return app
 

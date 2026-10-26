@@ -40,7 +40,7 @@ def entitlement(category: str, kind: str) -> Decimal | None:
     if category not in CATEGORIES:
         raise PolicyError(f"Unknown leave category: {category}")  # BR-EL-001
 
-    days_per_year, faculty_allowed, staff_allowed, carries_forward = ENTITLEMENT[category]
+    days_per_year, faculty_allowed, staff_allowed, _carries_forward = ENTITLEMENT[category]
 
     is_faculty = kind == "faculty"
 
@@ -60,7 +60,7 @@ def count_days(category: str, start: date, end: date, half_day: str = "none") ->
 
     BR-EL-010: Half-day CL consumes 0.5 day (only for CL and when start==end).
     BR-EL-011: EL, COL, VL count every calendar day inclusive (weekends/holidays included).
-               CL, RH, SCL count Monday to Friday only (no holiday calendar yet -> assume working days).
+               CL, RH, SCL count Monday to Friday only.
 
     Note: Since no external calendar service is imported, we assume the input dates represent
     the requested interval. For CL/RH/SCL, we will perform a basic weekday check assuming
@@ -106,7 +106,8 @@ def overlaps(
     """
     Check if two leave requests overlap.
 
-    True when the date ranges intersect, except a single shared date where both halves are set and different.
+    True when the date ranges intersect.
+    Exception: A single shared date where both halves are set and different does not count as overlap.
     BR-EL-012: Applicant non-overlap with half-day CL exception.
     """
     # Determine if ranges intersect
@@ -119,11 +120,8 @@ def overlaps(
     # Check for the half-day exception on the same date
     # Exception applies only to CL (implied by context of BR-EL-012 regarding halves)
     # If both are on the same day and have different halves, they do NOT overlap.
-    if a_start == b_start:
-        if a_half != "none" and b_half != "none":
-            # Both are half-days on the same day
-            if a_half != b_half:
-                return False  # Different halves on same date -> non-overlapping
+    if a_start == b_start and a_half != "none" and b_half != "none" and a_half != b_half:
+        return False  # Different halves of the same day do not overlap (BR-EL-012)
 
     return True
 

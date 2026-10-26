@@ -17,7 +17,7 @@ def set_reporting_line(
     if unit_head_id is None:
         raise LeaveError("Unit head ID cannot be empty.")
 
-    reporting_line, created = ReportingLine.objects.update_or_create(
+    reporting_line, _created = ReportingLine.objects.update_or_create(
         user_id=user_id,
         defaults={
             "unit_head_id": unit_head_id,
