@@ -94,7 +94,7 @@ export default function ReportingLinesPage() {
           <NumberInput
             label="User id"
             value={lookupId}
-            onChange={(value) => setLookupId(value)}
+            onChange={(value) => setLookupId(String(value))}
             placeholder="Enter user ID to load"
           />
           <Button onClick={handleLoad} disabled={!lookupId} loading={line.isPending}>
@@ -108,7 +108,7 @@ export default function ReportingLinesPage() {
           <NumberInput
             label="Unit Head (user id)"
             value={unitHeadId}
-            onChange={(value) => setUnitHeadId(value)}
+            onChange={(value) => setUnitHeadId(String(value))}
             placeholder="Enter unit head user ID"
             required
           />
@@ -116,14 +116,14 @@ export default function ReportingLinesPage() {
           <NumberInput
             label="Establishment officer (user id, optional)"
             value={establishmentId}
-            onChange={(value) => setEstablishmentId(value)}
+            onChange={(value) => setEstablishmentId(String(value))}
             placeholder="Enter establishment officer user ID"
           />
 
           <NumberInput
             label="Sanctioning Authority (user id, optional)"
             value={sanctioningId}
-            onChange={(value) => setSanctioningId(value)}
+            onChange={(value) => setSanctioningId(String(value))}
             placeholder="Enter sanctioning authority user ID"
           />
 
