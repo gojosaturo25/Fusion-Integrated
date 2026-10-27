@@ -1,6 +1,6 @@
 """ELM acceptance tests (Phase 2 verification harness).
 
-Written by the reviewing assistant (Claude) from the ELM specification IDs, NOT by the local
+Written by the reviewer from the ELM specification IDs, NOT by the local
 model; they are the yardstick for the local model's code, kept outside modules/ so `make test`
 is unaffected. Run: pytest pilot/phase2/acceptance -q
 Every request goes through the real API with Fusion's own permission gates; the IAM is the
