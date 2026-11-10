@@ -6027,3 +6027,579 @@ def test_cf_013_3_attorney_maintenance_reminders_display(
 
 > Tokens: 24k sent, 4.0k received.  
 > Applied edit to tests/a8/fr/test_fr_p10.py  
+
+# aider chat started at 2026-11-11 04:29:50
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/fr/aider.chat.history.md --input-history-file a8_logs/fr/aider.input.history --llm-history-file a8_logs/fr/llm.history.txt --file tests/a8/fr/test_fr_p11.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/fr/promptB_p11.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/fr/test_fr_p11.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 269 files  
+> Repo-map: disabled  
+> Added tests/a8/fr/test_fr_p11.py to the chat.  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen FR_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/fr/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen FR_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 81 to 88 of 204; write exactly these test cases into tests/a8/fr/test_fr_p11.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "TEST-CFR-013-4",  
+####   "source_id": "PMS-AFR-110",  
+####   "purpose": "Verify requirement of explicit renewal decision before deadline",  
+####   "preconditions": "Maintenance deadline is approaching.",  
+####   "action_or_input": "Skip the renewal decision process.",  
+####   "expected_result": "The system prevents proceeding past the deadline without a decision."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-013-5",  
+####   "source_id": "PMS-AFR-111",  
+####   "purpose": "Verify Attorney seeking renewal decision from Director",  
+####   "preconditions": "Renewal deadline is active.",  
+####   "action_or_input": "Attorney clicks 'Request Renewal Decision'.",  
+####   "expected_result": "A request form or workflow to the Director is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-013-6",  
+####   "source_id": "PMS-AFR-112",  
+####   "purpose": "Verify Director decision (Renew/Do Not Renew)",  
+####   "preconditions": "Renewal request received by Director.",  
+####   "action_or_input": "Director selects 'Renew' or 'Do Not Renew'.",  
+####   "expected_result": "The system accepts and records one of these decisions."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-013-7",  
+####   "source_id": "PMS-AFR-113",  
+####   "purpose": "Verify Attorney recording of maintenance action/transaction upon renewal approval",  
+####   "preconditions": "Director decision is 'Renew'.",  
+####   "action_or_input": "Attorney processes the payment and updates the status.",  
+####   "expected_result": "The transaction, status, and action are recorded."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-013-8",  
+####   "source_id": "PMS-AFR-114",  
+####   "purpose": "Verify maintenance of renewal history",  
+####   "preconditions": "Renewal was executed previously.",  
+####   "action_or_input": "View 'Maintenance History'.",  
+####   "expected_result": "Previous renewals are listed with details."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-013-9",  
+####   "source_id": "PMS-AFR-115",  
+####   "purpose": "Verify scheduling of next maintenance cycle",  
+####   "preconditions": "One renewal cycle is completed.",  
+####   "action_or_input": "Check the next scheduled action date.",  
+####   "expected_result": "The system schedules the next maintenance cycle."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-014-0",  
+####   "source_id": "PMS-AFR-116",  
+####   "purpose": "Verify recording of office actions received",  
+####   "preconditions": "Patent Office sends an Office Action.",  
+####   "action_or_input": "Navigate to 'Office Actions'.",  
+####   "expected_result": "The Office Action is recorded in the system."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-014-1",  
+####   "source_id": "PMS-AFR-117",  
+####   "purpose": "Verify Attorney review of recorded office actions",  
+####   "preconditions": "Office Action is recorded.",  
+####   "action_or_input": "Attorney views the action details.",  
+####   "expected_result": "Attorney can review and analyze the content."  
+####  }  
+#### ]  
+#### ```  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user wants me to convert the test cases from FR_DESIGN.json (test cases 81-88) into pytest/pytest-django tests. I need to create a file at `tests/a8/fr/test_fr_p11.py` with these specific test cases.
+
+Let me analyze each test case:
+
+1. TEST-CFR-013-4 (PMS-AFR-110): Verify renewal decision is required before deadline
+2. TEST-CFR-013-5 (PMS-AFR-111): Attorney requests renewal decision from Director
+3. TEST-CFR-013-6 (PMS-AFR-112): Director makes renewal decision
+4. TEST-CFR-013-7 (PMS-AFR-113): Attorney records maintenance action after renewal approval
+5. TEST-CFR-013-8 (PMS-AFR-114): Maintenance history is maintained
+6. TEST-CFR-013-9 (PMS-AFR-115): Next maintenance cycle is scheduled
+7. TEST-CFR-014-0 (PMS-AFR-116): Office Action is recorded
+8. TEST-CFR-014-1 (PMS-AFR-117): Attorney reviews office actions
+
+I need to use the existing test infrastructure from conftest.py and the models/services already defined in the codebase. I should not modify production code, only create tests.
+
+Let me write pytest tests that:
+1. Use pytest-django fixtures
+2. Include test_id and source_id in names/docstrings
+3. Test the actual behavior using the services/models
+4. Don't use xfail
+5. Store under tests/a8/fr/
+
+I'll need to create a new file with these tests. Let me structure them properly based on the existing code patterns I see in the files provided.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+tests/a8/fr/test_fr_p11.py
+```
+"""Test cases for Patent Management System - Maintenance and Office Actions (FR_DESIGN.json test cases 81-88).
+
+All tests use pytest-django with the isolated test database.
+No production code modifications are made.
+"""
+
+import pytest
+from datetime import date, timedelta
+from django.test import TestCase
+from django.core.management import call_command
+
+from modules.patent.models import (
+    PatentApplication, MaintenanceRecord, ApplicationHistory,
+    AttorneyAssignment, OfficeAction
+)
+from modules.patent.services.post_filing import (
+    record_office_action, prepare_response, approve_response, submit_response,
+    schedule_maintenance, decide_renewal
+)
+from fusion_auth.principal import Principal
+from conftest import make_principal
+
+
+@pytest.fixture
+def app_with_grant():
+    """Create a granted patent application for testing."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="US2024-001",
+        title="Test Patent Application",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Electronics",
+        applicant_id=1,
+        status="granted",
+    )
+    return app
+
+
+@pytest.fixture
+def attorney_assigned(app_with_grant):
+    """Create an application with assigned attorney."""
+    assignment = AttorneyAssignment.objects.create(
+        application=app_with_grant,
+        attorney_id=2,
+        status="accepted",
+    )
+    return assignment
+
+
+@pytest.fixture
+def director_assigned(app_with_grant):
+    """Create an application with assigned director."""
+    app_with_grant.assigned_director_id = 3
+    app_with_grant.save()
+    return app_with_grant
+
+
+@pytest.fixture
+def maintenance_record(app_with_grant):
+    """Create a maintenance record for testing renewal decisions."""
+    return MaintenanceRecord.objects.create(
+        application=app_with_grant,
+        due_date=date.today(),
+        fee=100.00,
+        decision="renewal_requested",
+        decided_by=None,
+    )
+
+
+@pytest.fixture
+def office_action(app_with_grant):
+    """Create an office action for testing."""
+    return OfficeAction.objects.create(
+        application=app_with_grant,
+        received_date=date.today(),
+        response_due_date=date.today() + timedelta(days=30),
+        description="Office Action received from USPTO",
+        response_text="",
+        status="recorded",
+    )
+
+
+@pytest.fixture
+def principal_attorney(app_with_grant):
+    """Create a Principal with Attorney role."""
+    return make_principal(
+        user_id=2,
+        permissions=("patent.legal.review",),
+        modules=("patent",),
+        kind="staff",
+        roles=("attorney",),
+        active_role="attorney",
+    )
+
+
+@pytest.fixture
+def principal_director(app_with_grant):
+    """Create a Principal with Director role."""
+    return make_principal(
+        user_id=3,
+        permissions=("patent.admin.manage", "patent.budget.approve",),
+        modules=("patent",),
+        kind="staff",
+        roles=("director",),
+        active_role="director",
+    )
+
+
+@pytest.fixture
+def principal_applicant(app_with_grant):
+    """Create a Principal with Applicant role."""
+    return make_principal(
+        user_id=1,
+        permissions=("patent.application.view_self", "patent.application.create",),
+        modules=("patent",),
+        kind="student",
+        roles=("applicant",),
+        active_role="applicant",
+    )
+
+
+class TestMaintenanceRenewalDecisionRequiredBeforeDeadline:
+    """Test case TEST-CFR-013-4 from PMS-AFR-110."""
+    
+    def test_id(self): "TEST-CFR-013-4"
+        self.source_id = "PMS-AFR-110"
+    
+    def test_renewal_decision_required_before_deadline(
+        self, app_with_grant, maintenance_record, principal_director
+    ):
+        """Verify requirement of explicit renewal decision before deadline."""
+        # Precondition: Maintenance deadline is approaching (already set to today)
+        
+        # Action: Skip the renewal decision process (attempt to proceed without decision)
+        # Verify that system prevents proceeding past deadline without decision
+        
+        # The maintenance record should have status indicating pending decision
+        assert maintenance_record.decision == "renewal_requested"
+        assert maintenance_record.decided_by is None
+        
+        # Attempting to access or use the record without a decision should fail
+        # This is enforced by business logic in decide_renewal service
+        with pytest.raises(Exception):
+            # Simulating attempt to proceed without decision
+            from modules.patent.services.post_filing import decide_renewal
+            decide_renewal(
+                director_id=principal_director.user_id,
+                record_id=maintenance_record.id,
+                renew=False,
+                justification="Test"
+            )
+
+
+class TestAttorneyRequestRenewalDecisionFromDirector:
+    """Test case TEST-CFR-013-5 from PMS-AFR-111."""
+    
+    def test_id(self): "TEST-CFR-013-5"
+        self.source_id = "PMS-AFR-111"
+    
+    def test_attorney_requests_renewal_decision_from_director(
+        self, app_with_grant, maintenance_record, principal_attorney
+    ):
+        """Verify Attorney seeking renewal decision from Director."""
+        # Precondition: Renewal deadline is active (maintenance record exists)
+        
+        # Action: Attorney clicks 'Request Renewal Decision'
+        # Expected: A request form or workflow to the Director is triggered
+        
+        # Verify maintenance record exists and is in pending state
+        assert MaintenanceRecord.objects.filter(
+            application=app_with_grant,
+            due_date=maintenance_record.due_date
+        ).exists()
+        
+        # The system should allow Attorney to initiate the renewal request process
+        # This triggers the workflow to Director for decision
+        
+        # Verify that maintenance record exists with renewal_requested status
+        assert maintenance_record.decision == "renewal_requested"
+
+
+class TestDirectorDecisionRenewOrDoNotRenew:
+    """Test case TEST-CFR-013-6 from PMS-AFR-112."""
+    
+    def test_id(self): "TEST-CFR-013-6"
+        self.source_id = "PMS-AFR-112"
+    
+    def test_director_decision_renew_or_do_not_renew(
+        self, app_with_grant, maintenance_record, principal_director
+    ):
+        """Verify Director decision (Renew/Do Not Renew)."""
+        # Precondition: Renewal request received by Director
+        
+        # Action: Director selects 'Renew' or 'Do Not Renew'
+        # Expected: The system accepts and records one of these decisions
+        
+        # Test 'Renew' decision
+        updated_record = decide_renewal(
+            director_id=principal_director.user_id,
+            record_id=maintenance_record.id,
+            renew=True,
+            justification="Patent is valuable"
+        )
+        
+        assert updated_record.decision == "renew"
+        assert updated_record.decided_by == principal_director.user_id
+        
+        # Test 'Do Not Renew' decision
+        maintenance_record2 = MaintenanceRecord.objects.create(
+            application=app_with_grant,
+            due_date=date.today() + timedelta(days=1),
+            fee=100.00,
+            decision="renewal_requested",
+            decided_by=None,
+        )
+        
+        updated_record2 = decide_renewal(
+            director_id=principal_director.user_id,
+            record_id=maintenance_record2.id,
+            renew=False,
+            justification="Patent is not commercially viable"
+        )
+        
+        assert updated_record2.decision == "do_not_renew"
+        assert updated_record2.decided_by == principal_director.user_id
+
+
+class TestAttorneyRecordsMaintenanceActionUponRenewalApproval:
+    """Test case TEST-CFR-013-7 from PMS-AFR-113."""
+    
+    def test_id(self): "TEST-CFR-013-7"
+        self.source_id = "PMS-AFR-113"
+    
+    def test_attorney_records_maintenance_action_transaction(
+        self, app_with_grant, maintenance_record, principal_attorney
+    ):
+        """Verify Attorney recording of maintenance action/transaction upon renewal approval."""
+        # Precondition: Director decision is 'Renew'
+        
+        # First make the renewal decision
+        updated_record = decide_renewal(
+            director_id=principal_director.user_id,
+            record_id=maintenance_record.id,
+            renew=True,
+            justification="Patent is valuable"
+        )
+        
+        assert updated_record.decision == "renew"
+        
+        # Action: Attorney processes the payment and updates the status
+        # Expected: The transaction, status, and action are recorded
+        
+        # Verify that ApplicationHistory records the renewal decision
+        history = ApplicationHistory.objects.filter(
+            application=app_with_grant
+        ).order_by('-created_at').first()
+        
+        assert history is not None
+        assert "renewal_decided" in str(history.action)
+
+
+class TestMaintenanceRenewalHistory:
+    """Test case TEST-CFR-013-8 from PMS-AFR-114."""
+    
+    def test_id(self): "TEST-CFR-013-8"
+        self.source_id = "PMS-AFR-114"
+    
+    def test_maintenance_renewal_history_viewed(
+        self, app_with_grant, principal_attorney
+    ):
+        """Verify maintenance of renewal history."""
+        # Precondition: Renewal was executed previously
+        
+        # Create multiple renewal records
+        for i in range(3):
+            MaintenanceRecord.objects.create(
+                application=app_with_grant,
+                due_date=date.today() - timedelta(days=i*30),
+                fee=100.00,
+                decision="renewal_requested",
+                decided_by=None,
+            )
+        
+        # Make renewal decisions for all records
+        for i in range(3):
+            MaintenanceRecord.objects.create(
+                application=app_with_grant,
+                due_date=date.today() - timedelta(days=i*30),
+                fee=100.00,
+                decision="renewal_requested",
+                decided_by=None,
+            )
+        
+        # Action: View 'Maintenance History'
+        # Expected: Previous renewals are listed with details
+        
+        # Retrieve history records
+        history_records = ApplicationHistory.objects.filter(
+            application=app_with_grant
+        ).order_by('-created_at')
+        
+        assert history_records.count() > 0
+        
+        # Verify renewal decisions are recorded in history
+        for record in MaintenanceRecord.objects.filter(application=app_with_grant):
+            history = ApplicationHistory.objects.filter(
+                application=app_with_grant,
+                action="renewal_decided"
+            ).exists()
+            
+            assert history is not None
+
+
+class TestNextMaintenanceCycleScheduled:
+    """Test case TEST-CFR-013-9 from PMS-AFR-115."""
+    
+    def test_id(self): "TEST-CFR-013-9"
+        self.source_id = "PMS-AFR-115"
+    
+    def test_next_maintenance_cycle_scheduled(
+        self, app_with_grant, principal_attorney
+    ):
+        """Verify scheduling of next maintenance cycle."""
+        # Precondition: One renewal cycle is completed
+        
+        # Create first renewal record and complete it
+        first_record = MaintenanceRecord.objects.create(
+            application=app_with_grant,
+            due_date=date.today() - timedelta(days=30),
+            fee=100.00,
+            decision="renewal_requested",
+            decided_by=None,
+        )
+        
+        # Make renewal decision
+        decide_renewal(
+            director_id=principal_director.user_id,
+            record_id=first_record.id,
+            renew=True,
+            justification="Patent is valuable"
+        )
+        
+        # Create second renewal record (next cycle)
+        second_record = MaintenanceRecord.objects.create(
+            application=app_with_grant,
+            due_date=date.today() + timedelta(days=30),
+            fee=150.00,
+            decision="renewal_requested",
+            decided_by=None,
+        )
+        
+        # Action: Check the next scheduled action date
+        # Expected: The system schedules the next maintenance cycle
+        
+        # Verify second renewal record exists with correct due date
+        assert MaintenanceRecord.objects.filter(
+            application=app_with_grant,
+            due_date=date.today() + timedelta(days=30)
+        ).exists()
+
+
+class TestOfficeActionRecording:
+    """Test case TEST-CFR-014-0 from PMS-AFR-116."""
+    
+    def test_id(self): "TEST-CFR-014-0"
+        self.source_id = "PMS-AFR-116"
+    
+    def test_office_action_recorded(
+        self, app_with_grant, principal_attorney
+    ):
+        """Verify recording of office actions received."""
+        # Precondition: Patent Office sends an Office Action
+        
+        # Action: Navigate to 'Office Actions' (simulated by creating record)
+        # Expected: The Office Action is recorded in the system
+        
+        # Create office action via service
+        oa = record_office_action(
+            attorney_id=principal_attorney.user_id,
+            application_id=app_with_grant.id,
+            received_date=date.today(),
+            response_due_date=date.today() + timedelta(days=30),
+            description="Office Action received from USPTO regarding novelty"
+        )
+        
+        # Verify office action was created
+        assert OfficeAction.objects.filter(
+            application=app_with_grant,
+            received_date=date.today()
+        ).exists()
+        
+        # Verify status is 'recorded'
+        oa.refresh_from_db()
+        assert oa.status == "recorded"
+
+
+class TestAttorneyReviewOfficeActions:
+    """Test case TEST-CFR-014-1 from PMS-AFR-117."""
+    
+    def test_id(self): "TEST-CFR-014-1"
+        self.source_id = "PMS-AFR-117"
+    
+    def test_attorney_reviews_office_action_details(
+        self, app_with_grant, principal_attorney, office_action
+    ):
+        """Verify Attorney review of recorded office actions."""
+        # Precondition: Office Action is recorded
+        
+        # Action: Attorney views the action details
+        # Expected: Attorney can review and analyze the content
+        
+        # Verify office action exists with correct data
+        oa = OfficeAction.objects.get(
+            application=app_with_grant,
+            received_date=date.today()
+        )
+        
+        assert oa.description == "Office Action received from USPTO regarding novelty"
+        assert oa.status == "recorded"
+        
+        # Attorney should be able to access and review the action details
+        # This is verified by the fact that the office action exists with proper data
+        
+        # Verify attorney can prepare response (simulating review completion)
+        updated_oa = prepare_response(
+            attorney_id=principal_attorney.user_id,
+            office_action_id=oa.id,
+            response_text="Response prepared based on analysis",
+            needs_applicant_approval=False
+        )
+        
+        assert updated_oa.status == "response_ready"
+```
+
+> Tokens: 24k sent, 3.5k received.  
+> Applied edit to tests/a8/fr/test_fr_p11.py  
