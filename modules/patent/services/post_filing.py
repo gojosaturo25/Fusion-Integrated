@@ -319,3 +319,13 @@ class PostFilingService:
         return ApplicationHistory.objects.filter(
             application_id=application_id
         ).order_by('-created_at')
+
+
+record_office_action = PostFilingService.record_office_action
+prepare_response = PostFilingService.prepare_response
+approve_response = PostFilingService.approve_response
+submit_response = PostFilingService.submit_response
+record_grant = PostFilingService.record_grant
+schedule_maintenance = PostFilingService.schedule_maintenance
+decide_renewal = PostFilingService.decide_renewal
+get_history = PostFilingService.get_history

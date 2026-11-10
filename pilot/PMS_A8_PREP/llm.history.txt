@@ -1481,3 +1481,1178 @@ ASSISTANT
 ASSISTANT from core.api.exceptions import BadRequestError as BusinessRuleViolation
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-11-10T20:05:45
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Always use best practices when coding.
+SYSTEM Respect and use existing conventions, libraries, etc that are already present in the code base.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 
+SYSTEM 1. Decide if you need to propose *SEARCH/REPLACE* edits to any files that haven't been added to the chat. You can create new files without asking!
+SYSTEM 
+SYSTEM But if you need to propose edits to existing files not already added to the chat, you *MUST* tell the user their full path names and ask them to *add the files to the chat*.
+SYSTEM End your reply and wait for their approval.
+SYSTEM You can keep asking if you then decide you need to edit more files.
+SYSTEM 
+SYSTEM 2. Think step-by-step and explain the needed changes in a few short sentences.
+SYSTEM 
+SYSTEM 3. Describe each change with a *SEARCH/REPLACE block* per the examples below.
+SYSTEM 
+SYSTEM All changes to files must use this *SEARCH/REPLACE block* format.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+SYSTEM Keep in mind these details about the user's platform and environment:
+SYSTEM - Platform: macOS-27.2-arm64-arm-64bit
+SYSTEM - Shell: SHELL=/bin/zsh
+SYSTEM - Language: English
+SYSTEM - Current date: 2026-11-10
+SYSTEM - The user is operating inside a git repository
+SYSTEM 
+SYSTEM 
+SYSTEM 
+SYSTEM # *SEARCH/REPLACE block* Rules:
+SYSTEM 
+SYSTEM Every *SEARCH/REPLACE block* must use this format:
+SYSTEM 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+SYSTEM 2. The opening fence and code language, eg: ```python
+SYSTEM 3. The start of search block: <<<<<<< SEARCH
+SYSTEM 4. A contiguous chunk of lines to search for in the existing source code
+SYSTEM 5. The dividing line: =======
+SYSTEM 6. The lines to replace into the source code
+SYSTEM 7. The end of the replace block: >>>>>>> REPLACE
+SYSTEM 8. The closing fence: ```
+SYSTEM 
+SYSTEM Use the *FULL* file path, as shown to you by the user.
+SYSTEM 
+SYSTEM Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+SYSTEM If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+SYSTEM 
+SYSTEM *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+SYSTEM Including multiple unique *SEARCH/REPLACE* blocks if needed.
+SYSTEM Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+SYSTEM 
+SYSTEM Keep *SEARCH/REPLACE* blocks concise.
+SYSTEM Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+SYSTEM Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+SYSTEM Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+SYSTEM 
+SYSTEM Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+SYSTEM 
+SYSTEM To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+SYSTEM 
+SYSTEM Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+SYSTEM 
+SYSTEM If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+SYSTEM - A new file path, including dir name if needed
+SYSTEM - An empty `SEARCH` section
+SYSTEM - The new file's contents in the `REPLACE` section
+SYSTEM 
+SYSTEM If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+SYSTEM The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+SYSTEM 
+-------
+USER Change get_factorial() to use math.factorial
+-------
+ASSISTANT To make this change we need to modify `mathweb/flask/app.py` to:
+ASSISTANT 
+ASSISTANT 1. Import the math package.
+ASSISTANT 2. Remove the existing factorial() function.
+ASSISTANT 3. Update get_factorial() to call math.factorial instead.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT from flask import Flask
+ASSISTANT =======
+ASSISTANT import math
+ASSISTANT from flask import Flask
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def factorial(n):
+ASSISTANT     "compute factorial"
+ASSISTANT 
+ASSISTANT     if n == 0:
+ASSISTANT         return 1
+ASSISTANT     else:
+ASSISTANT         return n * factorial(n-1)
+ASSISTANT 
+ASSISTANT =======
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT mathweb/flask/app.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     return str(factorial(n))
+ASSISTANT =======
+ASSISTANT     return str(math.factorial(n))
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER Refactor hello() into its own file.
+-------
+ASSISTANT To make this change we need to modify `main.py` and make a new file `hello.py`:
+ASSISTANT 
+ASSISTANT 1. Make a new hello.py file with hello() in it.
+ASSISTANT 2. Remove hello() from main.py and replace it with an import.
+ASSISTANT 
+ASSISTANT Here are the *SEARCH/REPLACE* blocks:
+ASSISTANT 
+ASSISTANT hello.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT =======
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+ASSISTANT 
+ASSISTANT main.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT def hello():
+ASSISTANT     "print a greeting"
+ASSISTANT 
+ASSISTANT     print("hello")
+ASSISTANT =======
+ASSISTANT from hello import hello
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/pagination.py:
+USER ⋮
+USER │class CursorPagination(DRFCursorPagination):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class IamSession:
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/apps.py:
+USER ⋮
+USER │class AccessControlConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/patent/domain/policy.py:
+USER ⋮
+USER │def add_business_days(start_date: date, days: int) -> date:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/patent/services/post_filing.py
+USER ```
+USER from django.db import transaction, connection
+USER from datetime import date
+USER from typing import List, Optional
+USER 
+USER from core.db.mixins import TimeStampedModel
+USER from modules.patent.models import (
+USER     PatentApplication, OfficeAction, ApplicationHistory, MaintenanceRecord,
+USER     PatentabilityOpinion, Filing
+USER )
+USER from fusion_auth.permissions import HasPermission, HasModuleGrant
+USER from fusion_auth.principal import Principal
+USER 
+USER 
+USER class PostFilingService:
+USER     """Service layer for post-filing lifecycle events."""
+USER 
+USER     @staticmethod
+USER     def record_office_action(
+USER         attorney_id: int,
+USER         application_id: int,
+USER         received_date: date,
+USER         response_due_date: Optional[date],
+USER         description: str
+USER     ) -> OfficeAction:
+USER         """
+USER         Record an office action received from the patent office.
+USER 
+USER         Rules (BR-PMS-014, BR-PMS-066):
+USER         - Attorney must have access to the application.
+USER         - Status must be 'Filed' or earlier (cannot receive OA before filing).
+USER         - Must append history entry.
+USER         """
+USER         application = PatentApplication.objects.get(pk=application_id)
+USER 
+USER         if application.status not in ['filed', 'granted']:
+USER             raise ValueError("Office action can only be recorded for Filed or Granted applications.")
+USER 
+USER         # Check attorney access (simplified: assume attorney_id matches assigned_attorney_id or has explicit access)
+USER         # In a full system, this would check the AttorneyAssignment model.
+USER         if application.assigned_attorney_id != attorney_id:
+USER             raise ValueError("Attorney does not have access to this application.")
+USER 
+USER         with transaction.atomic():
+USER             office_action = OfficeAction.objects.create(
+USER                 application=application,
+USER                 attorney_id=attorney_id,
+USER                 received_date=received_date,
+USER                 response_due_date=response_due_date,
+USER                 description=description,
+USER                 status='recorded'
+USER             )
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=attorney_id,
+USER                 action='office_action_received',
+USER                 from_status=None,
+USER                 to_status='under_review',  # Implicitly moves to under review upon OA receipt
+USER                 note=f"Office Action received: {description[:50]}"
+USER             )
+USER 
+USER         return office_action
+USER 
+USER     @staticmethod
+USER     def prepare_response(
+USER         attorney_id: int,
+USER         office_action_id: int,
+USER         response_text: str,
+USER         needs_applicant_approval: bool
+USER     ) -> OfficeAction:
+USER         """
+USER         Prepare an office action response.
+USER 
+USER         Rules (BR-PMS-015, BR-PMS-065):
+USER         - Attorney must own the OA.
+USER         - Status becomes 'awaiting_applicant_approval' if needs_applicant_approval is True.
+USER         - Otherwise 'response_ready'.
+USER         - Must append history entry.
+USER         """
+USER         office_action = OfficeAction.objects.get(pk=office_action_id)
+USER 
+USER         application = office_action.application
+USER 
+USER         # Verify attorney ownership
+USER         if office_action.attorney_id != attorney_id:
+USER             raise ValueError("Attorney does not own this office action.")
+USER 
+USER         with transaction.atomic():
+USER             office_action.status = 'awaiting_applicant_approval' if needs_applicant_approval else 'response_ready'
+USER             office_action.response_text = response_text
+USER             office_action.save()
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=attorney_id,
+USER                 action='response_prepared',
+USER                 from_status=None,
+USER                 to_status=office_action.status,
+USER                 note=f"Response prepared: {needs_applicant_approval}"
+USER             )
+USER 
+USER         return office_action
+USER 
+USER     @staticmethod
+USER     def approve_response(
+USER         applicant_id: int,
+USER         office_action_id: int
+USER     ) -> OfficeAction:
+USER         """
+USER         Approve an office action response.
+USER 
+USER         Rules (BR-PMS-015, BR-PMS-0146):
+USER         - Only the application owner (Applicant) can approve.
+USER         - Status must be 'awaiting_applicant_approval'.
+USER         - On approval, status becomes 'applicant_approved', allowing Attorney to submit.
+USER         - Must append history entry.
+USER         """
+USER         office_action = OfficeAction.objects.get(pk=office_action_id)
+USER 
+USER         application = office_action.application
+USER 
+USER         # Verify applicant ownership (simplified: check if applicant_id matches a known owner or is the logged-in principal's ID)
+USER         # Since we don't have a User model, we assume applicant_id corresponds to the entity that owns the application.
+USER         # In this context, 'applicant_id' likely refers to the user_id of the applicant IAM system.
+USER         if office_action.status != 'awaiting_applicant_approval':
+USER             raise ValueError("Response must be awaiting applicant approval.")
+USER 
+USER         with transaction.atomic():
+USER             office_action.status = 'applicant_approved'
+USER             office_action.save()
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=applicant_id,
+USER                 action='response_approved',
+USER                 from_status=None,
+USER                 to_status='applicant_approved',
+USER                 note="Applicant approved the response."
+USER             )
+USER 
+USER         return office_action
+USER 
+USER     @staticmethod
+USER     def submit_response(
+USER         attorney_id: int,
+USER         office_action_id: int
+USER     ) -> OfficeAction:
+USER         """
+USER         Submit an office action response.
+USER 
+USER         Rules (BR-PMS-015, BR-PMS-065):
+USER         - Attorney must own the OA.
+USER         - Status must be 'response_ready'.
+USER         - Must check if response_due_date has passed (simplified: raise error if past).
+USER         - On success, status becomes 'response_submitted'.
+USER         - Must append history entry.
+USER         """
+USER         office_action = OfficeAction.objects.get(pk=office_action_id)
+USER 
+USER         application = office_action.application
+USER 
+USER         # Verify attorney ownership
+USER         if office_action.attorney_id != attorney_id:
+USER             raise ValueError("Attorney does not own this office action.")
+USER 
+USER         # Check deadline (simplified logic)
+USER         if office_action.response_due_date and office_action.response_due_date < date.today():
+USER             raise ValueError("Response due date has passed. Cannot submit late response.")
+USER 
+USER         with transaction.atomic():
+USER             office_action.status = 'response_submitted'
+USER             office_action.save()
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=attorney_id,
+USER                 action='response_submitted',
+USER                 from_status=None,
+USER                 to_status='response_submitted',
+USER                 note="Response submitted to patent office."
+USER             )
+USER 
+USER         return office_action
+USER 
+USER     @staticmethod
+USER     def record_grant(
+USER         attorney_id: int,
+USER         application_id: int,
+USER         grant_number: str,
+USER         grant_date: date
+USER     ) -> PatentApplication:
+USER         """
+USER         Record a patent grant.
+USER 
+USER         Rules (BR-PMS-059):
+USER         - Only for applications that are 'filed' or 'granted'.
+USER         - Status must be updated to 'granted'.
+USER         - Must append history entry.
+USER         """
+USER         application = PatentApplication.objects.get(pk=application_id)
+USER 
+USER         if application.status not in ['filed', 'granted']:
+USER             raise ValueError("Grant can only be recorded for Filed or Granted applications.")
+USER 
+USER         # Verify attorney access (simplified check)
+USER         if application.assigned_attorney_id != attorney_id:
+USER             raise ValueError("Attorney does not have access to this application.")
+USER 
+USER         with transaction.atomic():
+USER             application.status = 'granted'
+USER             application.grant_number = grant_number
+USER             application.grant_date = grant_date
+USER             application.save()
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=attorney_id,
+USER                 action='patent_granted',
+USER                 from_status=None,
+USER                 to_status='granted',
+USER                 note=f"Patent granted: {grant_number}"
+USER             )
+USER 
+USER         return application
+USER 
+USER     @staticmethod
+USER     def schedule_maintenance(
+USER         attorney_id: int,
+USER         application_id: int,
+USER         due_date: date,
+USER         fee: float
+USER     ) -> MaintenanceRecord:
+USER         """
+USER         Schedule a maintenance fee payment.
+USER 
+USER         Rules (BR-PMS-060):
+USER         - Only for 'granted' patents.
+USER         - Attorney must have access.
+USER         - Must append history entry.
+USER         """
+USER         application = PatentApplication.objects.get(pk=application_id)
+USER 
+USER         if application.status != 'granted':
+USER             raise ValueError("Maintenance can only be scheduled for Granted patents.")
+USER 
+USER         # Verify attorney access
+USER         if application.assigned_attorney_id != attorney_id:
+USER             raise ValueError("Attorney does not have access to this application.")
+USER 
+USER         with transaction.atomic():
+USER             maintenance_record = MaintenanceRecord.objects.create(
+USER                 application=application,
+USER                 attorney_id=attorney_id,
+USER                 due_date=due_date,
+USER                 fee=fee,
+USER                 decision='renewal_requested',  # Default to requested until Director decides
+USER             )
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=attorney_id,
+USER                 action='maintenance_scheduled',
+USER                 from_status=None,
+USER                 to_status=None,
+USER                 note=f"Maintenance fee scheduled: {due_date} (${fee})"
+USER             )
+USER 
+USER         return maintenance_record
+USER 
+USER     @staticmethod
+USER     def decide_renewal(
+USER         director_id: int,
+USER         record_id: int,
+USER         renew: bool,
+USER         justification: str
+USER     ) -> MaintenanceRecord:
+USER         """
+USER         Make a renewal decision for a maintenance record.
+USER 
+USER         Rules (BR-PMS-061):
+USER         - Only Director can decide.
+USER         - Decision must be 'renew' or 'do_not_renew'.
+USER         - Must append history entry.
+USER         """
+USER         maintenance_record = MaintenanceRecord.objects.get(pk=record_id)
+USER 
+USER         application = maintenance_record.application
+USER 
+USER         # Verify Director access (simplified: assume director_id is the logged-in principal's ID)
+USER         if application.assigned_director_id != director_id:
+USER             raise ValueError("Only the assigned Director can make renewal decisions.")
+USER 
+USER         with transaction.atomic():
+USER             decision_text = 'renew' if renew else 'do_not_renew'
+USER             maintenance_record.decision = decision_text
+USER             maintenance_record.decided_by = director_id
+USER             maintenance_record.justification = justification
+USER             maintenance_record.save()
+USER 
+USER             ApplicationHistory.objects.create(
+USER                 application=application,
+USER                 actor_id=director_id,
+USER                 action='renewal_decided',
+USER                 from_status=None,
+USER                 to_status=None,
+USER                 note=f"Renewal decision: {decision_text}. Justification: {justification}"
+USER             )
+USER 
+USER         return maintenance_record
+USER 
+USER     @staticmethod
+USER     def get_history(application_id: int) -> List[ApplicationHistory]:
+USER         """
+USER         Retrieve the history of actions for an application.
+USER 
+USER         Rules (BR-PMS-0138):
+USER         - Returns ordered list of history rows.
+USER         """
+USER         return ApplicationHistory.objects.filter(
+USER             application_id=application_id
+USER         ).order_by('-created_at')
+USER ```
+USER 
+USER modules/patent/api/views_legal.py
+USER ```
+USER from rest_framework import generics, mixins, status
+USER from rest_framework.decorators import action
+USER from rest_framework.response import Response
+USER from django.db.models import Q
+USER 
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER 
+USER from ..models import (
+USER     PatentApplication, AttorneyAssignment, PatentabilityOpinion,
+USER     Budget, Filing, OfficeAction, MaintenanceRecord, ApplicationHistory
+USER )
+USER from ..services.legal import (
+USER     assign_attorney, respond_to_assignment, record_opinion, propose_budget, decide_budget,
+USER     record_filing
+USER )
+USER from ..services.post_filing import (
+USER     record_office_action, prepare_response, approve_response, submit_response,
+USER     record_grant, schedule_maintenance, decide_renewal
+USER )
+USER 
+USER 
+USER # --- Permission Classes ---
+USER 
+USER class AttorneyAssignmentListMixin(generics.ListAPIView):
+USER     """Base mixin for list views that filter by the requesting principal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return AttorneyAssignment.objects.none()
+USER         
+USER         # Filter based on user kind/role logic (simplified for this step)
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             # Applicants can see assignments for their own applications
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__applicant_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             # Directors can see assignments for applications assigned to them
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__assigned_director_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER         else:  # Default to self or all if logic is complex, here we assume admin access for safety in this snippet context or extend based on specific role checks
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER 
+USER 
+USER # --- Legal Service Views ---
+USER 
+USER class AssignAttorneyView(generics.UpdateAPIView):
+USER     """Assign an attorney to an approved application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             admin_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             attorney_id = data.get('attorney_id')
+USER             
+USER             # Validate and assign via service
+USER             assignment = assign_attorney(
+USER                 admin_id=admin_id,
+USER                 application_id=app.id,
+USER                 attorney_id=attorney_id
+USER             )
+USER             
+USER             return Response({'id': assignment.id, 'status': assignment.status}, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class RespondToAssignmentView(generics.UpdateAPIView):
+USER     """Record an attorney's response to an assignment."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             assignment = AttorneyAssignment.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and respond via service
+USER             application = respond_to_assignment(
+USER                 attorney_id=attorney_id,
+USER                 assignment_id=assignment.id,
+USER                 accept=data.get('accept', False),
+USER                 reason=data.get('reason', '')
+USER             )
+USER             
+USER             return Response({'id': application.id, 'status': application.status}, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class MyAttorneyAssignmentsView(AttorneyAssignmentListMixin):
+USER     """Retrieve attorney assignments for the current user's applications."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return AttorneyAssignment.objects.none()
+USER         
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__applicant_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__assigned_director_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER         else:
+USER             return AttorneyAssignment.objects.none()
+USER 
+USER 
+USER # --- Legal Service Views (Opinion & Budget) ---
+USER 
+USER class RecordOpinionView(generics.CreateAPIView):
+USER     """Record a patentability opinion by the assigned attorney."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record opinion via service
+USER             opinion = record_opinion(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 novelty=data.get('novelty', False),
+USER                 non_obviousness=data.get('non_obviousness', False),
+USER                 utility=data.get('utility', False),
+USER                 recommendation=data.get('recommendation'),
+USER                 text=data.get('text', '')
+USER             )
+USER             
+USER             return Response(PatentabilityOpinionSerializer(opinion).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ProposeBudgetView(generics.CreateAPIView):
+USER     """Propose a budget for an approved application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             admin_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and propose budget via service
+USER             budget = propose_budget(
+USER                 admin_id=admin_id,
+USER                 application_id=app.id,
+USER                 filing_fee=data.get('filing_fee', 0),
+USER                 attorney_fee=data.get('attorney_fee', 0),
+USER                 admin_cost=data.get('admin_cost', 0)
+USER             )
+USER             
+USER             return Response(BudgetSerializer(budget).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class DecideBudgetView(generics.UpdateAPIView):
+USER     """Decide on a budget proposal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.budget.approve")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             budget = Budget.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and decide via service
+USER             updated_budget, escalated = decide_budget(
+USER                 director_id=director_id,
+USER                 budget_id=budget.id,
+USER                 approve=data.get('approve', False),
+USER                 justification=data.get('justification', ''),
+USER                 threshold=data.get('threshold', 0)
+USER             )
+USER             
+USER             return Response(BudgetSerializer(updated_budget).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Legal Service Views (Filing) ---
+USER 
+USER class RecordFilingView(generics.CreateAPIView):
+USER     """Record an external patent filing."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record filing via service
+USER             filing = record_filing(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 office=data.get('office', ''),
+USER                 filing_number=data.get('filing_number', ''),
+USER                 filing_date=data.get('filing_date'),
+USER                 international=data.get('international', False)
+USER             )
+USER             
+USER             return Response(FilingSerializer(filing).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Post-Filing Service Views ---
+USER 
+USER class RecordOfficeActionView(generics.CreateAPIView):
+USER     """Record an office action received from the patent office."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record OA via service
+USER             oa = record_office_action(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 received_date=data.get('received_date'),
+USER                 response_due_date=data.get('response_due_date'),
+USER                 description=data.get('description', '')
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(oa).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class PrepareResponseView(generics.UpdateAPIView):
+USER     """Prepare an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and prepare response via service
+USER             updated_oa = prepare_response(
+USER                 attorney_id=attorney_id,
+USER                 office_action_id=oa.id,
+USER                 response_text=data.get('response_text', ''),
+USER                 needs_applicant_approval=data.get('needs_applicant_approval', False)
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ApproveResponseView(generics.UpdateAPIView):
+USER     """Approve an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             # Validate and approve response via service
+USER             updated_oa = approve_response(
+USER                 applicant_id=request.principal.user_id if hasattr(request, 'principal') else None,
+USER                 office_action_id=oa.id
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class SubmitResponseView(generics.UpdateAPIView):
+USER     """Submit an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             # Validate and submit response via service
+USER             updated_oa = submit_response(
+USER                 attorney_id=request.principal.user_id if hasattr(request, 'principal') else None,
+USER                 office_action_id=oa.id
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class RecordGrantView(generics.UpdateAPIView):
+USER     """Record a patent grant."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record grant via service
+USER             updated_app = record_grant(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 grant_number=data.get('grant_number', ''),
+USER                 grant_date=data.get('grant_date')
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(updated_app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ScheduleMaintenanceView(generics.CreateAPIView):
+USER     """Schedule a maintenance fee payment."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.maintenance.manage")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and schedule maintenance via service
+USER             record = schedule_maintenance(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 due_date=data.get('due_date'),
+USER                 fee=data.get('fee', 0)
+USER             )
+USER             
+USER             return Response(MaintenanceRecordSerializer(record).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class DecideRenewalView(generics.UpdateAPIView):
+USER     """Make a renewal decision for a maintenance record."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.maintenance.manage")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             record = MaintenanceRecord.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and decide renewal via service
+USER             updated_record = decide_renewal(
+USER                 director_id=director_id,
+USER                 record_id=record.id,
+USER                 renew=data.get('renew', False),
+USER                 justification=data.get('justification', '')
+USER             )
+USER             
+USER             return Response(MaintenanceRecordSerializer(updated_record).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Helper Classes for NotFoundResponse ---
+USER 
+USER class NotFoundResponse(Exception):
+USER     pass
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER modules/patent/api/views_legal.py imports plain functions (record_office_action, prepare_response, approve_response, submit_response, record_grant, schedule_maintenance, decide_renewal) from modules/patent/services/post_filing.py, but that file defines them as static methods of the class PostFilingService. Keep the class exactly as it is and add these lines at the very end of modules/patent/services/post_filing.py, after the class:
+USER 
+USER record_office_action = PostFilingService.record_office_action
+USER prepare_response = PostFilingService.prepare_response
+USER approve_response = PostFilingService.approve_response
+USER submit_response = PostFilingService.submit_response
+USER record_grant = PostFilingService.record_grant
+USER schedule_maintenance = PostFilingService.schedule_maintenance
+USER decide_renewal = PostFilingService.decide_renewal
+USER get_history = PostFilingService.get_history
+USER 
+USER 
+USER # *SEARCH/REPLACE block* Rules:
+USER 
+USER Every *SEARCH/REPLACE block* must use this format:
+USER 1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
+USER 2. The opening fence and code language, eg: ```python
+USER 3. The start of search block: <<<<<<< SEARCH
+USER 4. A contiguous chunk of lines to search for in the existing source code
+USER 5. The dividing line: =======
+USER 6. The lines to replace into the source code
+USER 7. The end of the replace block: >>>>>>> REPLACE
+USER 8. The closing fence: ```
+USER 
+USER Use the *FULL* file path, as shown to you by the user.
+USER 
+USER Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+USER If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
+USER 
+USER *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
+USER Including multiple unique *SEARCH/REPLACE* blocks if needed.
+USER Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+USER 
+USER Keep *SEARCH/REPLACE* blocks concise.
+USER Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
+USER Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+USER Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
+USER 
+USER Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
+USER 
+USER To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+USER 
+USER Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
+USER 
+USER If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
+USER - A new file path, including dir name if needed
+USER - An empty `SEARCH` section
+USER - The new file's contents in the `REPLACE` section
+USER 
+USER If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the code changes you just proposed.
+USER The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+USER 
+USER Reply in English.
+USER ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
+USER 
+LLM RESPONSE 2026-11-10T20:07:24
+ASSISTANT To resolve the import mismatch between `views_legal.py` (which expects plain functions) and `post_filing.py` (which defines them as static methods), I will add module-level function exports at the end of `modules/patent/services/post_filing.py`. These exports simply reference the existing static methods, keeping the class structure intact while providing the expected interface.
+ASSISTANT 
+ASSISTANT Here is the *SEARCH/REPLACE* block:
+ASSISTANT 
+ASSISTANT modules/patent/services/post_filing.py
+ASSISTANT ```python
+ASSISTANT <<<<<<< SEARCH
+ASSISTANT     @staticmethod
+ASSISTANT     def get_history(application_id: int) -> List[ApplicationHistory]:
+ASSISTANT         """
+ASSISTANT         Retrieve the history of actions for an application.
+ASSISTANT 
+ASSISTANT         Rules (BR-PMS-0138):
+ASSISTANT         - Returns ordered list of history rows.
+ASSISTANT         """
+ASSISTANT         return ApplicationHistory.objects.filter(
+ASSISTANT             application_id=application_id
+ASSISTANT         ).order_by('-created_at')
+ASSISTANT =======
+ASSISTANT     @staticmethod
+ASSISTANT     def get_history(application_id: int) -> List[ApplicationHistory]:
+ASSISTANT         """
+ASSISTANT         Retrieve the history of actions for an application.
+ASSISTANT 
+ASSISTANT         Rules (BR-PMS-0138):
+ASSISTANT         - Returns ordered list of history rows.
+ASSISTANT         """
+ASSISTANT         return ApplicationHistory.objects.filter(
+ASSISTANT             application_id=application_id
+ASSISTANT         ).order_by('-created_at')
+ASSISTANT 
+ASSISTANT 
+ASSISTANT record_office_action = PostFilingService.record_office_action
+ASSISTANT prepare_response = PostFilingService.prepare_response
+ASSISTANT approve_response = PostFilingService.approve_response
+ASSISTANT submit_response = PostFilingService.submit_response
+ASSISTANT record_grant = PostFilingService.record_grant
+ASSISTANT schedule_maintenance = PostFilingService.schedule_maintenance
+ASSISTANT decide_renewal = PostFilingService.decide_renewal
+ASSISTANT get_history = PostFilingService.get_history
+ASSISTANT >>>>>>> REPLACE
+ASSISTANT ```
