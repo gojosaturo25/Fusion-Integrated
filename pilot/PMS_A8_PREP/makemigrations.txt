@@ -1,0 +1,13 @@
+Migrations for 'patent':
+  modules/patent/migrations/0001_initial.py
+    + Create model PatentApplication
+    + Create model OfficeAction
+    + Create model ApplicationHistory
+    + Create model ApplicationDocument
+    + Create model PatentabilityOpinion
+    + Create model MaintenanceRecord
+    + Create model Inventor
+    + Create model Filing
+    + Create model Budget
+    + Create model AttorneyAssignment
+    + Create model Appeal
