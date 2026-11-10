@@ -1,5 +1,5 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
+from rest_framework.views import APIView
 
 from .views import (
     ApplicationListView, ApplicationDetailView, ApplicationHistoryView,
@@ -14,42 +14,38 @@ from .views_legal import (
     RecordGrantView, ScheduleMaintenanceView, DecideRenewalView
 )
 
-router = DefaultRouter()
-
-# --- Application Routes ---
-router.register(r'applications', ApplicationListView, basename='application-list')
-router.register(r'applications/(?P<pk>[0-9]+)/', ApplicationDetailView, basename='application-detail')
-router.register(r'history/', ApplicationHistoryView, basename='application-history')
-
-# --- Action Routes ---
-router.register(r'submit/', SubmitApplicationView, basename='submit-application')
-router.register(r'assign-director/', AssignDirectorView, basename='assign-director')
-router.register(r'review/', ReviewApplicationView, basename='review-application')
-router.register(r'resubmit/', ResubmitApplicationView, basename='resubmit-application')
-router.register(r'withdraw/', WithdrawApplicationView, basename='withdraw-application')
-router.register(r'appeal/', FileAppealView, basename='file-appeal')
-router.register(r'appeals/(?P<pk>[0-9]+)/', DecideAppealView, basename='decide-appeal')
-
-# --- Admin Routes ---
-router.register(r'', ExpireOverdueResubmissionsView, basename='admin-expire-resubmissions')
-router.register(r'applications/', AdminApplicationListView, basename='admin-application-list')
-
-# --- Legal Service Routes ---
-router.register(r'assign-attorney/', AssignAttorneyView, basename='assign-attorney')
-router.register(r'assignments/(?P<pk>[0-9]+)/', RespondToAssignmentView, basename='respond-to-assignment')
-router.register(r'my-assignments/', MyAttorneyAssignmentsView, basename='my-attorney-assignments')
-router.register(r'opinions/(?P<pk>[0-9]+)/', RecordOpinionView, basename='record-opinion')
-router.register(r'budgets/(?P<pk>[0-9]+)/', ProposeBudgetView, basename='propose-budget')
-router.register(r'budgets/(?P<pk>[0-9]+)/decide/', DecideBudgetView, basename='decide-budget')
-router.register(r'filings/(?P<pk>[0-9]+)/', RecordFilingView, basename='record-filing')
-router.register(r'office-actions/(?P<pk>[0-9]+)/', RecordOfficeActionView, basename='record-office-action')
-router.register(r'office-actions/(?P<pk>[0-9]+)/response/', PrepareResponseView, basename='prepare-response')
-router.register(r'office-actions/(?P<pk>[0-9]+)/response/approve/', ApproveResponseView, basename='approve-response')
-router.register(r'office-actions/(?P<pk>[0-9]+)/response/submit/', SubmitResponseView, basename='submit-response')
-router.register(r'applications/(?P<pk>[0-9]+)/grant/', RecordGrantView, basename='record-grant')
-router.register(r'maintenance/(?P<pk>[0-9]+)/', ScheduleMaintenanceView, basename='schedule-maintenance')
-router.register(r'maintenance/(?P<pk>[0-9]+)/decide/', DecideRenewalView, basename='decide-renewal')
-
 urlpatterns = [
-    path('', include(router.urls)),
+    # --- Application Routes ---
+    path('applications/', ApplicationListView.as_view(), name='application-list'),
+    path('applications/<int:pk>/', ApplicationDetailView.as_view(), name='application-detail'),
+    path('history/', ApplicationHistoryView.as_view(), name='application-history'),
+
+    # --- Action Routes ---
+    path('submit/', SubmitApplicationView.as_view(), name='submit-application'),
+    path('assign-director/', AssignDirectorView.as_view(), name='assign-director'),
+    path('review/', ReviewApplicationView.as_view(), name='review-application'),
+    path('resubmit/', ResubmitApplicationView.as_view(), name='resubmit-application'),
+    path('withdraw/', WithdrawApplicationView.as_view(), name='withdraw-application'),
+    path('appeal/', FileAppealView.as_view(), name='file-appeal'),
+    path('appeals/<int:pk>/', DecideAppealView.as_view(), name='decide-appeal'),
+
+    # --- Admin Routes ---
+    path('admin/applications/', AdminApplicationListView.as_view(), name='admin-application-list'),
+    path('admin/expire-resubmissions/', ExpireOverdueResubmissionsView.as_view(), name='admin-expire-resubmissions'),
+
+    # --- Legal Service Routes ---
+    path('assign-attorney/', AssignAttorneyView.as_view(), name='assign-attorney'),
+    path('assignments/<int:pk>/', RespondToAssignmentView.as_view(), name='respond-to-assignment'),
+    path('my-assignments/', MyAttorneyAssignmentsView.as_view(), name='my-attorney-assignments'),
+    path('opinions/<int:pk>/', RecordOpinionView.as_view(), name='record-opinion'),
+    path('budgets/<int:pk>/', ProposeBudgetView.as_view(), name='propose-budget'),
+    path('budgets/<int:pk>/decide/', DecideBudgetView.as_view(), name='decide-budget'),
+    path('filings/<int:pk>/', RecordFilingView.as_view(), name='record-filing'),
+    path('office-actions/<int:pk>/', RecordOfficeActionView.as_view(), name='record-office-action'),
+    path('office-actions/<int:pk>/response/', PrepareResponseView.as_view(), name='prepare-response'),
+    path('office-actions/<int:pk>/response/approve/', ApproveResponseView.as_view(), name='approve-response'),
+    path('office-actions/<int:pk>/response/submit/', SubmitResponseView.as_view(), name='submit-response'),
+    path('applications/<int:pk>/grant/', RecordGrantView.as_view(), name='record-grant'),
+    path('maintenance/<int:pk>/', ScheduleMaintenanceView.as_view(), name='schedule-maintenance'),
+    path('maintenance/<int:pk>/decide/', DecideRenewalView.as_view(), name='decide-renewal'),
 ]

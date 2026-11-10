@@ -2656,3 +2656,1149 @@ ASSISTANT decide_renewal = PostFilingService.decide_renewal
 ASSISTANT get_history = PostFilingService.get_history
 ASSISTANT >>>>>>> REPLACE
 ASSISTANT ```
+TO LLM 2026-11-10T20:16:29
+-------
+SYSTEM Act as an expert software developer.
+SYSTEM Take requests for changes to the supplied code.
+SYSTEM If the request is ambiguous, ask questions.
+SYSTEM Reply in English.
+SYSTEM 
+SYSTEM Once you understand the request you MUST:
+SYSTEM 1. Determine if any code changes are needed.
+SYSTEM 2. Explain any needed changes.
+SYSTEM 3. If changes are needed, output a copy of each file that needs changes.
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return the entire content of the updated file.
+SYSTEM You MUST use this *file listing* format:
+SYSTEM 
+SYSTEM path/to/filename.js
+SYSTEM ```
+SYSTEM // entire file content ...
+SYSTEM // ... goes in between
+SYSTEM ```
+SYSTEM 
+SYSTEM Every *file listing* MUST use this format:
+SYSTEM - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+SYSTEM - Second line: opening ```
+SYSTEM - ... entire content of the file ...
+SYSTEM - Final line: closing ```
+SYSTEM 
+SYSTEM To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+SYSTEM *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+SYSTEM Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+SYSTEM 
+SYSTEM Reply in English.
+SYSTEM 
+-------
+USER Change the greeting to be more casual
+-------
+ASSISTANT Ok, I will:
+ASSISTANT 
+ASSISTANT 1. Switch the greeting text from "Hello" to "Hey".
+ASSISTANT 
+ASSISTANT show_greeting.py
+ASSISTANT ```
+ASSISTANT import sys
+ASSISTANT 
+ASSISTANT def greeting(name):
+ASSISTANT     print(f"Hey {name}")
+ASSISTANT 
+ASSISTANT if __name__ == '__main__':
+ASSISTANT     greeting(sys.argv[1])
+ASSISTANT ```
+-------
+USER I switched to a new code base. Please don't consider the above files or try to edit them any longer.
+-------
+ASSISTANT Ok.
+-------
+USER Here are some READ ONLY files, provided for your reference.
+USER Do not edit these files!
+USER 
+USER modules/patent/api/views.py
+USER ```
+USER from rest_framework import generics, status
+USER from rest_framework.decorators import action
+USER from rest_framework.response import Response
+USER from django.db.models import Q
+USER 
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER 
+USER from ..models import (
+USER     PatentApplication, Inventor, ApplicationDocument,
+USER     AttorneyAssignment, PatentabilityOpinion, Budget, Filing,
+USER     OfficeAction, MaintenanceRecord, Appeal, ApplicationHistory
+USER )
+USER from ..services.applications import (
+USER     submit_application, assign_director, review_application, resubmit_application,
+USER     withdraw_application, expire_overdue_resubmissions, file_appeal, decide_appeal
+USER )
+USER 
+USER 
+USER # --- Permission Classes ---
+USER 
+USER class PatentApplicationListMixin(generics.ListAPIView):
+USER     """Base mixin for list views that filter by the requesting principal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return PatentApplication.objects.none()
+USER         
+USER         # Filter based on user kind/role logic (simplified for this step)
+USER         # In a real system, this would check roles against registry.py ROLE_GRANTS
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return PatentApplication.objects.filter(applicant_id=principal.user_id)
+USER         elif user_kind == 'director':
+USER             # Directors can review applications assigned to them
+USER             return PatentApplication.objects.filter(assigned_director_id=principal.user_id)
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return PatentApplication.objects.all()
+USER         else:  # Default to self or all if logic is complex, here we assume admin access for safety in this snippet context or extend based on specific role checks
+USER             # For simplicity in this step, assuming Admin sees all, others see self or assigned
+USER             # A robust implementation would check registry.py ROLE_GRANTS explicitly
+USER             return PatentApplication.objects.all()
+USER 
+USER 
+USER # --- Application Views ---
+USER 
+USER class ApplicationListView(PatentApplicationListMixin):
+USER     """List applications for the current user."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return PatentApplication.objects.none()
+USER         
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return PatentApplication.objects.filter(applicant_id=principal.user_id).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             return PatentApplication.objects.filter(assigned_director_id=principal.user_id).order_by('-created_at')
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return PatentApplication.objects.all().order_by('-created_at')
+USER         else:
+USER             # Fallback for other roles if not explicitly handled above, default to self or empty
+USER             # Assuming only Student/Director/Admin exist based on context
+USER             return PatentApplication.objects.none()
+USER 
+USER 
+USER class ApplicationDetailView(generics.RetrieveUpdateAPIView):
+USER     """Retrieve and update application details."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return PatentApplication.objects.none()
+USER         
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return PatentApplication.objects.filter(applicant_id=principal.user_id)
+USER         elif user_kind == 'director':
+USER             return PatentApplication.objects.filter(assigned_director_id=principal.user_id)
+USER         elif user_kind == 'admin':
+USER             return PatentApplication.objects.all()
+USER         else:
+USER             return PatentApplication.objects.none()
+USER 
+USER     def get_object(self):
+USER         queryset = self.get_queryset()
+USER         try:
+USER             return queryset.get(pk=self.kwargs['pk'])
+USER         except PatentApplication.DoesNotExist:
+USER             raise NotFoundResponse("Application not found.")
+USER 
+USER 
+USER class ApplicationHistoryView(generics.RetrieveAPIView):
+USER     """Retrieve application history."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return ApplicationHistory.objects.none()
+USER         
+USER         user_kind = getattr(principal, "kind", None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return PatentApplication.objects.filter(applicant_id=principal.user_id).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             return PatentApplication.objects.filter(assigned_director_id=principal.user_id).order_by('-created_at')
+USER         elif user_kind == 'admin':
+USER             return PatentApplication.objects.all().order_by('-created_at')
+USER         else:
+USER             return PatentApplication.objects.none()
+USER 
+USER     def get_object(self):
+USER         queryset = self.get_queryset()
+USER         try:
+USER             return queryset.get(pk=self.kwargs['pk'])
+USER         except PatentApplication.DoesNotExist:
+USER             raise NotFoundResponse("Application not found.")
+USER 
+USER 
+USER # --- Action Views ---
+USER 
+USER class SubmitApplicationView(generics.CreateAPIView):
+USER     """Submit a new patent application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.create")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             data = request.data
+USER             applicant_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and submit via service
+USER             app = submit_application(
+USER                 applicant_id=applicant_id,
+USER                 data=data,
+USER                 inventors=request.data.get('inventors', []),
+USER                 documents=request.data.get('documents', []),
+USER                 actor_id=applicant_id
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(app).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class AssignDirectorView(generics.UpdateAPIView):
+USER     """Assign a director to an application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = data.get('director_id')
+USER             admin_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and assign via service
+USER             app = assign_director(
+USER                 admin_id=admin_id,
+USER                 application_id=app.id,
+USER                 director_id=director_id
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ReviewApplicationView(generics.UpdateAPIView):
+USER     """Record a director's review decision."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and review via service
+USER             app = review_application(
+USER                 director_id=director_id,
+USER                 application_id=app.id,
+USER                 decision=data.get('decision'),
+USER                 justification=data.get('justification')
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ResubmitApplicationView(generics.UpdateAPIView):
+USER     """Resubmit an application after revision."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             applicant_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and resubmit via service
+USER             app = resubmit_application(
+USER                 applicant_id=applicant_id,
+USER                 application_id=app.id,
+USER                 changes=data.get('changes', {}),
+USER                 response_to_feedback=data.get('response_to_feedback'),
+USER                 actor_id=applicant_id
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class WithdrawApplicationView(generics.UpdateAPIView):
+USER     """Withdraw an application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             applicant_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and withdraw via service
+USER             app = withdraw_application(
+USER                 applicant_id=applicant_id,
+USER                 application_id=app.id,
+USER                 reason=data.get('reason')
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class FileAppealView(generics.CreateAPIView):
+USER     """File an appeal against a rejection."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.application.manage")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             applicant_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and file appeal via service
+USER             appeal = file_appeal(
+USER                 applicant_id=applicant_id,
+USER                 application_id=app.id,
+USER                 grounds=data.get('grounds')
+USER             )
+USER             
+USER             return Response({'id': appeal.id, 'status': appeal.status}, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class DecideAppealView(generics.UpdateAPIView):
+USER     """Record a director's decision on an appeal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.appeal.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             appeal = Appeal.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and decide via service
+USER             appeal = decide_appeal(
+USER                 director_id=director_id,
+USER                 appeal_id=appeal.id,
+USER                 outcome=data.get('outcome'),
+USER                 justification=data.get('justification')
+USER             )
+USER             
+USER             return Response({'id': appeal.id, 'status': appeal.status}, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Admin Views ---
+USER 
+USER class ExpireOverdueResubmissionsView(generics.GenericAPIView):
+USER     """Set status to Expired for applications where resubmission deadline has passed."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.admin.manage")]
+USER     
+USER     def post(self, request):
+USER         today = request.data.get('today')
+USER         if not today:
+USER             from datetime import date
+USER             today = date.today()
+USER         
+USER         expired_apps = expire_overdue_resubmissions(today)
+USER         
+USER         return Response({
+USER             'count': len(expired_apps),
+USER             'expired_applications': [app.APPLICATION_NUMBER for app in expired_apps]
+USER         }, status=status.HTTP_200_OK)
+USER 
+USER 
+USER class AdminApplicationListView(PatentApplicationListMixin):
+USER     """Admin list of all submitted applications."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.admin.manage")]
+USER     
+USER     def get_queryset(self):
+USER         return PatentApplication.objects.all().order_by('-created_at')
+USER 
+USER 
+USER class NotFoundResponse(Exception):
+USER     pass
+USER ```
+USER 
+USER modules/patent/api/views_legal.py
+USER ```
+USER from rest_framework import generics, mixins, status
+USER from rest_framework.decorators import action
+USER from rest_framework.response import Response
+USER from django.db.models import Q
+USER 
+USER from fusion_auth.permissions import HasModuleGrant, HasPermission
+USER 
+USER from ..models import (
+USER     PatentApplication, AttorneyAssignment, PatentabilityOpinion,
+USER     Budget, Filing, OfficeAction, MaintenanceRecord, ApplicationHistory
+USER )
+USER from ..services.legal import (
+USER     assign_attorney, respond_to_assignment, record_opinion, propose_budget, decide_budget,
+USER     record_filing
+USER )
+USER from ..services.post_filing import (
+USER     record_office_action, prepare_response, approve_response, submit_response,
+USER     record_grant, schedule_maintenance, decide_renewal
+USER )
+USER 
+USER 
+USER # --- Permission Classes ---
+USER 
+USER class AttorneyAssignmentListMixin(generics.ListAPIView):
+USER     """Base mixin for list views that filter by the requesting principal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return AttorneyAssignment.objects.none()
+USER         
+USER         # Filter based on user kind/role logic (simplified for this step)
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             # Applicants can see assignments for their own applications
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__applicant_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             # Directors can see assignments for applications assigned to them
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__assigned_director_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER         else:  # Default to self or all if logic is complex, here we assume admin access for safety in this snippet context or extend based on specific role checks
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER 
+USER 
+USER # --- Legal Service Views ---
+USER 
+USER class AssignAttorneyView(generics.UpdateAPIView):
+USER     """Assign an attorney to an approved application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             admin_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             attorney_id = data.get('attorney_id')
+USER             
+USER             # Validate and assign via service
+USER             assignment = assign_attorney(
+USER                 admin_id=admin_id,
+USER                 application_id=app.id,
+USER                 attorney_id=attorney_id
+USER             )
+USER             
+USER             return Response({'id': assignment.id, 'status': assignment.status}, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class RespondToAssignmentView(generics.UpdateAPIView):
+USER     """Record an attorney's response to an assignment."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             assignment = AttorneyAssignment.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and respond via service
+USER             application = respond_to_assignment(
+USER                 attorney_id=attorney_id,
+USER                 assignment_id=assignment.id,
+USER                 accept=data.get('accept', False),
+USER                 reason=data.get('reason', '')
+USER             )
+USER             
+USER             return Response({'id': application.id, 'status': application.status}, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class MyAttorneyAssignmentsView(AttorneyAssignmentListMixin):
+USER     """Retrieve attorney assignments for the current user's applications."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def get_queryset(self):
+USER         principal = getattr(self.request, "principal", None)
+USER         if not principal:
+USER             return AttorneyAssignment.objects.none()
+USER         
+USER         user_kind = getattr(principal, 'kind', None)
+USER         
+USER         if user_kind == 'student':  # Applicant
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__applicant_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'director':
+USER             return AttorneyAssignment.objects.filter(
+USER                 application__assigned_director_id=principal.user_id
+USER             ).order_by('-created_at')
+USER         elif user_kind == 'admin':  # PCC_ADMIN
+USER             return AttorneyAssignment.objects.all().order_by('-created_at')
+USER         else:
+USER             return AttorneyAssignment.objects.none()
+USER 
+USER 
+USER # --- Legal Service Views (Opinion & Budget) ---
+USER 
+USER class RecordOpinionView(generics.CreateAPIView):
+USER     """Record a patentability opinion by the assigned attorney."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record opinion via service
+USER             opinion = record_opinion(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 novelty=data.get('novelty', False),
+USER                 non_obviousness=data.get('non_obviousness', False),
+USER                 utility=data.get('utility', False),
+USER                 recommendation=data.get('recommendation'),
+USER                 text=data.get('text', '')
+USER             )
+USER             
+USER             return Response(PatentabilityOpinionSerializer(opinion).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ProposeBudgetView(generics.CreateAPIView):
+USER     """Propose a budget for an approved application."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.legal.review")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             admin_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and propose budget via service
+USER             budget = propose_budget(
+USER                 admin_id=admin_id,
+USER                 application_id=app.id,
+USER                 filing_fee=data.get('filing_fee', 0),
+USER                 attorney_fee=data.get('attorney_fee', 0),
+USER                 admin_cost=data.get('admin_cost', 0)
+USER             )
+USER             
+USER             return Response(BudgetSerializer(budget).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class DecideBudgetView(generics.UpdateAPIView):
+USER     """Decide on a budget proposal."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.budget.approve")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             budget = Budget.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and decide via service
+USER             updated_budget, escalated = decide_budget(
+USER                 director_id=director_id,
+USER                 budget_id=budget.id,
+USER                 approve=data.get('approve', False),
+USER                 justification=data.get('justification', ''),
+USER                 threshold=data.get('threshold', 0)
+USER             )
+USER             
+USER             return Response(BudgetSerializer(updated_budget).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Legal Service Views (Filing) ---
+USER 
+USER class RecordFilingView(generics.CreateAPIView):
+USER     """Record an external patent filing."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record filing via service
+USER             filing = record_filing(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 office=data.get('office', ''),
+USER                 filing_number=data.get('filing_number', ''),
+USER                 filing_date=data.get('filing_date'),
+USER                 international=data.get('international', False)
+USER             )
+USER             
+USER             return Response(FilingSerializer(filing).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Post-Filing Service Views ---
+USER 
+USER class RecordOfficeActionView(generics.CreateAPIView):
+USER     """Record an office action received from the patent office."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record OA via service
+USER             oa = record_office_action(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 received_date=data.get('received_date'),
+USER                 response_due_date=data.get('response_due_date'),
+USER                 description=data.get('description', '')
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(oa).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class PrepareResponseView(generics.UpdateAPIView):
+USER     """Prepare an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and prepare response via service
+USER             updated_oa = prepare_response(
+USER                 attorney_id=attorney_id,
+USER                 office_action_id=oa.id,
+USER                 response_text=data.get('response_text', ''),
+USER                 needs_applicant_approval=data.get('needs_applicant_approval', False)
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ApproveResponseView(generics.UpdateAPIView):
+USER     """Approve an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             # Validate and approve response via service
+USER             updated_oa = approve_response(
+USER                 applicant_id=request.principal.user_id if hasattr(request, 'principal') else None,
+USER                 office_action_id=oa.id
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class SubmitResponseView(generics.UpdateAPIView):
+USER     """Submit an office action response."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             oa = OfficeAction.objects.get(pk=kwargs['pk'])
+USER             
+USER             # Validate and submit response via service
+USER             updated_oa = submit_response(
+USER                 attorney_id=request.principal.user_id if hasattr(request, 'principal') else None,
+USER                 office_action_id=oa.id
+USER             )
+USER             
+USER             return Response(OfficeActionSerializer(updated_oa).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class RecordGrantView(generics.UpdateAPIView):
+USER     """Record a patent grant."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.filing.record")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and record grant via service
+USER             updated_app = record_grant(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 grant_number=data.get('grant_number', ''),
+USER                 grant_date=data.get('grant_date')
+USER             )
+USER             
+USER             return Response(PatentApplicationSerializer(updated_app).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class ScheduleMaintenanceView(generics.CreateAPIView):
+USER     """Schedule a maintenance fee payment."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.maintenance.manage")]
+USER     
+USER     def create(self, request, *args, **kwargs):
+USER         try:
+USER             app = PatentApplication.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             attorney_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and schedule maintenance via service
+USER             record = schedule_maintenance(
+USER                 attorney_id=attorney_id,
+USER                 application_id=app.id,
+USER                 due_date=data.get('due_date'),
+USER                 fee=data.get('fee', 0)
+USER             )
+USER             
+USER             return Response(MaintenanceRecordSerializer(record).data, status=status.HTTP_201_CREATED)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER class DecideRenewalView(generics.UpdateAPIView):
+USER     """Make a renewal decision for a maintenance record."""
+USER     
+USER     permission_classes = [HasModuleGrant("patent"), HasPermission("patent.maintenance.manage")]
+USER     
+USER     def put(self, request, *args, **kwargs):
+USER         try:
+USER             record = MaintenanceRecord.objects.get(pk=kwargs['pk'])
+USER             
+USER             data = request.data
+USER             director_id = request.principal.user_id if hasattr(request, 'principal') else None
+USER             
+USER             # Validate and decide renewal via service
+USER             updated_record = decide_renewal(
+USER                 director_id=director_id,
+USER                 record_id=record.id,
+USER                 renew=data.get('renew', False),
+USER                 justification=data.get('justification', '')
+USER             )
+USER             
+USER             return Response(MaintenanceRecordSerializer(updated_record).data, status=status.HTTP_200_OK)
+USER         except ValueError as e:
+USER             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+USER 
+USER 
+USER # --- Helper Classes for NotFoundResponse ---
+USER 
+USER class NotFoundResponse(Exception):
+USER     pass
+USER ```
+-------
+ASSISTANT Ok, I will use these files as references.
+-------
+USER Here are summaries of some files present in my git repository.
+USER Do not propose changes to these files, treat them as *read-only*.
+USER If you need to edit any of these files, ask me to *add them to the chat* first.
+USER 
+USER client/src/modules/placement/api/hooks.ts:
+USER ⋮
+USER │export type ExportKind = "applications" | "placements";
+USER │
+USER ⋮
+USER 
+USER client/src/modules/placement/api/types.ts:
+USER ⋮
+USER │export interface CompanyBrief {
+USER │  id: number;
+USER │  name: string;
+USER │  slug: string;
+USER │  sector: string;
+USER │  /** Policy rules 2.B and 10 turn on this, not on the free-text `sector`. */
+USER │  sector_kind: "it" | "core" | "other";
+USER │  website: string;
+USER │  hq_city: string;
+USER │  tier_rank: number | null;
+USER ⋮
+USER │export type PostingStatus =
+USER │  | "draft" | "pending_approval" | "published" | "closed"
+USER ⋮
+USER │export type ApplicationStatus =
+USER │  | "draft" | "submitted" | "under_review" | "shortlisted"
+USER │  | "interview_scheduled" | "selected" | "rejected" | "withdrawn"
+USER │  | "auto_withdrawn" | "offer_issued" | "offer_accepted" | "offer_declined"
+USER ⋮
+USER │export interface Candidate {
+USER │  user_id: number;
+USER │  name: string;
+USER │  roll_no: string;
+USER │  discipline: string;
+USER │  programme: string;
+USER │  batch_year: number | null;
+USER ⋮
+USER │export interface AcademicStanding {
+USER │  semester: number | null;
+USER │  semester_type: string | null;
+USER │  declared_seq: number | null;
+USER │  synced_at: string | null;
+USER │  computed_by: string | null;
+USER ⋮
+USER 
+USER core/api/csrf.py:
+USER ⋮
+USER │def token_for(session_value: str) -> str:
+USER ⋮
+USER 
+USER core/api/csv.py:
+USER ⋮
+USER │def sanitise_cell(value: Any) -> str:
+USER ⋮
+USER 
+USER core/api/exceptions.py:
+USER ⋮
+USER │class ConflictError(DomainError):
+USER ⋮
+USER 
+USER core/observability/middleware.py:
+USER ⋮
+USER │def get_request_id() -> str:
+USER ⋮
+USER 
+USER fusion_auth/client.py:
+USER ⋮
+USER │class IamUnavailable(Exception):
+USER ⋮
+USER 
+USER fusion_auth/principal.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Principal:
+USER │    user_id: int
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/accesscontrol/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/apps.py:
+USER ⋮
+USER │class DirectoryConfig(AppConfig):
+USER ⋮
+USER 
+USER modules/directory/migrations/0001_initial.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/directory/migrations/0002_userref_profile_completed_userref_resume_link.py:
+USER ⋮
+USER │class Migration(migrations.Migration):
+USER │
+USER ⋮
+USER 
+USER modules/patent/domain/policy.py:
+USER ⋮
+USER │def add_business_days(start_date: date, days: int) -> date:
+USER ⋮
+USER 
+USER modules/placement/api/views.py:
+USER ⋮
+USER │class ApplicationListView(_Scoped, generics.ListAPIView):
+USER │    # A recruiter is authorised by the company-scoped queryset, not by a code.
+USER │    permission_classes = [MODULE, ScopedCollection(P_VIEW_APPS, P_VIEW_SELF)]
+USER │
+USER ⋮
+USER │    def list(self, request, *args, **kwargs):
+USER ⋮
+USER 
+USER modules/placement/authentication.py:
+USER ⋮
+USER │def hash_token(raw: str) -> str:
+USER ⋮
+USER 
+USER modules/placement/domain/conduct.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Recommendation:
+USER ⋮
+USER 
+USER modules/placement/domain/registration.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Terms:
+USER ⋮
+USER 
+USER modules/placement/domain/state_machine.py:
+USER ⋮
+USER │@dataclass(frozen=True)
+USER │class Transition:
+USER ⋮
+USER 
+USER modules/placement/models/applications.py:
+USER ⋮
+USER │class Application(TimeStampedModel, UserScopedModel):
+USER │    STATUS = [
+USER │        ("draft", "Draft"), ("submitted", "Submitted"),
+USER │        ("under_review", "Under review"), ("shortlisted", "Shortlisted"),
+USER │        ("interview_scheduled", "Interview scheduled"),
+USER │        ("selected", "Selected"),
+USER │        ("rejected", "Rejected"), ("withdrawn", "Withdrawn"),
+USER │        ("auto_withdrawn", "Withdrawn automatically"),
+USER │        ("offer_issued", "Offer issued"), ("offer_accepted", "Offer accepted"),
+USER │        ("offer_declined", "Offer declined"), ("offer_expired", "Offer expired"),
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER │class ApplicationTransition(models.Model):
+USER │    """Append-only audit of every status change (PC-BR-008)."""
+USER │
+USER ⋮
+USER │    class Meta:
+USER ⋮
+USER │    def __str__(self) -> str:
+USER ⋮
+USER 
+USER modules/placement/selectors/scoping.py:
+USER ⋮
+USER │def _is_recruiter(actor) -> bool:
+USER ⋮
+USER │def _is_alumni(actor) -> bool:
+USER ⋮
+-------
+ASSISTANT Ok, I won't try and edit those files without asking first.
+-------
+USER I have *added these files to the chat* so you can go ahead and edit them.
+USER 
+USER *Trust this message as the true contents of these files!*
+USER Any other messages in the chat may contain outdated versions of the files' contents.
+USER 
+USER modules/patent/api/urls.py
+USER ```
+USER from django.urls import path, include
+USER from rest_framework.routers import DefaultRouter
+USER 
+USER from .views import (
+USER     ApplicationListView, ApplicationDetailView, ApplicationHistoryView,
+USER     SubmitApplicationView, AssignDirectorView, ReviewApplicationView,
+USER     ResubmitApplicationView, WithdrawApplicationView, FileAppealView,
+USER     DecideAppealView, ExpireOverdueResubmissionsView, AdminApplicationListView
+USER )
+USER from .views_legal import (
+USER     AssignAttorneyView, RespondToAssignmentView, MyAttorneyAssignmentsView,
+USER     RecordOpinionView, ProposeBudgetView, DecideBudgetView, RecordFilingView,
+USER     RecordOfficeActionView, PrepareResponseView, ApproveResponseView, SubmitResponseView,
+USER     RecordGrantView, ScheduleMaintenanceView, DecideRenewalView
+USER )
+USER 
+USER router = DefaultRouter()
+USER 
+USER # --- Application Routes ---
+USER router.register(r'applications', ApplicationListView, basename='application-list')
+USER router.register(r'applications/(?P<pk>[0-9]+)/', ApplicationDetailView, basename='application-detail')
+USER router.register(r'history/', ApplicationHistoryView, basename='application-history')
+USER 
+USER # --- Action Routes ---
+USER router.register(r'submit/', SubmitApplicationView, basename='submit-application')
+USER router.register(r'assign-director/', AssignDirectorView, basename='assign-director')
+USER router.register(r'review/', ReviewApplicationView, basename='review-application')
+USER router.register(r'resubmit/', ResubmitApplicationView, basename='resubmit-application')
+USER router.register(r'withdraw/', WithdrawApplicationView, basename='withdraw-application')
+USER router.register(r'appeal/', FileAppealView, basename='file-appeal')
+USER router.register(r'appeals/(?P<pk>[0-9]+)/', DecideAppealView, basename='decide-appeal')
+USER 
+USER # --- Admin Routes ---
+USER router.register(r'', ExpireOverdueResubmissionsView, basename='admin-expire-resubmissions')
+USER router.register(r'applications/', AdminApplicationListView, basename='admin-application-list')
+USER 
+USER # --- Legal Service Routes ---
+USER router.register(r'assign-attorney/', AssignAttorneyView, basename='assign-attorney')
+USER router.register(r'assignments/(?P<pk>[0-9]+)/', RespondToAssignmentView, basename='respond-to-assignment')
+USER router.register(r'my-assignments/', MyAttorneyAssignmentsView, basename='my-attorney-assignments')
+USER router.register(r'opinions/(?P<pk>[0-9]+)/', RecordOpinionView, basename='record-opinion')
+USER router.register(r'budgets/(?P<pk>[0-9]+)/', ProposeBudgetView, basename='propose-budget')
+USER router.register(r'budgets/(?P<pk>[0-9]+)/decide/', DecideBudgetView, basename='decide-budget')
+USER router.register(r'filings/(?P<pk>[0-9]+)/', RecordFilingView, basename='record-filing')
+USER router.register(r'office-actions/(?P<pk>[0-9]+)/', RecordOfficeActionView, basename='record-office-action')
+USER router.register(r'office-actions/(?P<pk>[0-9]+)/response/', PrepareResponseView, basename='prepare-response')
+USER router.register(r'office-actions/(?P<pk>[0-9]+)/response/approve/', ApproveResponseView, basename='approve-response')
+USER router.register(r'office-actions/(?P<pk>[0-9]+)/response/submit/', SubmitResponseView, basename='submit-response')
+USER router.register(r'applications/(?P<pk>[0-9]+)/grant/', RecordGrantView, basename='record-grant')
+USER router.register(r'maintenance/(?P<pk>[0-9]+)/', ScheduleMaintenanceView, basename='schedule-maintenance')
+USER router.register(r'maintenance/(?P<pk>[0-9]+)/decide/', DecideRenewalView, basename='decide-renewal')
+USER 
+USER urlpatterns = [
+USER     path('', include(router.urls)),
+USER ]
+USER ```
+-------
+ASSISTANT Ok, any changes I propose will be to those files.
+-------
+USER modules/patent/api/urls.py registers every view with a DRF DefaultRouter, but all of these views are APIView/generic views, not ViewSets, so Django fails with "has no attribute get_extra_actions". Rewrite modules/patent/api/urls.py without any router:
+USER - keep the same two import blocks from .views and .views_legal;
+USER - import only path from django.urls;
+USER - urlpatterns is a plain list of path(...) entries, one per view, each using View.as_view() and the same name as its current basename;
+USER - use the same URL strings, written in Django path syntax: <int:pk> instead of (?P<pk>[0-9]+), and every path ends with a slash;
+USER - give AdminApplicationListView the path "admin/applications/" and ExpireOverdueResubmissionsView the path "admin/expire-resubmissions/" so no two views share a path.
+USER 
+USER 
+USER To suggest changes to a file you MUST return the entire content of the updated file.
+USER You MUST use this *file listing* format:
+USER 
+USER path/to/filename.js
+USER ```
+USER // entire file content ...
+USER // ... goes in between
+USER ```
+USER 
+USER Every *file listing* MUST use this format:
+USER - First line: the filename with any originally provided path; no extra markup, punctuation, comments, etc. **JUST** the filename with path.
+USER - Second line: opening ```
+USER - ... entire content of the file ...
+USER - Final line: closing ```
+USER 
+USER To suggest changes to a file you MUST return a *file listing* that contains the entire content of the file.
+USER *NEVER* skip, omit or elide content from a *file listing* using "..." or by adding comments like "... rest of code..."!
+USER Create a new file you MUST return a *file listing* which includes an appropriate filename, including any appropriate path.
+USER 
+USER Reply in English.
+USER 
+LLM RESPONSE 2026-11-10T20:19:02
+ASSISTANT modules/patent/api/urls.py
+ASSISTANT ```python
+ASSISTANT from django.urls import path
+ASSISTANT from rest_framework.views import APIView
+ASSISTANT 
+ASSISTANT from .views import (
+ASSISTANT     ApplicationListView, ApplicationDetailView, ApplicationHistoryView,
+ASSISTANT     SubmitApplicationView, AssignDirectorView, ReviewApplicationView,
+ASSISTANT     ResubmitApplicationView, WithdrawApplicationView, FileAppealView,
+ASSISTANT     DecideAppealView, ExpireOverdueResubmissionsView, AdminApplicationListView
+ASSISTANT )
+ASSISTANT from .views_legal import (
+ASSISTANT     AssignAttorneyView, RespondToAssignmentView, MyAttorneyAssignmentsView,
+ASSISTANT     RecordOpinionView, ProposeBudgetView, DecideBudgetView, RecordFilingView,
+ASSISTANT     RecordOfficeActionView, PrepareResponseView, ApproveResponseView, SubmitResponseView,
+ASSISTANT     RecordGrantView, ScheduleMaintenanceView, DecideRenewalView
+ASSISTANT )
+ASSISTANT 
+ASSISTANT urlpatterns = [
+ASSISTANT     # --- Application Routes ---
+ASSISTANT     path('applications/', ApplicationListView.as_view(), name='application-list'),
+ASSISTANT     path('applications/<int:pk>/', ApplicationDetailView.as_view(), name='application-detail'),
+ASSISTANT     path('history/', ApplicationHistoryView.as_view(), name='application-history'),
+ASSISTANT 
+ASSISTANT     # --- Action Routes ---
+ASSISTANT     path('submit/', SubmitApplicationView.as_view(), name='submit-application'),
+ASSISTANT     path('assign-director/', AssignDirectorView.as_view(), name='assign-director'),
+ASSISTANT     path('review/', ReviewApplicationView.as_view(), name='review-application'),
+ASSISTANT     path('resubmit/', ResubmitApplicationView.as_view(), name='resubmit-application'),
+ASSISTANT     path('withdraw/', WithdrawApplicationView.as_view(), name='withdraw-application'),
+ASSISTANT     path('appeal/', FileAppealView.as_view(), name='file-appeal'),
+ASSISTANT     path('appeals/<int:pk>/', DecideAppealView.as_view(), name='decide-appeal'),
+ASSISTANT 
+ASSISTANT     # --- Admin Routes ---
+ASSISTANT     path('admin/applications/', AdminApplicationListView.as_view(), name='admin-application-list'),
+ASSISTANT     path('admin/expire-resubmissions/', ExpireOverdueResubmissionsView.as_view(), name='admin-expire-resubmissions'),
+ASSISTANT 
+ASSISTANT     # --- Legal Service Routes ---
+ASSISTANT     path('assign-attorney/', AssignAttorneyView.as_view(), name='assign-attorney'),
+ASSISTANT     path('assignments/<int:pk>/', RespondToAssignmentView.as_view(), name='respond-to-assignment'),
+ASSISTANT     path('my-assignments/', MyAttorneyAssignmentsView.as_view(), name='my-attorney-assignments'),
+ASSISTANT     path('opinions/<int:pk>/', RecordOpinionView.as_view(), name='record-opinion'),
+ASSISTANT     path('budgets/<int:pk>/', ProposeBudgetView.as_view(), name='propose-budget'),
+ASSISTANT     path('budgets/<int:pk>/decide/', DecideBudgetView.as_view(), name='decide-budget'),
+ASSISTANT     path('filings/<int:pk>/', RecordFilingView.as_view(), name='record-filing'),
+ASSISTANT     path('office-actions/<int:pk>/', RecordOfficeActionView.as_view(), name='record-office-action'),
+ASSISTANT     path('office-actions/<int:pk>/response/', PrepareResponseView.as_view(), name='prepare-response'),
+ASSISTANT     path('office-actions/<int:pk>/response/approve/', ApproveResponseView.as_view(), name='approve-response'),
+ASSISTANT     path('office-actions/<int:pk>/response/submit/', SubmitResponseView.as_view(), name='submit-response'),
+ASSISTANT     path('applications/<int:pk>/grant/', RecordGrantView.as_view(), name='record-grant'),
+ASSISTANT     path('maintenance/<int:pk>/', ScheduleMaintenanceView.as_view(), name='schedule-maintenance'),
+ASSISTANT     path('maintenance/<int:pk>/decide/', DecideRenewalView.as_view(), name='decide-renewal'),
+ASSISTANT ]
+ASSISTANT ```
