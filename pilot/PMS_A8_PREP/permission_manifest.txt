@@ -1,0 +1,4 @@
+CommandError: permission manifest is invalid:
+  - patent: patent.application.delete is granted but not in PERMISSIONS — a typo there grants nothing at all.
+  - patent: patent.application.withdraw is granted but not in PERMISSIONS — a typo there grants nothing at all.
+  - patent: patent.application.view_self is declared and granted, but no endpoint or service checks it — so the thing it names cannot be done at all. Either the feature is missing, or the permission is.
