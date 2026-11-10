@@ -1,7 +1,7 @@
 from django.db import transaction, connection
 from datetime import date, timedelta
 from typing import Dict, Any, List, Optional
-from core.models import TimeStampedModel
+from core.db.mixins import TimeStampedModel
 
 from ..models import (
     PatentApplication, Inventor, ApplicationDocument,

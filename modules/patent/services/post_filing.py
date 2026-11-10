@@ -2,7 +2,7 @@ from django.db import transaction, connection
 from datetime import date
 from typing import List, Optional
 
-from core.models import TimeStampedModel
+from core.db.mixins import TimeStampedModel
 from modules.patent.models import (
     PatentApplication, OfficeAction, ApplicationHistory, MaintenanceRecord,
     PatentabilityOpinion, Filing

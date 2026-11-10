@@ -2,7 +2,7 @@ from django.db import transaction, connection
 from datetime import date
 from typing import Tuple
 
-from core.exceptions import BusinessRuleViolation
+from core.api.exceptions import BadRequestError as BusinessRuleViolation
 from fusion_auth.permissions import HasPermission, HasModuleGrant
 from modules.patent.models import (
     PatentApplication, AttorneyAssignment, PatentabilityOpinion,
