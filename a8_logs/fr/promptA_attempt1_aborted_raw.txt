@@ -1,0 +1,5 @@
+[
+  {
+    "test_id": "AFR-PMS-038",
+    "source_id": "AFR-PMS-038",
+    "purpose": "Verify that PMS accepts a complete patent application submission with required

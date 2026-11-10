@@ -1,0 +1,1636 @@
+[
+  {
+    "test_id": "TEST-CFR-001-0",
+    "source_id": "PMS-AFR-010",
+    "purpose": "Verify application tracking by Applicant",
+    "preconditions": "An applicant with valid credentials logs into PMS.",
+    "action_or_input": "Navigate to 'My Applications' view.",
+    "expected_result": "A list of the applicant's patent applications is displayed with current status and progress indicators."
+  },
+  {
+    "test_id": "TEST-CFR-001-1",
+    "source_id": "PMS-AFR-016",
+    "purpose": "Verify report viewing by Applicant",
+    "preconditions": "An applicant with valid credentials logs into PMS.",
+    "action_or_input": "Navigate to 'Reports' and select a specific application ID.",
+    "expected_result": "A report containing details of the selected patent application is displayed."
+  },
+  {
+    "test_id": "TEST-CFR-002-0",
+    "source_id": "PMS-AFR-023",
+    "purpose": "Verify workflow oversight by Director",
+    "preconditions": "A Director with valid credentials logs into PMS.",
+    "action_or_input": "Navigate to 'Assigned Applications' view.",
+    "expected_result": "The application list includes only applications assigned to this specific Director with relevant workflow details."
+  },
+  {
+    "test_id": "TEST-CFR-003-0",
+    "source_id": "PMS-AFR-026",
+    "purpose": "Verify conflict-of-interest monitoring by PCC_ADMIN",
+    "preconditions": "PCC_ADMIN has a co-inventorship with an inventor listed on an application.",
+    "action_or_input": "Attempt to view the assigned application in 'Workflow Exceptions' section.",
+    "expected_result": "The system flags the conflict-of-interest case requiring resolution."
+  },
+  {
+    "test_id": "TEST-CFR-003-1",
+    "source_id": "PMS-AFR-027",
+    "purpose": "Verify configuration management by PCC_ADMIN",
+    "preconditions": "PCC_ADMIN has valid credentials.",
+    "action_or_input": "Navigate to 'System Configuration' and select 'User Roles'.",
+    "expected_result": "A list of assigned roles is displayed with edit permissions available."
+  },
+  {
+    "test_id": "TEST-CFR-003-2",
+    "source_id": "PMS-AFR-029",
+    "purpose": "Verify escalation handling by PCC_ADMIN",
+    "preconditions": "An application has missed its review deadline.",
+    "action_or_input": "Navigate to 'Workflow Exceptions' and select an escalated case.",
+    "expected_result": "Case details are displayed with a path for resolution."
+  },
+  {
+    "test_id": "TEST-CFR-003-3",
+    "source_id": "PMS-AFR-030",
+    "purpose": "Verify attorney panel management by PCC_ADMIN",
+    "preconditions": "PCC_ADMIN has valid credentials.",
+    "action_or_input": "Navigate to 'Attorney Panels' and add a new attorney.",
+    "expected_result": "The new attorney is added to the approved panel list."
+  },
+  {
+    "test_id": "TEST-CFR-004-0",
+    "source_id": "PMS-AFR-037",
+    "purpose": "Verify legal advice recording by Attorney",
+    "preconditions": "An application has status 'Attorney Assigned'.",
+    "action_or_input": "Navigate to 'Case Notes' and input a detailed legal opinion.",
+    "expected_result": "The legal opinion is recorded in the application history."
+  },
+  {
+    "test_id": "TEST-CFR-005-0",
+    "source_id": "PMS-AFR-038",
+    "purpose": "Verify complete application submission by Applicant",
+    "preconditions": "Applicant is not currently involved in any active filing workflow.",
+    "action_or_input": "Submit a patent application form with all required fields: title, abstract, claims, and documents.",
+    "expected_result": "Submission is accepted and the application record is created."
+  },
+  {
+    "test_id": "TEST-CFR-005-1",
+    "source_id": "PMS-AFR-039",
+    "purpose": "Verify rejection of non-PDF documents",
+    "preconditions": "Applicant attempts to upload a DOCX file as application documentation.",
+    "action_or_input": "Upload the document and attempt to proceed with submission.",
+    "expected_result": "The system rejects the document and displays an error message stating it must be PDF."
+  },
+  {
+    "test_id": "TEST-CFR-005-2",
+    "source_id": "PMS-AFR-040",
+    "purpose": "Verify rejection of oversized documents (>50 MB)",
+    "preconditions": "Applicant attempts to upload a document that is 51 MB in size.",
+    "action_or_input": "Upload the document and attempt to proceed with submission.",
+    "expected_result": "The system rejects the document and displays an error message stating it exceeds 50 MB."
+  },
+  {
+    "test_id": "TEST-CFR-005-3",
+    "source_id": "PMS-AFR-041",
+    "purpose": "Verify malware validation on submission",
+    "preconditions": "Applicant attempts to upload a document containing known malicious code.",
+    "action_or_input": "Upload the file and attempt to proceed with submission.",
+    "expected_result": "The system rejects the document and displays a warning about undetected malware/threats."
+  },
+  {
+    "test_id": "TEST-CFR-005-4",
+    "source_id": "PMS-AFR-042",
+    "purpose": "Verify rejection of incomplete application data",
+    "preconditions": "Applicant submits an application missing the 'Claims' section.",
+    "action_or_input": "Submit the application and attempt to proceed.",
+    "expected_result": "The system prevents submission with a validation error listing missing required fields."
+  },
+  {
+    "test_id": "TEST-CFR-005-5",
+    "source_id": "PMS-AFR-043",
+    "purpose": "Verify document sensitivity classification",
+    "preconditions": "Application submission is successful.",
+    "action_or_input": "View the application metadata in 'Submitted' state.",
+    "expected_result": "Document metadata displays classified sensitivity levels (e.g., Internal, Confidential)."
+  },
+  {
+    "test_id": "TEST-CFR-005-6",
+    "source_id": "PMS-AFR-044",
+    "purpose": "Verify unique Application ID assignment",
+    "preconditions": "An application is submitted for the first time.",
+    "action_or_input": "Retrieve the created application record.",
+    "expected_result": "A unique alphanumeric Application ID is generated and displayed."
+  },
+  {
+    "test_id": "TEST-CFR-005-7",
+    "source_id": "PMS-AFR-045",
+    "purpose": "Verify application status set to 'Submitted'",
+    "preconditions": "Application submission is accepted.",
+    "action_or_input": "Check the current state of the newly created application.",
+    "expected_result": "The application status is updated to 'Submitted'."
+  },
+  {
+    "test_id": "TEST-CFR-005-8",
+    "source_id": "PMS-AFR-046",
+    "purpose": "Verify enforcement of inventor agreement prerequisite",
+    "preconditions": "An application is submitted without completed inventor agreements.",
+    "action_or_input": "Attempt to proceed with submission processing.",
+    "expected_result": "The system blocks submission and displays an error indicating inventor agreements are incomplete."
+  },
+  {
+    "test_id": "TEST-CFR-005-9",
+    "source_id": "PMS-AFR-047",
+    "purpose": "Verify application history recording",
+    "preconditions": "Application status is 'Submitted'.",
+    "action_or_input": "Navigate to the application details page.",
+    "expected_result": "A history log showing submission event, timestamp, and user is visible."
+  },
+  {
+    "test_id": "TEST-CFR-005-10",
+    "source_id": "PMS-AFR-048",
+    "purpose": "Verify stakeholder notification on submission",
+    "preconditions": "Application submission is successful.",
+    "action_or_input": "Monitor the system notification log for Applicant and Stakeholders.",
+    "expected_result": "A notification is generated confirming application submission."
+  },
+  {
+    "test_id": "TEST-CFR-006-0",
+    "source_id": "PMS-AFR-049",
+    "purpose": "Verify manual assignment of Director by PCC_ADMIN",
+    "preconditions": "An application exists with status 'Submitted'.",
+    "action_or_input": "PCC_ADMIN navigates to 'Assign Applications' and selects a Director.",
+    "expected_result": "The application is assigned to the selected Director and workflow updates."
+  },
+  {
+    "test_id": "TEST-CFR-006-1",
+    "source_id": "PMS-AFR-050",
+    "purpose": "Verify automatic assignment based on rules",
+    "preconditions": "An application exists with status 'Submitted' and assignment rules are configured.",
+    "action_or_input": "Navigate to 'Submit Applications'.",
+    "expected_result": "The system automatically assigns the application without manual intervention."
+  },
+  {
+    "test_id": "TEST-CFR-006-2",
+    "source_id": "PMS-AFR-051",
+    "purpose": "Verify assignment based on Director expertise matching",
+    "preconditions": "Application domain is 'Chemistry'. Director A has 'Biology' expertise; Director B has 'Chemistry' expertise.",
+    "action_or_input": "Initiate application processing.",
+    "expected_result": "The system selects the Director with matching 'Chemistry' expertise."
+  },
+  {
+    "test_id": "TEST-CFR-006-3",
+    "source_id": "PMS-AFR-052",
+    "purpose": "Verify assignment based on workload balance",
+    "preconditions": "Two eligible Directors exist; Director A has heavy load, Director B has light load.",
+    "action_or_input": "Initiate application processing.",
+    "expected_result": "The system assigns the application to Director B to maintain balance."
+  },
+  {
+    "test_id": "TEST-CFR-006-4",
+    "source_id": "PMS-AFR-053",
+    "purpose": "Verify conflict-of-interest check before assignment",
+    "preconditions": "The Director being assigned is listed as an inventor on the application.",
+    "action_or_input": "Attempt to assign the application to this Director via the admin interface.",
+    "expected_result": "The system blocks the assignment and flags a Conflict of Interest."
+  },
+  {
+    "test_id": "TEST-CFR-006-5",
+    "source_id": "PMS-AFR-054",
+    "purpose": "Verify prevention of self-review by Director",
+    "preconditions": "Director X lists himself as an inventor on Application Y.",
+    "action_or_input": "Director X attempts to view or process Application Y.",
+    "expected_result": "The system prevents access and denies the Director from handling this application."
+  },
+  {
+    "test_id": "TEST-CFR-006-6",
+    "source_id": "PMS-AFR-055",
+    "purpose": "Verify prevention of self-review by PCC_ADMIN",
+    "preconditions": "PCC_ADMIN is listed as an inventor on an application.",
+    "action_or_input": "Attempt to view the specific application details.",
+    "expected_result": "The system restricts viewing permissions for this application."
+  },
+  {
+    "test_id": "TEST-CFR-006-7",
+    "source_id": "PMS-AFR-056",
+    "purpose": "Verify status update to 'Under Review'",
+    "preconditions": "An assignment is completed.",
+    "action_or_input": "Check the application status field.",
+    "expected_result": "The application status updates from 'Submitted' to 'Under Review'."
+  },
+  {
+    "test_id": "TEST-CFR-006-8",
+    "source_id": "PMS-AFR-057",
+    "purpose": "Verify notification of assigned Director",
+    "preconditions": "Application is assigned to a Director.",
+    "action_or_input": "Monitor the assigned Director's communication channel.",
+    "expected_result": "A notification regarding the assignment and initiation of the review timeline is generated."
+  },
+  {
+    "test_id": "TEST-CFR-007-0",
+    "source_id": "PMS-AFR-058",
+    "purpose": "Verify Director access to application details",
+    "preconditions": "Application status is 'Under Review'.",
+    "action_or_input": "Director navigates to the assigned application.",
+    "expected_result": "Director views full application details, documents, and supporting materials."
+  },
+  {
+    "test_id": "TEST-CFR-007-1",
+    "source_id": "PMS-AFR-059",
+    "purpose": "Verify valid review decision selection (Approve/Reject/Revision)",
+    "preconditions": "Director is reviewing an application.",
+    "action_or_input": "Select a decision from the dropdown: Approve, Reject, or Needs Revision.",
+    "expected_result": "The system accepts exactly one of these three decisions."
+  },
+  {
+    "test_id": "TEST-CFR-007-2",
+    "source_id": "PMS-AFR-060",
+    "purpose": "Verify minimum justification length (50 characters)",
+    "preconditions": "Director attempts to submit a decision.",
+    "action_or_input": "Submit a decision with a justification containing fewer than 50 characters.",
+    "expected_result": "The system prevents submission and prompts for additional justification text."
+  },
+  {
+    "test_id": "TEST-CFR-007-3",
+    "source_id": "PMS-AFR-061",
+    "purpose": "Verify enforcement of 15-day review deadline",
+    "preconditions": "Application is 'Under Review' and current time exceeds the review deadline.",
+    "action_or_input": "Attempt to view submission controls for this application.",
+    "expected_result": "The system prevents further action or logs a status of 'Overdue Review'.",
+    "test_type": "WF-02 approval-rejected path"
+  },
+  {
+    "test_id": "TEST-CFR-007-4",
+    "source_id": "PMS-AFR-062",
+    "purpose": "Verify notification on rejection",
+    "preconditions": "Director decision is 'Reject'.",
+    "action_or_input": "Monitor the Applicant's communication channel.",
+    "expected_result": "A notification containing detailed feedback and rejection reasons is sent to the Applicant."
+  },
+  {
+    "test_id": "TEST-CFR-007-5",
+    "source_id": "PMS-AFR-063",
+    "purpose": "Verify notification on revision request",
+    "preconditions": "Director decision is 'Needs Revision'.",
+    "action_or_input": "Monitor the Applicant's communication channel.",
+    "expected_result": "A notification containing detailed feedback and revision requirements is sent to the Applicant."
+  },
+  {
+    "test_id": "TEST-CFR-007-6",
+    "source_id": "PMS-AFR-064",
+    "purpose": "Verify routing of approved applications to attorney assignment",
+    "preconditions": "Director decision is 'Approve'.",
+    "action_or_input": "View the application workflow status post-decision.",
+    "expected_result": "The application state transitions toward 'Attorney Assigned'."
+  },
+  {
+    "test_id": "TEST-CFR-007-7",
+    "source_id": "PMS-AFR-065",
+    "purpose": "Verify audit trail of Director review process",
+    "preconditions": "A review is performed and a decision is made.",
+    "action_or_input": "Access the 'Audit Logs' for PMS actions.",
+    "expected_result": "The log contains entries detailing the review action, user ID, timestamp, decision, and justification."
+  },
+  {
+    "test_id": "TEST-CFR-008-0",
+    "source_id": "PMS-AFR-066",
+    "purpose": "Verify revision of 'Needs Revision' applications",
+    "preconditions": "Application status is 'Needs Revision'.",
+    "action_or_input": "Applicant edits and resubmits the application.",
+    "expected_result": "The system accepts the revised application."
+  },
+  {
+    "test_id": "TEST-CFR-008-1",
+    "source_id": "PMS-AFR-067",
+    "purpose": "Verify revision of 'Rejected' applications",
+    "preconditions": "Application status is 'Rejected'.",
+    "action_or_input": "Applicant edits and resubmits the application within the allowed period.",
+    "expected_result": "The system accepts the revised application."
+  },
+  {
+    "test_id": "TEST-CFR-008-2",
+    "source_id": "PMS-AFR-068",
+    "purpose": "Verify validation of 60-day resubmission period",
+    "preconditions": "Application status is 'Rejected' and current date exceeds the 60-day deadline.",
+    "action_or_input": "Attempt to revise and resubmit the application.",
+    "expected_result": "The system rejects the submission as outside the permitted timeframe."
+  },
+  {
+    "test_id": "TEST-CFR-008-3",
+    "source_id": "PMS-AFR-069",
+    "purpose": "Verify validation of revision addressing feedback",
+    "preconditions": "Director previously requested specific revisions for the application.",
+    "action_or_input": "Applicant submits a revision that ignores the Director's previous feedback notes.",
+    "expected_result": "The system flags or prevents submission until the feedback is addressed."
+  },
+  {
+    "test_id": "TEST-CFR-008-4",
+    "source_id": "PMS-AFR-070",
+    "purpose": "Verify restart of review cycle after resubmission",
+    "preconditions": "Application is resubmitted successfully.",
+    "action_or_input": "View the application workflow status.",
+    "expected_result": "The system initiates a new review cycle."
+  },
+  {
+    "test_id": "TEST-CFR-008-5",
+    "source_id": "PMS-AFR-071",
+    "purpose": "Verify version control for revised applications",
+    "preconditions": "An application has been resubmitted.",
+    "action_or_input": "Navigate to document management for the application.",
+    "expected_result": "A new document version is recorded as V2 or higher with prior versions archived."
+  },
+  {
+    "test_id": "TEST-CFR-008-6",
+    "source_id": "PMS-AFR-072",
+    "purpose": "Verify status change to 'Expired' on deadline expiration",
+    "preconditions": "Application is awaiting revision and the 60-day deadline has passed without resubmission.",
+    "action_or_input": "Check the application status record.",
+    "expected_result": "The application status is automatically updated to 'Expired'.",
+    "test_type": "UC-05 Alternative A1"
+  },
+  {
+    "test_id": "TEST-CFR-009-0",
+    "source_id": "PMS-AFR-074",
+    "purpose": "Verify restriction of attorney assignment to PCC_ADMIN only",
+    "preconditions": "Director attempts to assign an Attorney directly.",
+    "action_or_input": "Submit an 'Assign Attorney' command from the Director dashboard.",
+    "expected_result": "The system denies access and displays an error that only PCC_ADMIN can perform this action."
+  },
+  {
+    "test_id": "TEST-CFR-009-1",
+    "source_id": "PMS-AFR-075",
+    "purpose": "Verify requirement of approved panel for attorney selection",
+    "preconditions": "An approved application is selected.",
+    "action_or_input": "PCC_ADMIN attempts to assign an Attorney who is not on the approved panel (except if exception exists).",
+    "expected_result": "The system prevents assignment unless a valid institutional exception is recorded."
+  },
+  {
+    "test_id": "TEST-CFR-009-2",
+    "source_id": "PMS-AFR-076",
+    "purpose": "Verify attorney expertise matching during assignment",
+    "preconditions": "Application domain is 'Biology'. Attorney A (Biology) and B (Chemistry) are eligible.",
+    "action_or_input": "Execute attorney assignment process.",
+    "expected_result": "The system prioritizes or selects Attorney A based on domain expertise."
+  },
+  {
+    "test_id": "TEST-CFR-009-3",
+    "source_id": "PMS-AFR-077",
+    "purpose": "Verify attorney workload consideration during assignment",
+    "preconditions": "Attorney A has high workload; Attorney B has low workload. Both have correct expertise.",
+    "action_or_input": "Execute attorney assignment process.",
+    "expected_result": "The system favors assignment to Attorney B due to lower workload."
+  },
+  {
+    "test_id": "TEST-CFR-009-4",
+    "source_id": "PMS-AFR-078",
+    "purpose": "Verify conflict-of-interest check before attorney assignment",
+    "preconditions": "Attorney C has a prior relationship with an inventor on the application.",
+    "action_or_input": "PCC_ADMIN attempts to assign Attorney C to the application.",
+    "expected_result": "The system prevents assignment and flags a Conflict of Interest."
+  },
+  {
+    "test_id": "TEST-CFR-009-5",
+    "source_id": "PMS-AFR-079",
+    "purpose": "Verify consideration of Applicant preference (only if approved)",
+    "preconditions": "Applicant's preferred Attorney is NOT on the approved panel.",
+    "action_or_input": "Submit application for attorney assignment with preference set.",
+    "expected_result": "The system does not select the preferred attorney but selects based on other criteria."
+  },
+  {
+    "test_id": "TEST-CFR-009-6",
+    "source_id": "PMS-AFR-080",
+    "purpose": "Verify requirement of Attorney acceptance/decline",
+    "preconditions": "An application is assigned to an attorney.",
+    "action_or_input": "Review the status of the assignment record.",
+    "expected_result": "The system records the outcome only after the Attorney has accepted or declined."
+  },
+  {
+    "test_id": "TEST-CFR-009-7",
+    "source_id": "PMS-AFR-081",
+    "purpose": "Verify recording of attorney assignment outcome",
+    "preconditions": "Attorney accepts an assignment.",
+    "action_or_input": "Check the application status record.",
+    "expected_result": "The application status updates to 'Attorney Assigned' (or similar)."
+  },
+  {
+    "test_id": "TEST-CFR-010-0",
+    "source_id": "PMS-AFR-082",
+    "purpose": "Verify recording of legal and patentability analysis",
+    "preconditions": "Attorney has access to the application.",
+    "action_or_input": "Attorney enters a detailed patentability analysis report.",
+    "expected_result": "The analysis is recorded in the attorney's case file."
+  },
+  {
+    "test_id": "TEST-CFR-010-1",
+    "source_id": "PMS-AFR-083",
+    "purpose": "Verify recording of prior-art searches",
+    "preconditions": "Attorney has access to search tools.",
+    "action_or_input": "Conduct a search in the integrated prior-art database.",
+    "expected_result": "Search results and details are recorded in the case file."
+  },
+  {
+    "test_id": "TEST-CFR-010-2",
+    "source_id": "PMS-AFR-084",
+    "purpose": "Verify recording of novelty/non-obviousness/utility evaluation",
+    "preconditions": "Attorney has access to the application.",
+    "action_or_input": "Input evaluations for Novelty, Non-Obviousness, and Utility.",
+    "expected_result": "The three specific evaluations are recorded."
+  },
+  {
+    "test_id": "TEST-CFR-010-3",
+    "source_id": "PMS-AFR-085",
+    "purpose": "Verify valid patentability recommendation (File/Do Not File/Amend)",
+    "preconditions": "Attorney has performed analysis.",
+    "action_or_input": "Select a recommendation from the dropdown.",
+    "expected_result": "Only 'File Patent', 'Do Not File', or 'Needs Amendment' are allowed."
+  },
+  {
+    "test_id": "TEST-CFR-010-4",
+    "source_id": "PMS-AFR-086",
+    "purpose": "Verify attorney request for additional information",
+    "preconditions": "Attorney is reviewing an application.",
+    "action_or_input": "Click 'Request Additional Information' button.",
+    "expected_result": "A form appears requesting specific details from the relevant stakeholder."
+  },
+  {
+    "test_id": "TEST-CFR-010-5",
+    "source_id": "PMS-AFR-087",
+    "purpose": "Verify attorney request for extensions",
+    "preconditions": "Attorney is under time pressure.",
+    "action_or_input": "Click 'Request Extension' button.",
+    "expected_result": "An extension request form is displayed."
+  },
+  {
+    "test_id": "TEST-CFR-010-6",
+    "source_id": "PMS-AFR-088",
+    "purpose": "Verify recording of final patentability opinion",
+    "preconditions": "Attorney has completed the review.",
+    "action_or_input": "Submit the final opinion with recommendation.",
+    "expected_result": "The system stores the complete opinion record."
+  },
+  {
+    "test_id": "TEST-CFR-010-7",
+    "source_id": "PMS-AFR-089",
+    "purpose": "Verify stakeholder notification on attorney opinion",
+    "preconditions": "Patentability opinion is recorded.",
+    "action_or_input": "Monitor system notifications.",
+    "expected_result": "Stakeholders receive a notification regarding the recorded opinion."
+  },
+  {
+    "test_id": "TEST-CFR-011-0",
+    "source_id": "PMS-AFR-090",
+    "purpose": "Verify Director review of filing/prosecution costs",
+    "preconditions": "An application is 'Attorney Assigned' or similar.",
+    "action_or_input": "Director views the cost breakdown screen.",
+    "expected_result": "Filing fees, attorney fees, and administrative costs are displayed."
+  },
+  {
+    "test_id": "TEST-CFR-011-1",
+    "source_id": "PMS-AFR-091",
+    "purpose": "Verify Director approval of budget costs",
+    "preconditions": "Budget is within limits and available.",
+    "action_or_input": "Director clicks 'Approve Budget'.",
+    "expected_result": "The budget is approved and recorded."
+  },
+  {
+    "test_id": "TEST-CFR-011-2",
+    "source_id": "PMS-AFR-092",
+    "purpose": "Verify inclusion of filing fees in budget info",
+    "preconditions": "Attorney submits a fee estimate.",
+    "action_or_input": "View the detailed budget report.",
+    "expected_result": "Filing fees are listed as a distinct line item."
+  },
+  {
+    "test_id": "TEST-CFR-011-3",
+    "source_id": "PMS-AFR-093",
+    "purpose": "Verify inclusion of attorney fees in budget info",
+    "preconditions": "Attorney submits a fee estimate.",
+    "action_or_input": "View the detailed budget report.",
+    "expected_result": "Attorney fees are listed as a distinct line item."
+  },
+  {
+    "test_id": "TEST-CFR-011-4",
+    "source_id": "PMS-AFR-094",
+    "purpose": "Verify inclusion of administrative costs in budget info",
+    "preconditions": "Admin services are requested.",
+    "action_or_input": "View the detailed budget report.",
+    "expected_result": "Administrative costs are listed as a distinct line item."
+  },
+  {
+    "test_id": "TEST-CFR-011-5",
+    "source_id": "PMS-AFR-095",
+    "purpose": "Verify escalation to higher authority on cost threshold exceedance",
+    "preconditions": "Total calculated budget exceeds the configured limit.",
+    "action_or_input": "Attempt to approve the budget.",
+    "expected_result": "The system routes/escalates the case to the higher authority instead of allowing approval."
+  },
+  {
+    "test_id": "TEST-CFR-011-6",
+    "source_id": "PMS-AFR-096",
+    "purpose": "Verify restriction of budget approval for non-Approved status",
+    "preconditions": "Application status is 'Submitted' (not Approved).",
+    "action_or_input": "Director attempts to approve the associated budget.",
+    "expected_result": "The system prevents approval with an error message."
+  },
+  {
+    "test_id": "TEST-CFR-011-7",
+    "source_id": "PMS-AFR-097",
+    "purpose": "Verify validation of budget availability before approval",
+    "preconditions": "Budget data includes an 'Available' flag set to false.",
+    "action_or_input": "Director attempts to approve the budget.",
+    "expected_result": "The system prevents approval and indicates insufficient availability."
+  },
+  {
+    "test_id": "TEST-CFR-011-8",
+    "source_id": "PMS-AFR-098",
+    "purpose": "Verify logging of financial transactions with authorization info",
+    "preconditions": "Budget approval is executed.",
+    "action_or_input": "Access the Audit Logs for Financial Transactions.",
+    "expected_result": "The log includes transaction details and the authorizing level."
+  },
+  {
+    "test_id": "TEST-CFR-012-0",
+    "source_id": "PMS-AFR-099",
+    "purpose": "Verify Attorney preparation of filing package",
+    "preconditions": "Application is ready for external filing.",
+    "action_or_input": "Attorney navigates to 'File Application'.",
+    "expected_result": "The system allows preparation of the application package."
+  },
+  {
+    "test_id": "TEST-CFR-012-1",
+    "source_id": "PMS-AFR-100",
+    "purpose": "Verify validation of filing format compliance (if rules exist)",
+    "preconditions": "Filing package includes invalid format for a specific office.",
+    "action_or_input": "Submit the package.",
+    "expected_result": "If valid validation rules exist, the system flags non-compliance."
+  },
+  {
+    "test_id": "TEST-CFR-012-2",
+    "source_id": "PMS-AFR-101",
+    "purpose": "Verify recording of Indian Patent Office submission",
+    "preconditions": "Attorney prepares the package.",
+    "action_or_input": "Record the submission to Indian Patent Office.",
+    "expected_result": "The system logs the submission details."
+  },
+  {
+    "test_id": "TEST-CFR-012-3",
+    "source_id": "PMS-AFR-102",
+    "purpose": "Verify recording of International Patent Office submission",
+    "preconditions": "Attorney prepares the package.",
+    "action_or_input": "Record the submission to an international office (e.g., WIPO).",
+    "expected_result": "The system logs the submission details."
+  },
+  {
+    "test_id": "TEST-CFR-012-4",
+    "source_id": "PMS-AFR-103",
+    "purpose": "Verify requirement of additional justification for international filings",
+    "preconditions": "Application is being filed internationally.",
+    "action_or_input": "Proceed with filing without justification.",
+    "expected_result": "The system blocks the action and requires justification."
+  },
+  {
+    "test_id": "TEST-CFR-012-5",
+    "source_id": "PMS-AFR-104",
+    "purpose": "Verify capture of filing ID, date, and confirmation",
+    "preconditions": "Filing is recorded.",
+    "action_or_input": "View the application's filing metadata.",
+    "expected_result": "External Filing ID, Date, and Confirmation info are visible."
+  },
+  {
+    "test_id": "TEST-CFR-012-6",
+    "source_id": "PMS-AFR-105",
+    "purpose": "Verify status update to 'Filed'",
+    "preconditions": "Filing is recorded.",
+    "action_or_input": "Check application status.",
+    "expected_result": "Status updates from 'Attorney Assigned' to 'Filed'."
+  },
+  {
+    "test_id": "TEST-CFR-012-7",
+    "source_id": "PMS-AFR-106",
+    "purpose": "Verify logging of official patent office communications",
+    "preconditions": "A response or notification is received from the Patent Office.",
+    "action_or_input": "Access the communication log.",
+    "expected_result": "Official communications are logged."
+  },
+  {
+    "test_id": "TEST-CFR-013-0",
+    "source_id": "PMS-AFR-107",
+    "purpose": "Verify activation of post-grant tracking only for 'Granted' status",
+    "preconditions": "Application status is 'Under Review'.",
+    "action_or_input": "Check the Post-Grant Maintenance menu.",
+    "expected_result": "The menu is unavailable or not applicable."
+  },
+  {
+    "test_id": "TEST-CFR-013-1",
+    "source_id": "PMS-AFR-107-alt",
+    "purpose": "Verify activation of post-grant tracking for 'Granted' status",
+    "preconditions": "Application status is 'Granted'.",
+    "action_or_input": "Check the Post-Grant Maintenance menu.",
+    "expected_result": "The maintenance tracking interface becomes available."
+  },
+  {
+    "test_id": "TEST-CFR-013-2",
+    "source_id": "PMS-AFR-108",
+    "purpose": "Verify calculation of maintenance-fee schedules from grant date",
+    "preconditions": "Application is 'Granted'.",
+    "action_or_input": "View the Maintenance Schedule.",
+    "expected_result": "Fees and deadlines are calculated based on the grant date."
+  },
+  {
+    "test_id": "TEST-CFR-013-3",
+    "source_id": "PMS-AFR-109",
+    "purpose": "Verify Attorney management of maintenance reminders/deadlines",
+    "preconditions": "Application is 'Granted' and approaching a deadline.",
+    "action_or_input": "Attorney views the dashboard.",
+    "expected_result": "Reminders and deadlines for maintenance fees are displayed."
+  },
+  {
+    "test_id": "TEST-CFR-013-4",
+    "source_id": "PMS-AFR-110",
+    "purpose": "Verify requirement of explicit renewal decision before deadline",
+    "preconditions": "Maintenance deadline is approaching.",
+    "action_or_input": "Skip the renewal decision process.",
+    "expected_result": "The system prevents proceeding past the deadline without a decision."
+  },
+  {
+    "test_id": "TEST-CFR-013-5",
+    "source_id": "PMS-AFR-111",
+    "purpose": "Verify Attorney seeking renewal decision from Director",
+    "preconditions": "Renewal deadline is active.",
+    "action_or_input": "Attorney clicks 'Request Renewal Decision'.",
+    "expected_result": "A request form or workflow to the Director is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-013-6",
+    "source_id": "PMS-AFR-112",
+    "purpose": "Verify Director decision (Renew/Do Not Renew)",
+    "preconditions": "Renewal request received by Director.",
+    "action_or_input": "Director selects 'Renew' or 'Do Not Renew'.",
+    "expected_result": "The system accepts and records one of these decisions."
+  },
+  {
+    "test_id": "TEST-CFR-013-7",
+    "source_id": "PMS-AFR-113",
+    "purpose": "Verify Attorney recording of maintenance action/transaction upon renewal approval",
+    "preconditions": "Director decision is 'Renew'.",
+    "action_or_input": "Attorney processes the payment and updates the status.",
+    "expected_result": "The transaction, status, and action are recorded."
+  },
+  {
+    "test_id": "TEST-CFR-013-8",
+    "source_id": "PMS-AFR-114",
+    "purpose": "Verify maintenance of renewal history",
+    "preconditions": "Renewal was executed previously.",
+    "action_or_input": "View 'Maintenance History'.",
+    "expected_result": "Previous renewals are listed with details."
+  },
+  {
+    "test_id": "TEST-CFR-013-9",
+    "source_id": "PMS-AFR-115",
+    "purpose": "Verify scheduling of next maintenance cycle",
+    "preconditions": "One renewal cycle is completed.",
+    "action_or_input": "Check the next scheduled action date.",
+    "expected_result": "The system schedules the next maintenance cycle."
+  },
+  {
+    "test_id": "TEST-CFR-014-0",
+    "source_id": "PMS-AFR-116",
+    "purpose": "Verify recording of office actions received",
+    "preconditions": "Patent Office sends an Office Action.",
+    "action_or_input": "Navigate to 'Office Actions'.",
+    "expected_result": "The Office Action is recorded in the system."
+  },
+  {
+    "test_id": "TEST-CFR-014-1",
+    "source_id": "PMS-AFR-117",
+    "purpose": "Verify Attorney review of recorded office actions",
+    "preconditions": "Office Action is recorded.",
+    "action_or_input": "Attorney views the action details.",
+    "expected_result": "Attorney can review and analyze the content."
+  },
+  {
+    "test_id": "TEST-CFR-014-2",
+    "source_id": "PMS-AFR-118",
+    "purpose": "Verify Attorney preparation of draft responses",
+    "preconditions": "Office Action is open for review.",
+    "action_or_input": "Attorney creates a draft response.",
+    "expected_result": "A draft response document is created."
+  },
+  {
+    "test_id": "TEST-CFR-014-3",
+    "source_id": "PMS-AFR-119",
+    "purpose": "Verify Applicant review/approval of office-action responses (if required)",
+    "preconditions": "Applicable process requires Applicant approval.",
+    "action_or_input": "Applicant reviews and approves the draft response.",
+    "expected_result": "The system records Applicant approval."
+  },
+  {
+    "test_id": "TEST-CFR-014-4",
+    "source_id": "PMS-AFR-120",
+    "purpose": "Verify Attorney finalization of office-action responses",
+    "preconditions": "Applicant has approved the draft.",
+    "action_or_input": "Attorney marks the response as 'Finalized'.",
+    "expected_result": "The system updates status to Finalized."
+  },
+  {
+    "test_id": "TEST-CFR-014-5",
+    "source_id": "PMS-AFR-121",
+    "purpose": "Verify recording of office-action response submission within deadline",
+    "preconditions": "Response is finalized.",
+    "action_or_input": "Submit the finalized response.",
+    "expected_result": "Submission details are recorded and timestamped."
+  },
+  {
+    "test_id": "TEST-CFR-014-6",
+    "source_id": "PMS-AFR-122",
+    "purpose": "Verify recording of extension requests for additional response time",
+    "preconditions": "Deadline is imminent.",
+    "action_or_input": "Attorney submits an extension request.",
+    "expected_result": "Extension details are recorded if the process allows it."
+  },
+  {
+    "test_id": "TEST-CFR-014-7",
+    "source_id": "PMS-AFR-123",
+    "purpose": "Verify tracking of response submission status",
+    "preconditions": "Response has been submitted.",
+    "action_or_input": "View the application status regarding this Office Action.",
+    "expected_result": "Status reflects 'Submitted' or similar."
+  },
+  {
+    "test_id": "TEST-CFR-014-8",
+    "source_id": "PMS-AFR-124",
+    "purpose": "Verify automation of deadline tracking for responses (if data available)",
+    "preconditions": "Deadline is calculable based on received action.",
+    "action_or_input": "Monitor system alerts for the response.",
+    "expected_result": "System automatically generates and displays deadline countdowns."
+  },
+  {
+    "test_id": "TEST-CFR-015-0",
+    "source_id": "PMS-AFR-125",
+    "purpose": "Verify withdrawal of applications before filing stage (Pre-Filing)",
+    "preconditions": "Application status is 'Submitted' (and withdrawal allowed).",
+    "action_or_input": "Applicant submits a withdrawal request.",
+    "expected_result": "Withdrawal is processed."
+  },
+  {
+    "test_id": "TEST-CFR-015-1",
+    "source_id": "PMS-AFR-126",
+    "purpose": "Verify validation of withdrawal eligibility based on status",
+    "preconditions": "Application status is 'Under Review'.",
+    "action_or_input": "Applicant attempts to withdraw.",
+    "expected_result": "The system rejects withdrawal as it is not allowed for this status."
+  },
+  {
+    "test_id": "TEST-CFR-015-2",
+    "source_id": "PMS-AFR-127",
+    "purpose": "Verify requirement of withdrawal reason",
+    "preconditions": "Applicant attempts to withdraw.",
+    "action_or_input": "Submit a request without a reason field populated.",
+    "expected_result": "The system rejects the request and prompts for a reason."
+  },
+  {
+    "test_id": "TEST-CFR-015-3",
+    "source_id": "PMS-AFR-128",
+    "purpose": "Verify support of recording co-inventor consent for withdrawal (if required)",
+    "preconditions": "Application has multiple inventors and consent is required.",
+    "action_or_input": "Complete the withdrawal form with consent signatures.",
+    "expected_result": "Consent is recorded in the application history."
+  },
+  {
+    "test_id": "TEST-CFR-015-4",
+    "source_id": "PMS-AFR-129",
+    "purpose": "Verify status update to 'Withdrawn' after permitted withdrawal",
+    "preconditions": "Withdrawal is processed successfully.",
+    "action_or_input": "Check application status record.",
+    "expected_result": "Status updates to 'Withdrawn'."
+  },
+  {
+    "test_id": "TEST-CFR-015-5",
+    "source_id": "PMS-AFR-130",
+    "purpose": "Verify removal of withdrawn applications from active queue",
+    "preconditions": "Application is 'Withdrawn'.",
+    "action_or_input": "Search the Active Queue.",
+    "expected_result": "The application does not appear in the active queue."
+  },
+  {
+    "test_id": "TEST-CFR-015-6",
+    "source_id": "PMS-AFR-131",
+    "purpose": "Verify maintenance of withdrawal history",
+    "preconditions": "Application was withdrawn previously.",
+    "action_or_input": "Access 'Withdrawal History' report.",
+    "expected_result": "Details of the withdrawal are available."
+  },
+  {
+    "test_id": "TEST-CFR-016-0",
+    "source_id": "PMS-AFR-132",
+    "purpose": "Verify management of multiple inventors by Applicant",
+    "preconditions": "Applicant is preparing a new application.",
+    "action_or_input": "Add three different inventor names.",
+    "expected_result": "All three inventors are added to the list."
+  },
+  {
+    "test_id": "TEST-CFR-016-1",
+    "source_id": "PMS-AFR-133",
+    "purpose": "Verify management of ownership shares for inventors",
+    "preconditions": "Multiple inventors are listed.",
+    "action_or_input": "Assign specific percentage shares to each inventor.",
+    "expected_result": "Ownership percentages are recorded."
+  },
+  {
+    "test_id": "TEST-CFR-016-2",
+    "source_id": "PMS-AFR-134",
+    "purpose": "Verify validation of inventor information",
+    "preconditions": "Inventor data contains errors (e.g., missing middle name).",
+    "action_or_input": "Submit the application with invalid data.",
+    "expected_result": "System validates and alerts on incorrect inventor info."
+  },
+  {
+    "test_id": "TEST-CFR-016-3",
+    "source_id": "PMS-AFR-135",
+    "purpose": "Verify validation of ownership percentages for inventors",
+    "preconditions": "Ownership shares sum to less than 100%.",
+    "action_or_input": "Save the application record.",
+    "expected_result": "System prevents save and requires correct total."
+  },
+  {
+    "test_id": "TEST-CFR-016-4",
+    "source_id": "PMS-AFR-136",
+    "purpose": "Verify requirement of inventor consent before filing",
+    "preconditions": "Inventor agreement is not signed.",
+    "action_or_input": "Attempt to file the application.",
+    "expected_result": "System blocks filing and requires signed consent."
+  },
+  {
+    "test_id": "TEST-CFR-016-5",
+    "source_id": "PMS-AFR-137",
+    "purpose": "Verify collection of electronic signatures for inventor consent/agreement (if permitted)",
+    "preconditions": "Legal permission for e-signature exists.",
+    "action_or_input": "Applicant uploads or signs the agreement electronically.",
+    "expected_result": "Electronic signature is collected and recorded."
+  },
+  {
+    "test_id": "TEST-CFR-016-6",
+    "source_id": "PMS-AFR-138",
+    "purpose": "Verify validation of electronic signatures (if permitted)",
+    "preconditions": "Applicant attempts to submit a document with an invalid signature hash.",
+    "action_or_input": "Submit the file.",
+    "expected_result": "System rejects or flags the invalid signature."
+  },
+  {
+    "test_id": "TEST-CFR-016-7",
+    "source_id": "PMS-AFR-140",
+    "purpose": "Verify notification to affected parties on inventor information changes",
+    "preconditions": "Inventor details are changed.",
+    "action_or_input": "Monitor communication logs.",
+    "expected_result": "Affected parties (other inventors) receive a notification."
+  },
+  {
+    "test_id": "TEST-CFR-017-0",
+    "source_id": "PMS-AFR-141",
+    "purpose": "Verify Applicant search of prior-art references",
+    "preconditions": "Applicant has access to search tools.",
+    "action_or_input": "Applicant initiates a search query.",
+    "expected_result": "Search interface is available."
+  },
+  {
+    "test_id": "TEST-CFR-017-1",
+    "source_id": "PMS-AFR-142",
+    "purpose": "Verify Attorney search of prior-art references",
+    "preconditions": "Attorney has access to search tools.",
+    "action_or_input": "Attorney initiates a search query.",
+    "expected_result": "Search interface is available."
+  },
+  {
+    "test_id": "TEST-CFR-017-2",
+    "source_id": "PMS-AFR-143",
+    "purpose": "Verify querying of relevant patent databases (where integration exists)",
+    "preconditions": "Search query is entered.",
+    "action_or_input": "Execute search.",
+    "expected_result": "System queries integrated patent database if available."
+  },
+  {
+    "test_id": "TEST-CFR-017-3",
+    "source_id": "PMS-AFR-144",
+    "purpose": "Verify querying of relevant publication databases (where integration exists)",
+    "preconditions": "Search query includes publication filter.",
+    "action_or_input": "Execute search.",
+    "expected_result": "System queries integrated publication database if available."
+  },
+  {
+    "test_id": "TEST-CFR-017-4",
+    "source_id": "PMS-AFR-145",
+    "purpose": "Verify display of search results with relevance ranking",
+    "preconditions": "Search returns results.",
+    "action_or_input": "View the search result list.",
+    "expected_result": "Results are displayed in order of relevance."
+  },
+  {
+    "test_id": "TEST-CFR-017-5",
+    "source_id": "PMS-AFR-146",
+    "purpose": "Verify attachment of selected prior-art references to application",
+    "preconditions": "Reference is available in search results.",
+    "action_or_input": "Attach the reference to an active application.",
+    "expected_result": "The reference is linked to the application document."
+  },
+  {
+    "test_id": "TEST-CFR-017-6",
+    "source_id": "PMS-AFR-147",
+    "purpose": "Verify logging of prior-art search sessions for audit trail",
+    "preconditions": "Search is performed.",
+    "action_or_input": "Access Audit Logs for 'Search' events.",
+    "expected_result": "Search session details are logged."
+  },
+  {
+    "test_id": "TEST-CFR-017-7",
+    "source_id": "PMS-AFR-148",
+    "purpose": "Verify keyword optimization support for search",
+    "preconditions": "Search is being executed.",
+    "action_or_input": "Use suggested terms or synonym features.",
+    "expected_result": "System utilizes the optimization to improve results."
+  },
+  {
+    "test_id": "TEST-CFR-017-8",
+    "source_id": "PMS-AFR-149",
+    "purpose": "Verify classification mapping support for search",
+    "preconditions": "Search is being executed.",
+    "action_or_input": "Select a specific IPC/CPC classification.",
+    "expected_result": "System uses the mapping to filter or guide results."
+  },
+  {
+    "test_id": "TEST-CFR-018-0",
+    "source_id": "PMS-AFR-150",
+    "purpose": "Verify maintenance of version history for application documents",
+    "preconditions": "Documents are uploaded.",
+    "action_or_input": "Navigate to document repository.",
+    "expected_result": "Version history is displayed."
+  },
+  {
+    "test_id": "TEST-CFR-018-1",
+    "source_id": "PMS-AFR-151",
+    "purpose": "Verify permission to upload new versions (role/status allowed)",
+    "preconditions": "Applicant has 'Needs Revision' status.",
+    "action_or_input": "Attempt to upload a new document.",
+    "expected_result": "Upload is permitted."
+  },
+  {
+    "test_id": "TEST-CFR-018-2",
+    "source_id": "PMS-AFR-152",
+    "purpose": "Verify assignment of automatic version numbers to new document versions",
+    "preconditions": "New document is uploaded.",
+    "action_or_input": "View the document header.",
+    "expected_result": "Auto-generated version number (e.g., v3.0) appears."
+  },
+  {
+    "test_id": "TEST-CFR-018-3",
+    "source_id": "PMS-AFR-153",
+    "purpose": "Verify archiving of previous document versions",
+    "preconditions": "Versions exist in history.",
+    "action_or_input": "Select an archived version.",
+    "expected_result": "System confirms the version is in 'Archived' state."
+  },
+  {
+    "test_id": "TEST-CFR-018-4",
+    "source_id": "PMS-AFR-154",
+    "purpose": "Verify access control for previous document versions (role/status rules)",
+    "preconditions": "User has restricted role accessing an archived doc.",
+    "action_or_input": "Attempt to view the document.",
+    "expected_result": "Access is granted only if user role and status permit it."
+  },
+  {
+    "test_id": "TEST-CFR-018-5",
+    "source_id": "PMS-AFR-155",
+    "purpose": "Verification of logging document modifications with user/timestamp",
+    "preconditions": "Document is modified.",
+    "action_or_input": "View the modification log.",
+    "expected_result": "Log entry includes User ID and Timestamp."
+  },
+  {
+    "test_id": "TEST-CFR-018-6",
+    "source_id": "PMS-AFR-156",
+    "purpose": "Verification of control based on role and application status",
+    "preconditions": "User lacks required permission.",
+    "action_or_input": "Attempt to access a confidential document.",
+    "expected_result": "Access is denied."
+  },
+  {
+    "test_id": "TEST-CFR-018-7",
+    "source_id": "PMS-AFR-157",
+    "purpose": "Verify restriction of document editing to 'Needs Revision' status for Applicants",
+    "preconditions": "Application status is 'Submitted'.",
+    "action_or_input": "Attempt by Applicant to edit the main application document.",
+    "expected_result": "System prevents editing."
+  },
+  {
+    "test_id": "TEST-CFR-019-0",
+    "source_id": "PMS-AFR-158",
+    "purpose": "Verify Applicant submission of licensing requests",
+    "preconditions": "Application is in a state allowing licensing.",
+    "action_or_input": "Applicant submits a Licensing Request form.",
+    "expected_result": "Request is recorded."
+  },
+  {
+    "test_id": "TEST-CFR-019-1",
+    "source_id": "PMS-AFR-159",
+    "purpose": "Verify Applicant submission of technology transfer requests",
+    "preconditions": "Application is in a state allowing TTR.",
+    "action_or_input": "Applicant submits a Technology Transfer Request form.",
+    "expected_result": "Request is recorded."
+  },
+  {
+    "test_id": "TEST-CFR-019-2",
+    "source_id": "PMS-AFR-160",
+    "purpose": "Verification of routing to appropriate committee/Director",
+    "preconditions": "Request is submitted.",
+    "action_or_input": "Trace the workflow status.",
+    "expected_result": "System routes request based on institutional process definitions."
+  },
+  {
+    "test_id": "TEST-CFR-019-3",
+    "source_id": "PMS-AFR-161",
+    "purpose": "Verification of tracking negotiation process info",
+    "preconditions": "Negotiation is in progress.",
+    "action_or_input": "Check the case status page.",
+    "expected_result": "Negotiation details (dates, parties) are tracked."
+  },
+  {
+    "test_id": "TEST-CFR-019-4",
+    "source_id": "PMS-AFR-162",
+    "purpose": "Verification of recording final agreements",
+    "preconditions": "Agreement is finalized.",
+    "action_or_input": "View the agreement record.",
+    "expected_result": "The agreement terms are stored."
+  },
+  {
+    "test_id": "TEST-CFR-019-5",
+    "source_id": "PMS-AFR-163",
+    "purpose": "Verification of updating/sharing financial-system info (where integration exists)",
+    "preconditions": "Integration with finance system is active.",
+    "action_or_input": "Finalize the agreement with cost details.",
+    "expected_result": "Financial data is exchanged or recorded in PMS/Finance."
+  },
+  {
+    "test_id": "TEST-CFR-019-6",
+    "source_id": "PMS-AFR-164",
+    "purpose": "Verification of confidentiality controls for license records",
+    "preconditions": "License record is created.",
+    "action_or_input": "Attempt to access confidential details without clearance.",
+    "expected_result": "Access is restricted."
+  },
+  {
+    "test_id": "TEST-CFR-020-0",
+    "source_id": "PMS-AFR-165",
+    "purpose": "Verification of Applicant appeal filing against rejected applications",
+    "preconditions": "Application status is 'Rejected'.",
+    "action_or_input": "Applicant initiates an Appeal.",
+    "expected_result": "Appeal case is created."
+  },
+  {
+    "test_id": "TEST-CFR-020-1",
+    "source_id": "PMS-AFR-166",
+    "purpose": "Verification of appeal filing within configured time period",
+    "preconditions": "Current time exceeds the allowed appeal window.",
+    "action_or_input": "Applicant attempts to file an appeal.",
+    "expected_result": "System blocks filing with 'Overdue' message."
+  },
+  {
+    "test_id": "TEST-CFR-020-2",
+    "source_id": "PMS-AFR-167",
+    "purpose": "Verification of requirement for grounds and justification for appeal",
+    "preconditions": "Appeal form is open.",
+    "action_or_input": "Submit an appeal with empty justification.",
+    "expected_result": "System requires justification input."
+  },
+  {
+    "test_id": "TEST-CFR-020-3",
+    "source_id": "PMS-AFR-168",
+    "purpose": "Verification of Director review of appeals and documentation",
+    "preconditions": "Appeal is filed.",
+    "action_or_input": "Director views the appeal details.",
+    "expected_result": "Director can review grounds and submit supporting docs."
+  },
+  {
+    "test_id": "TEST-CFR-020-4",
+    "source_id": "PMS-AFR-169",
+    "purpose": "Verification of Director choice (Uphold/Remand/Modify)",
+    "preconditions": "Review is complete.",
+    "action_or_input": "Director selects an appeal outcome.",
+    "expected_result": "One of 'Uphold Rejection', 'Remand for Amendment', or 'Modify Decision' is selected."
+  },
+  {
+    "test_id": "TEST-CFR-020-5",
+    "source_id": "PMS-AFR-170",
+    "purpose": "Verification of recording appeal outcomes",
+    "preconditions": "Decision is made.",
+    "action_or_input": "View the Case Outcome page.",
+    "expected_result": "Outcome details are recorded."
+  },
+  {
+    "test_id": "TEST-CFR-020-6",
+    "source_id": "PMS-AFR-171",
+    "purpose": "Verification of initiation of next applicable process step",
+    "preconditions": "Appeal outcome is recorded.",
+    "action_or_input": "Check the workflow status.",
+    "expected_result": "System initiates the relevant next process."
+  },
+  {
+    "test_id": "TEST-CFR-021-0",
+    "source_id": "PMS-AFR-172",
+    "purpose": "Verification of calculation/monitoring of Director review deadlines",
+    "preconditions": "Application is 'Under Review'.",
+    "action_or_input": "View the timeline dashboard.",
+    "expected_result": "Deadline for review is calculated and displayed."
+  },
+  {
+    "test_id": "TEST-CFR-021-1",
+    "source_id": "PMS-AFR-173",
+    "purpose": "Verification of calculation/monitoring of revision/resubmission deadlines",
+    "preconditions": "Application is awaiting resubmission.",
+    "action_or_input": "View the timeline dashboard.",
+    "expected_result": "Deadline for revision is calculated and displayed."
+  },
+  {
+    "test_id": "TEST-CFR-021-2",
+    "source_id": "PMS-AFR-174",
+    "purpose": "Verification of calculation/monitoring of office-action response deadlines (if data available)",
+    "preconditions": "Office Action received, deadline calculable.",
+    "action_or_input": "View the timeline dashboard.",
+    "expected_result": "Deadline for response is calculated and displayed."
+  },
+  {
+    "test_id": "TEST-CFR-021-3",
+    "source_id": "PMS-AFR-175",
+    "purpose": "Verification of calculation/monitoring of maintenance-fee deadlines (if data available)",
+    "preconditions": "Patent Granted, jurisdiction data available.",
+    "action_or_input": "View the timeline dashboard.",
+    "expected_result": "Maintenance fee deadline is calculated and displayed."
+  },
+  {
+    "test_id": "TEST-CFR-021-4",
+    "source_id": "PMS-AFR-176",
+    "purpose": "Verification of generating alert 30 days before deadline (if applicable)",
+    "preconditions": "Deadline is active.",
+    "action_or_input": "Check notifications at T-30.",
+    "expected_result": "Alert message is generated."
+  },
+  {
+    "test_id": "TEST-CFR-021-5",
+    "source_id": "PMS-AFR-177",
+    "purpose": "Verification of generating alert 15 days before deadline (if applicable)",
+    "preconditions": "Deadline is active.",
+    "action_or_input": "Check notifications at T-15.",
+    "expected_result": "Alert message is generated."
+  },
+  {
+    "test_id": "TEST-CFR-021-6",
+    "source_id": "PMS-AFR-178",
+    "purpose": "Verification of generating alert 5 days before deadline (if applicable)",
+    "preconditions": "Deadline is active.",
+    "action_or_input": "Check notifications at T-5.",
+    "expected_result": "Alert message is generated."
+  },
+  {
+    "test_id": "TEST-CFR-021-7",
+    "source_id": "PMS-AFR-179",
+    "purpose": "Verification of sending deadline notifications to stakeholders",
+    "preconditions": "Alert conditions are met.",
+    "action_or_input": "Monitor communication logs.",
+    "expected_result": "Notifications are sent to relevant parties."
+  },
+  {
+    "test_id": "TEST-CFR-021-8",
+    "source_id": "PMS-AFR-180",
+    "purpose": "Verification of escalation for missed deadlines (configured chain)",
+    "preconditions": "Deadline is missed.",
+    "action_or_input": "Check status of the process flow.",
+    "expected_result": "System triggers the configured escalation path."
+  },
+  {
+    "test_id": "TEST-CFR-021-9",
+    "source_id": "PMS-AFR-181",
+    "purpose": "Verification of logging deadline tracking activities",
+    "preconditions": "Deadline monitoring is active.",
+    "action_or_input": "Access Audit Logs for 'Deadline' entries.",
+    "expected_result": "Activities are logged."
+  },
+  {
+    "test_id": "TEST-CFR-022-0",
+    "source_id": "PMS-AFR-182",
+    "purpose": "Verification of generating application status/progress reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Application Status' report.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-1",
+    "source_id": "PMS-AFR-183",
+    "purpose": "Verification of generating financial/budget reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Budget Report'.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-2",
+    "source_id": "PMS-AFR-184",
+    "purpose": "Verification of generating deadline/pending action reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Deadline Report'.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-3",
+    "source_id": "PMS-AFR-185",
+    "purpose": "Verification of generating inventor/co-inventor reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Inventor Report'.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-4",
+    "source_id": "PMS-AFR-186",
+    "purpose": "Verification of generating patent portfolio analysis reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Portfolio Analysis'.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-5",
+    "source_id": "PMS-AFR-187",
+    "purpose": "Verification of generating workload/assignment reports (PCC_ADMIN/Director)",
+    "preconditions": "User has role.",
+    "action_or_input": "Generate 'Workload Report'.",
+    "expected_result": "Report is generated."
+  },
+  {
+    "test_id": "TEST-CFR-022-6",
+    "source_id": "PMS-AFR-188",
+    "purpose": "Verification of scheduling reports (authorized users)",
+    "preconditions": "User has role.",
+    "action_or_input": "Schedule a report for a future time.",
+    "expected_result": "Schedule is created."
+  },
+  {
+    "test_id": "TEST-CFR-022-7",
+    "source_id": "PMS-AFR-189",
+    "purpose": "Verification of exporting reports (authorized users)",
+    "preconditions": "Report is generated.",
+    "action_or_input": "Click 'Export' button.",
+    "expected_result": "File is downloaded/available for export."
+  },
+  {
+    "test_id": "TEST-CFR-022-8",
+    "source_id": "PMS-AFR-190",
+    "purpose": "Verification of customizing reports (authorized users)",
+    "preconditions": "Report is generated.",
+    "action_or_input": "Modify report filters/parameters.",
+    "expected_result": "Customization is applied."
+  },
+  {
+    "test_id": "TEST-CFR-022-9",
+    "source_id": "PMS-AFR-191",
+    "purpose": "Verification of logging report access for audit (authorized users)",
+    "preconditions": "Report is viewed.",
+    "action_or_input": "Check Audit Logs.",
+    "expected_result": "Access event is logged."
+  },
+  {
+    "test_id": "TEST-CFR-022-10",
+    "source_id": "PMS-AFR-237",
+    "purpose": "Verification of providing dashboards within reporting scope",
+    "preconditions": "User has role.",
+    "action_or_input": "Navigate to 'Dashboards'.",
+    "expected_result": "Dashboard is visible."
+  },
+  {
+    "test_id": "TEST-CFR-022-11",
+    "source_id": "PMS-AFR-238",
+    "purpose": "Verification of providing historical data analysis within reporting scope",
+    "preconditions": "Historical data exists.",
+    "action_or_input": "Query time-series report.",
+    "expected_result": "Analysis is displayed."
+  },
+  {
+    "test_id": "TEST-CFR-022-12",
+    "source_id": "PMS-AFR-239",
+    "purpose": "Verification of providing trend reporting within reporting scope",
+    "preconditions": "Trend data exists.",
+    "action_or_input": "View 'Trend Analysis'.",
+    "expected_result": "Trends are displayed."
+  },
+  {
+    "test_id": "TEST-CFR-023-0",
+    "source_id": "PMS-AFR-192",
+    "purpose": "Verification of triggering notification for application submission",
+    "preconditions": "Application is submitted.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-1",
+    "source_id": "PMS-AFR-193",
+    "purpose": "Verification of triggering notification for application status change",
+    "preconditions": "Status changes.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-2",
+    "source_id": "PMS-AFR-194",
+    "purpose": "Verification of triggering notification for assignment to Director",
+    "preconditions": "Assignment occurs.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-3",
+    "source_id": "PMS-AFR-195",
+    "purpose": "Verification of triggering notification for assignment to Attorney",
+    "preconditions": "Assignment occurs.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-4",
+    "source_id": "PMS-AFR-196",
+    "purpose": "Verification of triggering notification for review decisions",
+    "preconditions": "Decision is made.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-5",
+    "source_id": "PMS-AFR-197",
+    "purpose": "Verification of triggering notification for budget approval/rejection",
+    "preconditions": "Budget decision is made.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-6",
+    "source_id": "PMS-AFR-198",
+    "purpose": "Verification of triggering notification for filing confirmations",
+    "preconditions": "Filing is recorded.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-7",
+    "source_id": "PMS-AFR-199",
+    "purpose": "Verification of triggering notification for office actions",
+    "preconditions": "Office Action recorded.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-8",
+    "source_id": "PMS-AFR-200",
+    "purpose": "Verification of triggering notification for deadline reminders",
+    "preconditions": "Deadline approaching.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-9",
+    "source_id": "PMS-AFR-201",
+    "purpose": "Verification of triggering notification for deadline escalations",
+    "preconditions": "Deadline missed.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-10",
+    "source_id": "PMS-AFR-202",
+    "purpose": "Verification of triggering notification for maintenance-fee reminders",
+    "preconditions": "Maintenance due.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-11",
+    "source_id": "PMS-AFR-203",
+    "purpose": "Verification of triggering notification for document updates",
+    "preconditions": "Document updated.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-12",
+    "source_id": "PMS-AFR-204",
+    "purpose": "Verification of triggering notification for document version changes",
+    "preconditions": "Version changed.",
+    "action_or_input": "Check email logs.",
+    "expected_result": "Notification is triggered."
+  },
+  {
+    "test_id": "TEST-CFR-023-13",
+    "source_id": "PMS-AFR-206",
+    "purpose": "Verification of limiting notification scope to system-generated emails (external infra outside)",
+    "preconditions": "Notification trigger occurs.",
+    "action_or_input": "Monitor external delivery logs vs PMS internal logs.",
+    "expected_result": "PMS only triggers the event; actual delivery relies on external infrastructure."
+  },
+  {
+    "test_id": "TEST-CFR-024-0",
+    "source_id": "PMS-AFR-207",
+    "purpose": "Verification of maintaining audit trail of PMS actions",
+    "preconditions": "Action performed.",
+    "action_or_input": "Access Audit Logs.",
+    "expected_result": "Record exists in the log."
+  },
+  {
+    "test_id": "TEST-CFR-024-1",
+    "source_id": "PMS-AFR-208",
+    "purpose": "Verification of logging all user actions",
+    "preconditions": "User performs action.",
+    "action_or_input": "Search Audit Logs for User ID.",
+    "expected_result": "All logged actions are present."
+  },
+  {
+    "test_id": "TEST-CFR-024-2",
+    "source_id": "PMS-AFR-209",
+    "purpose": "Verification of logging all status changes",
+    "preconditions": "Status changes.",
+    "action_or_input": "Search Audit Logs for 'Application ID' and 'Old Status/Status'.",
+    "expected_result": "Changes are logged."
+  },
+  {
+    "test_id": "TEST-CFR-024-3",
+    "source_id": "PMS-AFR-210",
+    "purpose": "Verification of logging all document modifications",
+    "preconditions": "Document modified.",
+    "action_or_input": "Search Audit Logs for 'Doc ID'.",
+    "expected_result": "Modification is logged."
+  },
+  {
+    "test_id": "TEST-CFR-024-4",
+    "source_id": "PMS-AFR-211",
+    "purpose": "Verification of audit logs including user ID, action type, timestamp, app ID, prev state, new state",
+    "preconditions": "Action performed.",
+    "action_or_input": "Inspect a specific log entry in detail.",
+    "expected_result": "All 6 required fields are present."
+  },
+  {
+    "test_id": "TEST-CFR-024-5",
+    "source_id": "PMS-AFR-212",
+    "purpose": "Verification of creating immutable audit records for critical operations",
+    "preconditions": "Critical operation occurs (e.g., Budget Approval).",
+    "action_or_input": "Attempt to modify the audit log entry.",
+    "expected_result": "Modification is rejected/immutable."
+  },
+  {
+    "test_id": "TEST-CFR-024-6",
+    "source_id": "PMS-AFR-213",
+    "purpose": "Verification of providing audit logs for compliance verification and forensic analysis",
+    "preconditions": "Audit logs exist.",
+    "action_or_input": "Access 'Compliance View'.",
+    "expected_result": "Logs are accessible for verification."
+  },
+  {
+    "test_id": "TEST-CFR-024-7",
+    "source_id": "PMS-AFR-214",
+    "purpose": "Verification of encryption at rest for PMS data (where implemented)",
+    "preconditions": "Data is stored.",
+    "action_or_input": "Perform physical inspection of storage media (if accessible) or check security config.",
+    "expected_result": "Encryption confirmation exists."
+  },
+  {
+    "test_id": "TEST-CFR-024-8",
+    "source_id": "PMS-AFR-215",
+    "purpose": "Verification of encryption in transit for PMS data (where implemented)",
+    "preconditions": "Data is being transmitted.",
+    "action_or_input": "Capture traffic or check network logs.",
+    "expected_result": "Encrypted traffic is observed."
+  },
+  {
+    "test_id": "TEST-CFR-025-0",
+    "source_id": "PMS-AFR-216",
+    "purpose": "Verification of requiring valid role assignments before access",
+    "preconditions": "User has no PMS role.",
+    "action_or_input": "Attempt to access any patent-management function.",
+    "expected_result": "Access is denied."
+  },
+  {
+    "test_id": "TEST-CFR-026-0",
+    "source_id": "PMS-AFR-217",
+    "purpose": "Verification of preventing attorney assignment until Director approval recorded",
+    "preconditions": "Director has not approved the application.",
+    "action_or_input": "Attempt to assign an Attorney.",
+    "expected_result": "Assignment is blocked."
+  },
+  {
+    "test_id": "TEST-CFR-026-1",
+    "source_id": "PMS-AFR-218",
+    "purpose": "Verification of preventing external filing until required approvals/budget allocated",
+    "preconditions": "Budget is not approved.",
+    "action_or_input": "Attempt to file externally.",
+    "expected_result": "Filing is blocked."
+  },
+  {
+    "test_id": "TEST-CFR-027-0",
+    "source_id": "PMS-AFR-220",
+    "purpose": "Verification of enforcing role-based access control (RBAC) for confidential info",
+    "preconditions": "User has low clearance, data is confidential.",
+    "action_or_input": "Attempt to view the document.",
+    "expected_result": "Access is denied."
+  },
+  {
+    "test_id": "TEST-CFR-028-0",
+    "source_id": "PMS-AFR-221",
+    "purpose": "Verification of maintaining exactly one active PCC_ADMIN as oversight role",
+    "preconditions": "System state checked.",
+    "action_or_input": "Query 'Admin Count'.",
+    "expected_result": "Exactly 1 active PCC_ADMIN is found."
+  },
+  {
+    "test_id": "TEST-CFR-028-1",
+    "source_id": "PMS-AFR-222",
+    "purpose": "Verification of allowing multiple Directors to handle reviews based on expertise domains",
+    "preconditions": "Multiple domains exist.",
+    "action_or_input": "Check Director assignments for different applications.",
+    "expected_result": "Different Directors can handle applications in different domains."
+  },
+  {
+    "test_id": "TEST-CFR-028-2",
+    "source_id": "PMS-AFR-223",
+    "purpose": "Verification of allowing multiple Attorneys from approved panels to conduct legal assessments",
+    "preconditions": "Multiple Attorneys exist.",
+    "action_or_input": "Check Attorney assignments for a complex application.",
+    "expected_result": "Multiple Attorneys can be assigned/appointed if needed."
+  },
+  {
+    "test_id": "TEST-CFR-028-3",
+    "source_id": "PMS-AFR-224",
+    "purpose": "Verification of allowing multiple Applicants to submit patent applications",
+    "preconditions": "System is active.",
+    "action_or_input": "Submit applications from distinct user IDs.",
+    "expected_result": "Multiple applications are accepted."
+  },
+  {
+    "test_id": "TEST-CFR-028-4",
+    "source_id": "PMS-AFR-225",
+    "purpose": "Verification of enforcing status-driven handling with valid transitions",
+    "preconditions": "Application is in an invalid state or wrong transition attempted.",
+    "action_or_input": "Attempt to change status from 'Submitted' directly to 'Filed'.",
+    "expected_result": "Transition is denied."
+  },
+  {
+    "test_id": "TEST-CFR-028-5",
+    "source_id": "PMS-AFR-226",
+    "purpose": "Verification of support for escalation mechanisms for delayed actions",
+    "preconditions": "Action is delayed beyond threshold.",
+    "action_or_input": "Check system response to delay.",
+    "expected_result": "Escalation logic triggers."
+  },
+  {
+    "test_id": "TEST-CFR-028-6",
+    "source_id": "PMS-AFR-227",
+    "purpose": "Verification of permitting parallel processing only where explicitly allowed",
+    "preconditions": "Parallel process defined in config.",
+    "action_or_input": "Attempt to handle two conflicting actions simultaneously if not defined.",
+    "expected_result": "System restricts behavior based on explicit rules."
+  },
+  {
+    "test_id": "TEST-CFR-029-0",
+    "source_id": "PMS-AFR-228",
+    "purpose": "Verification of treating patent-office integration as external unless PMS records details",
+    "preconditions": "Integration configured.",
+    "action_or_input": "Submit to Patent Office.",
+    "expected_result": "System acts as a client; success/failure is only recorded as metadata."
+  },
+  {
+    "test_id": "TEST-CFR-029-1",
+    "source_id": "PMS-AFR-229",
+    "purpose": "Verification of treating financial-system integration as external unless PMS records metadata",
+    "preconditions": "Integration configured.",
+    "action_or_input": "Execute payment.",
+    "expected_result": "System records transaction details but does not own the funds."
+  },
+  {
+    "test_id": "TEST-CFR-029-2",
+    "source_id": "PMS-AFR-230",
+    "purpose": "Verification of treating document-management-system integration as external unless PMS stores metadata",
+    "preconditions": "Integration configured.",
+    "action_or_input": "Upload to Doc Mgmt System.",
+    "expected_result": "System records version/metadata but relies on external storage."
+  },
+  {
+    "test_id": "TEST-CFR-029-3",
+    "source_id": "PMS-AFR-231",
+    "purpose": "Verification of treating external prior-art databases as query sources (not owned)",
+    "preconditions": "Search executed.",
+    "action_or_input": "Check source of data retrieved.",
+    "expected_result": "Data is identified as external/proprietary."
+  },
+  {
+    "test_id": "TEST-CFR-029-4",
+    "source_id": "PMS-AFR-232",
+    "purpose": "Verification of not treating external patent office filing success as internally controlled beyond recording details",
+    "preconditions": "External office grants filing.",
+    "action_or_input": "Check PMS status upon external confirmation.",
+    "expected_result": "PMS records the event but does not guarantee control over the result."
+  },
+  {
+    "test_id": "TEST-CFR-030-0",
+    "source_id": "PMS-AFR-236",
+    "purpose": "Verification of allowing Director to reject a proposed budget and record outcome",
+    "preconditions": "Budget submitted.",
+    "action_or_input": "Director selects 'Reject' and records reason.",
+    "expected_result": "Rejection is recorded."
+  }
+]
