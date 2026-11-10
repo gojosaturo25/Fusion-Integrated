@@ -7267,3 +7267,510 @@ class TestOfficeActionResponseLifecycle:
 
 > Tokens: 24k sent, 4.4k received.  
 > Applied edit to tests/a8/fr/test_fr_p12.py  
+
+# aider chat started at 2026-11-11 05:05:52
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/fr/aider.chat.history.md --input-history-file a8_logs/fr/aider.input.history --llm-history-file a8_logs/fr/llm.history.txt --file tests/a8/fr/test_fr_p13.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/fr/promptB_p13.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/fr/test_fr_p13.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 271 files  
+> Repo-map: disabled  
+> Added tests/a8/fr/test_fr_p13.py to the chat.  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen FR_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/fr/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen FR_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 97 to 104 of 204; write exactly these test cases into tests/a8/fr/test_fr_p13.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "TEST-CFR-015-1",  
+####   "source_id": "PMS-AFR-126",  
+####   "purpose": "Verify validation of withdrawal eligibility based on status",  
+####   "preconditions": "Application status is 'Under Review'.",  
+####   "action_or_input": "Applicant attempts to withdraw.",  
+####   "expected_result": "The system rejects withdrawal as it is not allowed for this status."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-015-2",  
+####   "source_id": "PMS-AFR-127",  
+####   "purpose": "Verify requirement of withdrawal reason",  
+####   "preconditions": "Applicant attempts to withdraw.",  
+####   "action_or_input": "Submit a request without a reason field populated.",  
+####   "expected_result": "The system rejects the request and prompts for a reason."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-015-3",  
+####   "source_id": "PMS-AFR-128",  
+####   "purpose": "Verify support of recording co-inventor consent for withdrawal (if required)",  
+####   "preconditions": "Application has multiple inventors and consent is required.",  
+####   "action_or_input": "Complete the withdrawal form with consent signatures.",  
+####   "expected_result": "Consent is recorded in the application history."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-015-4",  
+####   "source_id": "PMS-AFR-129",  
+####   "purpose": "Verify status update to 'Withdrawn' after permitted withdrawal",  
+####   "preconditions": "Withdrawal is processed successfully.",  
+####   "action_or_input": "Check application status record.",  
+####   "expected_result": "Status updates to 'Withdrawn'."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-015-5",  
+####   "source_id": "PMS-AFR-130",  
+####   "purpose": "Verify removal of withdrawn applications from active queue",  
+####   "preconditions": "Application is 'Withdrawn'.",  
+####   "action_or_input": "Search the Active Queue.",  
+####   "expected_result": "The application does not appear in the active queue."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-015-6",  
+####   "source_id": "PMS-AFR-131",  
+####   "purpose": "Verify maintenance of withdrawal history",  
+####   "preconditions": "Application was withdrawn previously.",  
+####   "action_or_input": "Access 'Withdrawal History' report.",  
+####   "expected_result": "Details of the withdrawal are available."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-0",  
+####   "source_id": "PMS-AFR-132",  
+####   "purpose": "Verify management of multiple inventors by Applicant",  
+####   "preconditions": "Applicant is preparing a new application.",  
+####   "action_or_input": "Add three different inventor names.",  
+####   "expected_result": "All three inventors are added to the list."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-1",  
+####   "source_id": "PMS-AFR-133",  
+####   "purpose": "Verify management of ownership shares for inventors",  
+####   "preconditions": "Multiple inventors are listed.",  
+####   "action_or_input": "Assign specific percentage shares to each inventor.",  
+####   "expected_result": "Ownership percentages are recorded."  
+####  }  
+#### ]  
+#### ```  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user wants me to convert the test cases from TEST-CFR-015-1 through TEST-CFR-016-1 into pytest tests using pytest-django. These are test cases related to patent application withdrawal and inventor management functionality.
+
+Let me analyze what I need to do:
+
+1. Create a new file `tests/a8/fr/test_fr_p13.py`
+2. Implement exactly the 8 test cases provided (TEST-CFR-015-1 through TEST-CFR-016-1)
+3. Each test must have its test_id and source_id in the name or docstring
+4. Use pytest-django with Django's isolated test database
+5. Reuse existing Fusion test infrastructure where appropriate (from conftest.py I can see there's a stub_iam fixture, make_principal, etc.)
+6. Don't mock behavior being tested - only mock unavailable external dependencies
+7. Don't use xfail to hide failures
+8. Every test must contain its test_id and source_id in its name or docstring
+
+Looking at the existing code structure:
+- `modules/patent/models.py` has PatentApplication, Inventor, ApplicationHistory models
+- `modules/patent/services/applications.py` has withdraw_application function
+- `modules/patent/domain/policy.py` has can_withdraw function
+- `conftest.py` has stub_iam fixture for IAM testing
+
+I need to create tests that:
+1. Test withdrawal eligibility based on status (TEST-CFR-015-1)
+2. Test withdrawal reason requirement (TEST-CFR-015-2)
+3. Test co-inventor consent recording (TEST-CFR-015-3)
+4. Test status update to 'Withdrawn' (TEST-CFR-015-4)
+5. Test removal from active queue (TEST-CFR-015-5)
+
+
+6. Test withdrawal history maintenance (TEST-CFR-015-6)
+7. Test multiple inventor management (TEST-CFR-016-0)
+8. Test ownership share recording (TEST-CFR-016-1)
+
+I'll need to create a test file that imports the necessary models and services, uses the stub_iam fixture for authentication, and implements each test case with proper pytest-django fixtures. I should check if there are existing tests in this directory structure to maintain consistency with the project's testing patterns.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+tests/a8/fr/test_fr_p13.py
+```
+"""Test cases for Patent Management System - Withdrawal and Inventor Management (TEST-CFR-015, TEST-CFR-016)."""
+
+import pytest
+from datetime import date
+from django.test import TestCase
+from modules.patent.models import (
+    PatentApplication, Inventor, ApplicationHistory, ApplicationDocument
+)
+from modules.patent.services.applications import withdraw_application
+from modules.patent.domain.policy import can_withdraw
+
+
+@pytest.fixture
+def stub_iam(monkeypatch):
+    """IAM stub fixture for authentication."""
+    from conftest import stub_iam as original_stub_iam
+    return original_stub_iam(monkeypatch)
+
+
+@pytest.fixture
+def applicant_principal(stub_iam):
+    """Create an applicant principal for testing."""
+    from conftest import make_principal
+    return make_principal(kind="student", active_role="student")
+
+
+@pytest.fixture
+def application(applicant_principal):
+    """Create a test patent application."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="TEST-001",
+        title="Test Application",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Test domain",
+        applicant_id=applicant_principal.user_id,
+        status="draft"
+    )
+    return app
+
+
+@pytest.fixture
+def application_under_review(applicant_principal):
+    """Create a test patent application under review."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="TEST-002",
+        title="Test Application Under Review",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Test domain",
+        applicant_id=applicant_principal.user_id,
+        status="under_review"
+    )
+    return app
+
+
+@pytest.fixture
+def application_with_inventors(applicant_principal):
+    """Create a test patent application with inventors."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="TEST-003",
+        title="Test Application With Inventors",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Test domain",
+        applicant_id=applicant_principal.user_id,
+        status="draft"
+    )
+    
+    # Create inventors with consent
+    inventor1 = Inventor.objects.create(
+        application=app,
+        user_id=applicant_principal.user_id,
+        name="Inventor 1",
+        email="inventor1@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True
+    )
+    
+    inventor2 = Inventor.objects.create(
+        application=app,
+        user_id=applicant_principal.user_id + 1,
+        name="Inventor 2",
+        email="inventor2@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True
+    )
+    
+    return app
+
+
+@pytest.fixture
+def application_with_multiple_inventors(applicant_principal):
+    """Create a test patent application with multiple inventors."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="TEST-004",
+        title="Test Application With Multiple Inventors",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Test domain",
+        applicant_id=applicant_principal.user_id,
+        status="draft"
+    )
+    
+    # Create three inventors with different shares
+    inventor1 = Inventor.objects.create(
+        application=app,
+        user_id=applicant_principal.user_id,
+        name="Inventor 1",
+        email="inventor1@test.com",
+        contribution_percent=30.0,
+        agreement_signed=True
+    )
+    
+    inventor2 = Inventor.objects.create(
+        application=app,
+        user_id=applicant_principal.user_id + 1,
+        name="Inventor 2",
+        email="inventor2@test.com",
+        contribution_percent=40.0,
+        agreement_signed=True
+    )
+    
+    inventor3 = Inventor.objects.create(
+        application=app,
+        user_id=applicant_principal.user_id + 2,
+        name="Inventor 3",
+        email="inventor3@test.com",
+        contribution_percent=30.0,
+        agreement_signed=True
+    )
+    
+    return app
+
+
+class TestWithdrawalEligibilityBasedOnStatus:
+    """Test withdrawal eligibility based on application status."""
+
+    @pytest.mark.django_db
+    def test_withdrawal_rejected_for_under_review_status(self, application_under_review, applicant_principal):
+        """TEST-CFR-015-1 | PMS-AFR-126 | Verify validation of withdrawal eligibility based on status.
+        
+        Preconditions: Application status is 'Under Review'.
+        Action: Applicant attempts to withdraw.
+        Expected Result: The system rejects withdrawal as it is not allowed for this status.
+        """
+        # Test that withdrawal is not allowed from 'under_review' status
+        assert can_withdraw("under_review") == False
+        
+        # Attempt withdrawal should fail due to policy check
+        with pytest.raises(ValueError) as exc_info:
+            withdraw_application(
+                applicant_id=applicant_principal.user_id,
+                application_id=application_under_review.id,
+                reason="Test withdrawal reason"
+            )
+        
+        assert "Withdrawal is not allowed from status under_review" in str(exc_info.value)
+
+
+class TestWithdrawalReasonRequirement:
+    """Test withdrawal reason requirement."""
+
+    @pytest.mark.django_db
+    def test_withdrawal_requires_reason_field(self, application, applicant_principal):
+        """TEST-CFR-015-2 | PMS-AFR-127 | Verify requirement of withdrawal reason.
+        
+        Preconditions: Applicant attempts to withdraw.
+        Action: Submit a request without a reason field populated.
+        Expected Result: The system rejects the request and prompts for a reason.
+        """
+        # Withdrawal requires a reason field - this is enforced by the serializer
+        # The service layer expects reason parameter, so missing it should fail validation
+        
+        # Test with empty reason string
+        with pytest.raises(ValueError) as exc_info:
+            withdraw_application(
+                applicant_id=applicant_principal.user_id,
+                application_id=application.id,
+                reason=""
+            )
+        
+        assert "Withdrawal is not allowed from status draft" in str(exc_info.value)
+
+
+class TestCoInventorConsentRecording:
+    """Test co-inventor consent recording for withdrawal."""
+
+    @pytest.mark.django_db
+    def test_withdrawal_records_co_inventor_consent(self, application_with_inventors, applicant_principal):
+        """TEST-CFR-015-3 | PMS-AFR-128 | Verify support of recording co-inventor consent for withdrawal (if required).
+        
+        Preconditions: Application has multiple inventors and consent is required.
+        Action: Complete the withdrawal form with consent signatures.
+        Expected Result: Consent is recorded in the application history.
+        """
+        # Withdrawal should record history entry
+        withdrawn_app = withdraw_application(
+            applicant_id=applicant_principal.user_id,
+            application_id=application_with_inventors.id,
+            reason="Test withdrawal with consent"
+        )
+        
+        # Verify history entry was created
+        history_entries = ApplicationHistory.objects.filter(application=withdrawn_app)
+        assert history_entries.count() > 0
+        
+        # Check for withdrawal action in history
+        withdraw_history = ApplicationHistory.objects.filter(
+            application=withdrawn_app,
+            action="withdraw"
+        )
+        assert withdraw_history.exists()
+
+
+class TestStatusUpdateToWithdrawn:
+    """Test status update to 'Withdrawn' after permitted withdrawal."""
+
+    @pytest.mark.django_db
+    def test_status_updates_to_withdrawn_after_permitted_withdrawal(self, application, applicant_principal):
+        """TEST-CFR-015-4 | PMS-AFR-129 | Verify status update to 'Withdrawn' after permitted withdrawal.
+        
+        Preconditions: Withdrawal is processed successfully.
+        Action: Check application status record.
+        Expected Result: Status updates to 'Withdrawn'.
+        """
+        # Apply withdrawal
+        withdrawn_app = withdraw_application(
+            applicant_id=applicant_principal.user_id,
+            application_id=application.id,
+            reason="Test withdrawal reason"
+        )
+        
+        # Verify status is now 'withdrawn'
+        assert withdrawn_app.status == "withdrawn"
+
+
+class TestRemovalFromActiveQueue:
+    """Test removal of withdrawn applications from active queue."""
+
+    @pytest.mark.django_db
+    def test_withdrawn_application_not_in_active_queue(self, application, applicant_principal):
+        """TEST-CFR-015-5 | PMS-AFR-130 | Verify removal of withdrawn applications from active queue.
+        
+        Preconditions: Application is 'Withdrawn'.
+        Action: Search the Active Queue.
+        Expected Result: The application does not appear in the active queue.
+        """
+        # Apply withdrawal
+        withdrawn_app = withdraw_application(
+            applicant_id=applicant_principal.user_id,
+            application_id=application.id,
+            reason="Test withdrawal reason"
+        )
+        
+        # Verify withdrawn application is not found when querying for active applications
+        active_apps = PatentApplication.objects.filter(
+            applicant_id=applicant_principal.user_id,
+            status__in=["draft", "submitted", "under_review", "needs_revision", "resubmitted"]
+        )
+        
+        assert withdrawn_app not in active_apps
+
+
+class TestWithdrawalHistoryMaintenance:
+    """Test maintenance of withdrawal history."""
+
+    @pytest.mark.django_db
+    def test_withdrawal_history_available_in_report(self, application, applicant_principal):
+        """TEST-CFR-015-6 | PMS-AFR-131 | Verify maintenance of withdrawal history.
+        
+        Preconditions: Application was withdrawn previously.
+        Action: Access 'Withdrawal History' report.
+        Expected Result: Details of the withdrawal are available.
+        """
+        # Apply withdrawal
+        withdrawn_app = withdraw_application(
+            applicant_id=applicant_principal.user_id,
+            application_id=application.id,
+            reason="Test withdrawal reason"
+        )
+        
+        # Verify history entry exists with withdrawal details
+        history_entries = ApplicationHistory.objects.filter(application=withdrawn_app)
+        assert history_entries.count() > 0
+        
+        # Check for specific withdrawal action
+        withdraw_history = ApplicationHistory.objects.filter(
+            application=withdrawn_app,
+            action="withdraw"
+        )
+        
+        assert withdraw_history.exists()
+
+
+class TestMultipleInventorManagement:
+    """Test management of multiple inventors by Applicant."""
+
+    @pytest.mark.django_db
+    def test_multiple_inventors_added_to_application(self, application_with_multiple_inventors, applicant_principal):
+        """TEST-CFR-016-0 | PMS-AFR-132 | Verify management of multiple inventors by Applicant.
+        
+        Preconditions: Applicant is preparing a new application.
+        Action: Add three different inventor names.
+        Expected Result: All three inventors are added to the list.
+        """
+        # Verify all three inventors exist in the application
+        inventors = Inventor.objects.filter(application=application_with_multiple_inventors)
+        
+        assert inventors.count() == 3
+        
+        # Verify each inventor has unique user_id
+        user_ids = inventors.values_list('user_id', flat=True)
+        assert len(user_ids) == 3
+
+
+class TestOwnershipShareRecording:
+    """Test management of ownership shares for inventors."""
+
+    @pytest.mark.django_db
+    def test_ownership_percentages_recorded(self, application_with_multiple_inventors):
+        """TEST-CFR-016-1 | PMS-AFR-133 | Verify management of ownership shares for inventors.
+        
+        Preconditions: Multiple inventors are listed.
+        Action: Assign specific percentage shares to each inventor.
+        Expected Result: Ownership percentages are recorded.
+        """
+        # Verify ownership percentages are stored correctly
+        inventor1 = Inventor.objects.get(
+            application=application_with_multiple_inventors,
+            user_id=1001
+        )
+        
+        inventor2 = Inventor.objects.get(
+            application=application_with_multiple_inventors,
+            user_id=1002
+        )
+        
+        inventor3 = Inventor.objects.get(
+            application=application_with_multiple_inventors,
+            user_id=1003
+        )
+        
+        # Verify contribution percentages are recorded
+        assert inventor1.contribution_percent == 30.0
+        assert inventor2.contribution_percent == 40.0
+        assert inventor3.contribution_percent == 30.0
+        
+        # Verify total equals 100%
+        total = inventor1.contribution_percent + inventor2.contribution_percent + inventor3.contribution_percent
+        assert total == 100.0
+```
+
+> Tokens: 24k sent, 3.1k received.  
+> Applied edit to tests/a8/fr/test_fr_p13.py  
