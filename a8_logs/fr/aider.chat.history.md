@@ -7774,3 +7774,111 @@ class TestOwnershipShareRecording:
 
 > Tokens: 24k sent, 3.1k received.  
 > Applied edit to tests/a8/fr/test_fr_p13.py  
+
+# aider chat started at 2026-11-11 05:21:18
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/fr/aider.chat.history.md --input-history-file a8_logs/fr/aider.input.history --llm-history-file a8_logs/fr/llm.history.txt --file tests/a8/fr/test_fr_p14.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/fr/promptB_p14.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/fr/test_fr_p14.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 272 files  
+> Repo-map: disabled  
+> Added tests/a8/fr/test_fr_p14.py to the chat.  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen FR_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/fr/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen FR_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 105 to 112 of 204; write exactly these test cases into tests/a8/fr/test_fr_p14.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "TEST-CFR-016-2",  
+####   "source_id": "PMS-AFR-134",  
+####   "purpose": "Verify validation of inventor information",  
+####   "preconditions": "Inventor data contains errors (e.g., missing middle name).",  
+####   "action_or_input": "Submit the application with invalid data.",  
+####   "expected_result": "System validates and alerts on incorrect inventor info."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-3",  
+####   "source_id": "PMS-AFR-135",  
+####   "purpose": "Verify validation of ownership percentages for inventors",  
+####   "preconditions": "Ownership shares sum to less than 100%.",  
+####   "action_or_input": "Save the application record.",  
+####   "expected_result": "System prevents save and requires correct total."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-4",  
+####   "source_id": "PMS-AFR-136",  
+####   "purpose": "Verify requirement of inventor consent before filing",  
+####   "preconditions": "Inventor agreement is not signed.",  
+####   "action_or_input": "Attempt to file the application.",  
+####   "expected_result": "System blocks filing and requires signed consent."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-5",  
+####   "source_id": "PMS-AFR-137",  
+####   "purpose": "Verify collection of electronic signatures for inventor consent/agreement (if permitted)",  
+####   "preconditions": "Legal permission for e-signature exists.",  
+####   "action_or_input": "Applicant uploads or signs the agreement electronically.",  
+####   "expected_result": "Electronic signature is collected and recorded."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-6",  
+####   "source_id": "PMS-AFR-138",  
+####   "purpose": "Verify validation of electronic signatures (if permitted)",  
+####   "preconditions": "Applicant attempts to submit a document with an invalid signature hash.",  
+####   "action_or_input": "Submit the file.",  
+####   "expected_result": "System rejects or flags the invalid signature."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-016-7",  
+####   "source_id": "PMS-AFR-140",  
+####   "purpose": "Verify notification to affected parties on inventor information changes",  
+####   "preconditions": "Inventor details are changed.",  
+####   "action_or_input": "Monitor communication logs.",  
+####   "expected_result": "Affected parties (other inventors) receive a notification."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-017-0",  
+####   "source_id": "PMS-AFR-141",  
+####   "purpose": "Verify Applicant search of prior-art references",  
+####   "preconditions": "Applicant has access to search tools.",  
+####   "action_or_input": "Applicant initiates a search query.",  
+####   "expected_result": "Search interface is available."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-017-1",  
+####   "source_id": "PMS-AFR-142",  
+####   "purpose": "Verify Attorney search of prior-art references",  
+####   "preconditions": "Attorney has access to search tools.",  
+####   "action_or_input": "Attorney initiates a search query.",  
+####   "expected_result": "Search interface is available."  
+####  }  
+#### ]  
+#### ```  
