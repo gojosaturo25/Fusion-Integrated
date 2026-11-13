@@ -1,0 +1,314 @@
+[
+  {
+    "test_id": "TEST-PMS-UC001-MAX",
+    "source_id": "UC-PMS-001 Main Success Scenario",
+    "purpose": "Verify that PMS validates required fields, documents (PDF, size, malware), and creates a Submitted application.",
+    "preconditions": "A submission draft exists with complete application fields (title, abstract, description, claims, inventors) and valid PDF documents under 50MB.",
+    "action_or_input": "Applicant submits the application.",
+    "expected_result": "PMS assigns a unique ID, sets status to Submitted, records history/audit data, and triggers submission notification. Invalid submissions are rejected without acceptance."
+  },
+  {
+    "test_id": "TEST-PMS-UC001-MIN",
+    "source_id": "UC-PMS-001 Failure / Minimal Guarantee",
+    "purpose": "Verify that incomplete required fields or invalid document formats prevent application acceptance.",
+    "preconditions": "A submission draft exists with missing required fields or a document that fails format/size/malware validation.",
+    "action_or_input": "Applicant attempts to submit the application.",
+    "expected_result": "PMS identifies missing info or rejects the invalid document, keeping the application unsubmitted or preserving the prior valid state."
+  },
+  {
+    "test_id": "TEST-PMS-UC002-MAX",
+    "source_id": "UC-PMS-002 Main Success Scenario",
+    "purpose": "Verify that an authorized Applicant can view their own application status and history.",
+    "preconditions": "Applicant has a valid PMS role and access to a specific application record.",
+    "action_or_input": "Applicant opens the application tracking view.",
+    "expected_result": "PMS displays current status, progress, and recorded history without modifying business state."
+  },
+  {
+    "test_id": "TEST-PMS-UC002-MIN",
+    "source_id": "UC-PMS-002 Exception Flows",
+    "purpose": "Verify that unauthorized access to application records is blocked.",
+    "preconditions": "Applicant attempts to view an application record they do not have access to (or lacks valid role).",
+    "action_or_input": "Applicant navigates to or opens the restricted application.",
+    "expected_result": "PMS blocks access and displays no application data; prior state is unaffected."
+  },
+  {
+    "test_id": "TEST-PMS-UC003-MAX",
+    "source_id": "UC-PMS-003 Main Success Scenario",
+    "purpose": "Verify that Applicants can update inventor information and ownership shares.",
+    "preconditions": "Applicant has access to an application and the current role/status permits changes.",
+    "action_or_input": "Applicant updates inventor details and ownership percentages.",
+    "expected_result": "PMS validates the data, records consent/signatures where configured, notifies affected parties, and stores valid information."
+  },
+  {
+    "test_id": "TEST-PMS-UC003-MIN",
+    "source_id": "UC-PMS-003 Exception Flows",
+    "purpose": "Verify that invalid inventor data prevents changes from being committed.",
+    "preconditions": "Applicant attempts to update inventor information with invalid ownership percentages or missing required consent.",
+    "action_or_input": "Applicant submits the update request.",
+    "expected_result": "PMS rejects the invalid change, preventing commitment and retaining prior valid inventor/agreement data."
+  },
+  {
+    "test_id": "TEST-PMS-UC004-MAX",
+    "source_id": "UC-PMS-004 Main Success Scenario",
+    "purpose": "Verify that Actors can search, attach references, and log the session.",
+    "preconditions": "Actor has a valid PMS role and external search access is available (or only local search).",
+    "action_or_input": "Actor searches for prior art, selects references, and attaches them to an application.",
+    "expected_result": "PMS displays ranked results, attaches selected references, logs the search session, and retains any previously recorded PMS data."
+  },
+  {
+    "test_id": "TEST-PMS-UC004-MIN",
+    "source_id": "UC-PMS-004 Exception Flows",
+    "purpose": "Verify that unavailable external sources do not fabricate results.",
+    "preconditions": "Actor initiates a search where the configured external database integration is unavailable.",
+    "action_or_input": "Actor attempts to query an unavailable external source.",
+    "expected_result": "PMS does not represent the external source as successfully queried; any already-recorded PMS data remains intact."
+  },
+  {
+    "test_id": "TEST-PMS-UC005-MAX",
+    "source_id": "UC-PMS-005 Main Success Scenario",
+    "purpose": "Verify that Applicants can revise applications within the feedback period.",
+    "preconditions": "Application status is Needs Revision or Rejected, and the 60-day resubmission period has not expired.",
+    "action_or_input": "Applicant reviews Director feedback, edits content/documents, and resubmits.",
+    "expected_result": "PMS validates that revision addresses feedback, records the revised version, starts a new review cycle."
+  },
+  {
+    "test_id": "TEST-PMS-UC005-MIN",
+    "source_id": "UC-PMS-005 Exception Flows (Late Deadline)",
+    "purpose": "Verify that resubmissions outside the 60-day deadline are blocked.",
+    "preconditions": "The application is in a revisionable state but the resubmission period has expired.",
+    "action_or_input": "Applicant attempts to resubmit a late revision.",
+    "expected_result": "PMS changes application status to Expired and rejects the submission."
+  },
+  {
+    "test_id": "TEST-PMS-UC005-MIN2",
+    "source_id": "UC-PMS-005 Exception Flows (Ignoring Feedback)",
+    "purpose": "Verify that resubmissions not addressing Director feedback are rejected.",
+    "preconditions": "Application is in Needs Revision state; revision content does not address the recorded Director feedback.",
+    "action_or_input": "Applicant attempts to submit a revision ignoring feedback points.",
+    "expected_result": "PMS rejects the resubmission and retains the prior valid application state."
+  },
+  {
+    "test_id": "TEST-PMS-UC006-MAX",
+    "source_id": "UC-PMS-006 Main Success Scenario",
+    "purpose": "Verify that Applicants can withdraw eligible pre-filing applications.",
+    "preconditions": "Application status is withdrawal-eligible (pre-filing), and withdrawal is allowed per BR-PMS-068.",
+    "action_or_input": "Applicant provides a withdrawal reason, confirms co-inventor consent if required, and confirms withdrawal.",
+    "expected_result": "PMS sets status to Withdrawn, removes application from active queue, and records history/status change."
+  },
+  {
+    "test_id": "TEST-PMS-UC006-MIN",
+    "source_id": "UC-PMS-006 Exception Flows",
+    "purpose": "Verify that withdrawal is blocked when application status is not withdrawal-eligible.",
+    "preconditions": "Application has reached Filed status or is in a non-withdrawal-eligible state.",
+    "action_or_input": "Applicant attempts to withdraw the application.",
+    "expected_result": "PMS blocks withdrawal and retains the current valid state."
+  },
+  {
+    "test_id": "TEST-PMS-UC007-MAX",
+    "source_id": "UC-PMS-007 Main Success Scenario",
+    "purpose": "Verify that Submitted applications are assigned to an eligible, non-conflicted Director.",
+    "preconditions": "Application status is Submitted; PCC_ADMIN or automatic routing is active.",
+    "action_or_input": "PCC_ADMIN selects a Director (not listed as inventor) to receive the application.",
+    "expected_result": "PMS records assignment, sets status to Under Review, notifies Director, and initiates review timeline."
+  },
+  {
+    "test_id": "TEST-PMS-UC007-MIN",
+    "source_id": "UC-PMS-007 Exception Flows",
+    "purpose": "Verify that assignment to a conflicted Director (inventor) is prevented.",
+    "preconditions": "Application is Submitted; PCC_ADMIN attempts to assign to a Director listed as an inventor.",
+    "action_or_input": "PCC_ADMIN selects the conflicted Director.",
+    "expected_result": "PMS prevents assignment, leaves application status Submitted, and flags/raises the exceptional case."
+  },
+  {
+    "test_id": "TEST-PMS-UC008-MAX",
+    "source_id": "UC-PMS-008 Main Success Scenario",
+    "purpose": "Verify that Directors record valid technical merit decisions (Approve, Reject, Needs Revision).",
+    "preconditions": "Application is Under Review; Director is the assigned reviewer with no conflict.",
+    "action_or_input": "Director selects a decision and enters justification of at least 50 characters.",
+    "expected_result": "PMS records the decision/audit trail. Approved apps become eligible for attorney assignment; others trigger feedback to Applicant."
+  },
+  {
+    "test_id": "TEST-PMS-UC008-MIN",
+    "source_id": "UC-PMS-008 Exception Flows (No Justification)",
+    "purpose": "Verify that review decisions without sufficient justification are rejected.",
+    "preconditions": "Director attempts to submit a decision with fewer than 50 characters of justification.",
+    "action_or_input": "Director submits the incomplete decision.",
+    "expected_result": "PMS rejects the decision; no business state changes occur."
+  },
+  {
+    "test_id": "TEST-PMS-UC010-MAX",
+    "source_id": "UC-PMS-010 Main Success Scenario",
+    "purpose": "Verify that approved applications can be assigned attorneys from the approved panel.",
+    "preconditions": "Application status is Approved; PCC_ADMIN is authorized.",
+    "action_or_input": "PCC_ADMIN selects an attorney from the approved panel (considering preference/conflict).",
+    "expected_result": "PMS records the assignment, notifies the Attorney for acceptance/decline, and updates status to Attorney Assigned/Pending Review."
+  },
+  {
+    "test_id": "TEST-PMS-010-MIN",
+    "source_id": "UC-PMS-010 Exception Flows (Non-Panel)",
+    "purpose": "Verify that non-panel attorneys are only assigned if an institutional exception exists.",
+    "preconditions": "PCC_ADMIN attempts to assign an attorney not in the approved panel without a recorded exception.",
+    "action_or_input": "PCC_ADMIN selects the non-panel attorney.",
+    "expected_result": "PMS blocks assignment unless a valid institutional exception is recorded/allowed."
+  },
+  {
+    "test_id": "TEST-PMS-UC011-MAX",
+    "source_id": "UC-PMS-011 Main Success Scenario",
+    "purpose": "Verify that Attorneys can accept or decline assignments.",
+    "preconditions": "An assignment to the Attorney exists and is active.",
+    "action_or_input": "Attorney selects Accept or Decline for the assignment.",
+    "expected_result": "PMS records response. Acceptance updates status to Attorney Assigned; Decline updates to Pending Review and notifies PCC_ADMIN."
+  },
+  {
+    "test_id": "TEST-PMS-UC012-MAX",
+    "source_id": "UC-PMS-012 Main Success Scenario",
+    "purpose": "Verify that Attorneys record patentability opinions with valid recommendations.",
+    "preconditions": "Attorney has an assigned application and access to review details.",
+    "action_or_input": "Attorney conducts assessment and selects one recommendation: File Patent, Do Not File, or Needs Amendment.",
+    "expected_result": "PMS records the opinion/recommendation and notifies stakeholders."
+  },
+  {
+    "test_id": "TEST-PMS-UC013-MAX",
+    "source_id": "UC-PMS-013 Main Success Scenario",
+    "purpose": "Verify that Attorneys can prepare, validate, and record external patent filings.",
+    "preconditions": "Required approvals, budget allocation, and inventor agreements are complete; Attorney has filing authority.",
+    "action_or_input": "Attorney prepares package, performs validation (if available), submits externally, and records confirmation details.",
+    "expected_result": "PMS sets application status to Filed, records audit/history, and triggers confirmation notification."
+  },
+  {
+    "test_id": "TEST-PMS-UC013-MIN",
+    "source_id": "UC-PMS-013 Exception Flows (Prerequisites)",
+    "purpose": "Verify that external filing is blocked if prerequisite approvals or agreements are missing.",
+    "preconditions": "Required budget approval or inventor agreement is missing for the application.",
+    "action_or_input": "Attorney attempts to submit the filing package.",
+    "expected_result": "PMS blocks the filing action."
+  },
+  {
+    "test_id": "TEST-PMS-UC015-MAX",
+    "source_id": "UC-PMS-015 Main Success Scenario",
+    "purpose": "Verify that Attorneys can submit office-action responses, handling optional Applicant review.",
+    "preconditions": "Office action exists; Attorney has access; applicable deadline/extension data is available.",
+    "action_or_input": "Attorney prepares response (optional: records Applicant approval) and submits the response externally.",
+    "expected_result": "PMS updates response tracking, audit/history, and maintains status. Extension requests are recorded if allowed."
+  },
+  {
+    "test_id": "TEST-PMS-UC015-MIN",
+    "source_id": "UC-PMS-015 Exception Flows (Approval)",
+    "purpose": "Verify that responses cannot be marked submitted without required Applicant approval (when applicable).",
+    "preconditions": "Process requires Applicant review; draft is available but not yet approved.",
+    "action_or_input": "Attorney attempts to finalize and submit the response without Applicant approval.",
+    "expected_result": "PMS does not mark the response as submitted; response status remains awaiting approval."
+  },
+  {
+    "test_id": "TEST-PMS-UC016-MAX",
+    "source_id": "UC-PMS-016 Main Success Scenario",
+    "purpose": "Verify that PCC_ADMIN can monitor deadlines and handle escalations.",
+    "preconditions": "Active authorized role; deadline records exist or are calculable.",
+    "action_or_input": "PCC_ADMIN views monitoring view, reviews alerts (30/15/5 days), and handles missed deadline escalations.",
+    "expected_result": "PMS calculates/maintains deadlines, generates alerts, logs activity, and routes/escalates delayed cases."
+  },
+  {
+    "test_id": "TEST-PMS-UC017-MAX",
+    "source_id": "UC-PMS-017 Main Success Scenario",
+    "purpose": "Verify that post-grant tracking activates and renewal decisions are recorded.",
+    "preconditions": "Patent status is Granted; maintenance deadline approaches.",
+    "action_or_input": "Attorney requests a Renewal decision from the Director.",
+    "expected_result": "Director records Renew or Do Not Renew; if Renewed, Attorney processes action and PMS updates status/history."
+  },
+  {
+    "test_id": "TEST-PMS-UC018-MAX",
+    "source_id": "UC-PMS-018 Main Success Scenario",
+    "purpose": "Verify that Directors can record Renewal or Do Not Renew decisions.",
+    "preconditions": "Patent is in post-grant tracking; renewal decision is due.",
+    "action_or_input": "Director selects Renew or Do Not Renew.",
+    "expected_result": "PMS records the decision and makes it available for the Attorney's next action."
+  },
+  {
+    "test_id": "TEST-PMS-UC019-MAX",
+    "source_id": "UC-PMS-019 Main Success Scenario",
+    "purpose": "Verify that authorized users can upload document versions.",
+    "preconditions": "User has valid role; action is permitted for role/status (e.g., Applicant in Needs Revision).",
+    "action_or_input": "User uploads a new document version.",
+    "expected_result": "PMS assigns next version number, archives previous version, logs modification with user/timestamp."
+  },
+  {
+    "test_id": "TEST-PMS-UC019-MIN",
+    "source_id": "UC-PMS-019 Exception Flows (Unauthorized)",
+    "purpose": "Verify that unauthorized users cannot upload document versions.",
+    "preconditions": "User lacks role or status permission to upload documents.",
+    "action_or_input": "User attempts to upload a new document version.",
+    "expected_result": "Upload is blocked; prior version history remains consistent."
+  },
+  {
+    "test_id": "TEST-PMS-UC022-MAX",
+    "source_id": "UC-PMS-022 Main Success Scenario",
+    "purpose": "Verify that Applicants can file appeals within the allowed period.",
+    "preconditions": "Application is Rejected; appeal period has not expired.",
+    "action_or_input": "Applicant enters grounds/justification and submits the appeal.",
+    "expected_result": "PMS validates eligibility/timing, records the appeal for Director review."
+  },
+  {
+    "test_id": "TEST-PMS-UC023-MAX",
+    "source_id": "UC-PMS-023 Main Success Scenario",
+    "purpose": "Verify that Directors can record specific appeal outcomes.",
+    "preconditions": "Appeal exists and is available for review.",
+    "action_or_input": "Director selects one outcome: Uphold Rejection, Remand for Amendment, or Modify Decision.",
+    "expected_result": "PMS records the outcome and initiates the next applicable process step."
+  },
+  {
+    "test_id": "TEST-PMS-UC028-MAX",
+    "source_id": "UC-PMS-028 Main Success Scenario",
+    "purpose": "Verify that authorized actors can view audit/compliance logs.",
+    "preconditions": "Authorized actor (PCC_ADMIN/Director); access to audit information.",
+    "action_or_input": "Actor opens audit/compliance logs and selects scope (application/user/action).",
+    "expected_result": "PMS displays available audit records with required fields; no business state changes."
+  },
+  {
+    "test_id": "TEST-PMS-UC028-MIN",
+    "source_id": "UC-PMS-028 Exception Flows",
+    "purpose": "Verify that unauthorized audit access is blocked.",
+    "preconditions": "Actor attempts to view audit logs without authorization.",
+    "action_or_input": "Actor accesses the restricted audit record.",
+    "expected_result": "PMS blocks access; no audit data is displayed or altered."
+  },
+  {
+    "test_id": "TEST-PMS-UC029-MAX",
+    "source_id": "UC-PMS-029 Main Success Scenario",
+    "purpose": "Verify that Applicants can approve Office Action draft responses when required.",
+    "preconditions": "Process requires Applicant review; a draft response exists.",
+    "action_or_input": "Applicant reviews and records approval of the draft response.",
+    "expected_result": "PMS records the approval, allowing the Attorney to finalize/submit."
+  },
+  {
+    "test_id": "TEST-PMS-UC031-MAX",
+    "source_id": "UC-PMS-031 Main Success Scenario",
+    "purpose": "Verify that Directors can view authorized reports and analytics.",
+    "preconditions": "Director has an authorized PMS role.",
+    "action_or_input": "Director selects a report/analytics view (e.g., portfolio, workload).",
+    "expected_result": "PMS generates output within Director's scope/domain and logs access."
+  },
+  {
+    "test_id": "TEST-PMS-UC032-MAX",
+    "source_id": "UC-PMS-032 Main Success Scenario",
+    "purpose": "Verify that Directors can view workflow oversight information.",
+    "preconditions": "Director has an authorized role and domain scope.",
+    "action_or_input": "Director opens workflow oversight dashboard.",
+    "expected_result": "PMS displays workflow states, pending actions, and oversight info within the Director's domain."
+  },
+  {
+    "test_id": "TEST-PMS-UC033-MAX",
+    "source_id": "UC-PMS-033 Main Success Scenario",
+    "purpose": "Verify that Attorneys can record legal advice for applications.",
+    "preconditions": "Attorney has a valid role and access to the application.",
+    "action_or_input": "Attorney records legal advice/opinion information for an application.",
+    "expected_result": "PMS associates the advice with the application history/audit record as applicable."
+  },
+  {
+    "test_id": "TEST-PMS-UC033-MIN",
+    "source_id": "UC-PMS-033 Exception Flows",
+    "purpose": "Verify that unauthorized legal advice recording is blocked.",
+    "preconditions": "Attorney attempts to record advice for an application they do not have access to.",
+    "action_or_input": "Attorney selects the restricted application to record advice.",
+    "expected_result": "Recording fails; no unrelated application state changes occur."
+  }
+]
