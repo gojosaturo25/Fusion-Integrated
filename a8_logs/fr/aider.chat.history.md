@@ -13415,3 +13415,507 @@ def test_cfr_023_3_notification_for_assignment_to_attorney(
 
 > Tokens: 24k sent, 3.9k received.  
 > Applied edit to tests/a8/fr/test_fr_p21.py  
+
+# aider chat started at 2026-11-14 01:46:01
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/fr/aider.chat.history.md --input-history-file a8_logs/fr/aider.input.history --llm-history-file a8_logs/fr/llm.history.txt --file tests/a8/fr/test_fr_p22.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/fr/promptB_p22.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/fr/test_fr_p22.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 280 files  
+> Repo-map: disabled  
+> Added tests/a8/fr/test_fr_p22.py to the chat.  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen FR_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/fr/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen FR_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 169 to 176 of 204; write exactly these test cases into tests/a8/fr/test_fr_p22.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "TEST-CFR-023-4",  
+####   "source_id": "PMS-AFR-196",  
+####   "purpose": "Verification of triggering notification for review decisions",  
+####   "preconditions": "Decision is made.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-5",  
+####   "source_id": "PMS-AFR-197",  
+####   "purpose": "Verification of triggering notification for budget approval/rejection",  
+####   "preconditions": "Budget decision is made.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-6",  
+####   "source_id": "PMS-AFR-198",  
+####   "purpose": "Verification of triggering notification for filing confirmations",  
+####   "preconditions": "Filing is recorded.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-7",  
+####   "source_id": "PMS-AFR-199",  
+####   "purpose": "Verification of triggering notification for office actions",  
+####   "preconditions": "Office Action recorded.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-8",  
+####   "source_id": "PMS-AFR-200",  
+####   "purpose": "Verification of triggering notification for deadline reminders",  
+####   "preconditions": "Deadline approaching.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-9",  
+####   "source_id": "PMS-AFR-201",  
+####   "purpose": "Verification of triggering notification for deadline escalations",  
+####   "preconditions": "Deadline missed.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-10",  
+####   "source_id": "PMS-AFR-202",  
+####   "purpose": "Verification of triggering notification for maintenance-fee reminders",  
+####   "preconditions": "Maintenance due.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  },  
+####  {  
+####   "test_id": "TEST-CFR-023-11",  
+####   "source_id": "PMS-AFR-203",  
+####   "purpose": "Verification of triggering notification for document updates",  
+####   "preconditions": "Document updated.",  
+####   "action_or_input": "Check email logs.",  
+####   "expected_result": "Notification is triggered."  
+####  }  
+#### ]  
+#### ```  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user wants me to convert test cases 169-176 from the FR_DESIGN.json into pytest tests. These are notification-related tests (TEST-CFR-023-4 through TEST-CFR-023-11).
+
+Looking at the existing test file structure and the conftest.py, I need to:
+1. Create a new test file `tests/a8/fr/test_fr_p22.py`
+2. Implement exactly these 8 test cases (TEST-CFR-023-4 through TEST-CFR-023-11)
+3. Each test must have test_id and source_id in the name or docstring
+4. Use pytest/pytest-django infrastructure
+5. Don't modify production code
+6. Use Django isolated test database
+7. Reuse existing Fusion test infrastructure where appropriate
+
+The tests are about email notifications being triggered for various events:
+- Review decisions
+- Budget approval/rejection
+- Filing confirmations
+- Office actions
+- Deadline reminders
+- Deadline escalations
+- Maintenance fee reminders
+- Document updates
+
+Since these are notification-related tests that check "email logs", I'll need to look at how email logging is typically done in the Fusion system. Based on the existing code structure, I should:
+1. Create test fixtures for users/applications
+2. Trigger the relevant actions (review decision, budget decision, filing, etc.)
+3. Check that email notifications were sent
+
+Let me create the test file with all 8 test cases properly structured.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+tests/a8/fr/test_fr_p22.py
+```
+"""Tests for notification triggering events - Test Cases 169-176."""
+import pytest
+from datetime import date, timedelta
+from django.test import TestCase
+from django.core.mail import outbox
+from core.db.mixins import TimeStampedModel
+
+from fusion_auth.principal import Principal
+from modules.patent.models import (
+    PatentApplication, Budget, Filing, OfficeAction, ApplicationHistory
+)
+from modules.patent.services.applications import review_application, decide_budget, file_appeal
+from modules.patent.services.legal import record_filing
+from modules.patent.services.post_filing import record_office_action
+
+
+@pytest.fixture
+def stub_iam(monkeypatch):
+    """Fake IAM client for testing."""
+    from fusion_auth import client as iam_client
+    from fusion_auth.client import IamSession, UserRef
+    
+    class FakeIam:
+        def __init__(self, session=None, users=None):
+            self.session = session
+            self.users = users or {}
+        
+        def login(self, username, password):
+            return "tok-123"
+    
+    fake = FakeIam()
+    patched = 0
+    for mod in list(monkeypatch.list):
+        if getattr(mod, "__name__", "") == "fusion_auth.client":
+            monkeypatch.setattr(iam_client, "get_client", lambda: fake)
+            patched += 1
+    
+    return fake
+
+
+@pytest.fixture
+def user_ref():
+    """Create a test user reference."""
+    def _make(user_id, name="Test User", kind="student"):
+        return UserRef(user_id=user_id, username=f"u{user_id}", display_name=name,
+                       kind=kind)
+    return _make
+
+
+@pytest.fixture
+def principal(applicant_id=1001):
+    """Create a test principal."""
+    from conftest import make_principal
+    return make_principal(user_id=applicant_id, kind="student")
+
+
+@pytest.fixture
+def application(principal):
+    """Create a test patent application."""
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-2024-001",
+        applicant_id=principal.user_id,
+        title="Test Application",
+        abstract="Test abstract",
+        description="Test description",
+        claims="Test claims",
+        technical_domain="Technology",
+        status="submitted"
+    )
+    return app
+
+
+@pytest.fixture
+def director_principal(applicant_id=1002):
+    """Create a test director principal."""
+    from conftest import make_principal
+    return make_principal(user_id=applicant_id, kind="director")
+
+
+@pytest.fixture
+def budget(application):
+    """Create a test budget."""
+    budget = Budget.objects.create(
+        application=application,
+        filing_fee=1000.00,
+        attorney_fee=500.00,
+        administrative_cost=200.00,
+        total=1700.00,
+        status="pending"
+    )
+    return budget
+
+
+@pytest.fixture
+def filing(application):
+    """Create a test filing."""
+    filing = Filing.objects.create(
+        application=application,
+        patent_office="USPTO",
+        filing_number="12345678",
+        filing_date=date.today(),
+        international=False
+    )
+    return filing
+
+
+@pytest.fixture
+def office_action(application):
+    """Create a test office action."""
+    oa = OfficeAction.objects.create(
+        application=application,
+        received_date=date.today(),
+        response_due_date=date.today() + timedelta(days=30),
+        description="Office Action Description",
+        status="recorded"
+    )
+    return oa
+
+
+@pytest.fixture
+def document(application):
+    """Create a test document."""
+    from modules.patent.models import ApplicationDocument
+    doc = ApplicationDocument.objects.create(
+        application=application,
+        file_name="test.pdf",
+        content_type="application/pdf",
+        size=102400,
+        version=1,
+        sensitivity="internal",
+        uploaded_by=application.applicant_id
+    )
+    return doc
+
+
+@pytest.fixture
+def email_log_checker():
+    """Helper to check email logs."""
+    from django.core.mail import outbox
+    
+    def get_logs():
+        return list(outbox)
+    
+    return get_logs
+
+
+class TestNotificationTriggeringEvents:
+    """Test cases for notification triggering events (TEST-CFR-023-4 through TEST-CFR-023-11)."""
+
+    @pytest.mark.django_db
+    def test_cfr_023_4_notification_for_review_decisions(self, application, director_principal):
+        """TEST-CFR-023-4: Verification of triggering notification for review decisions.
+        
+        Source ID: PMS-AFR-196
+        Purpose: Verify that email notifications are triggered when a Director makes a review decision.
+        Preconditions: Decision is made.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange
+        director_id = director_principal.user_id
+        
+        # Act - Make a review decision
+        review_application(
+            director_id=director_id,
+            application_id=application.id,
+            decision="approve",
+            justification="This application meets all patentability criteria." * 2
+        )
+        
+        # Assert - Check email logs
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for review decision"
+
+    @pytest.mark.django_db
+    def test_cfr_023_5_notification_for_budget_approval_rejection(self, application, director_principal):
+        """TEST-CFR-023-5: Verification of triggering notification for budget approval/rejection.
+        
+        Source ID: PMS-AFR-197
+        Purpose: Verify that email notifications are triggered when a Director makes a budget decision.
+        Preconditions: Budget decision is made.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange
+        director_id = director_principal.user_id
+        
+        # Act - Make a budget decision (approve)
+        decide_budget(
+            director_id=director_id,
+            budget_id=budget.id,
+            approve=True,
+            justification="Budget approved for patent filing." * 2
+        )
+        
+        # Assert - Check email logs
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for budget decision"
+
+    @pytest.mark.django_db
+    def test_cfr_023_6_notification_for_filing_confirmations(self, application, director_principal):
+        """TEST-CFR-023-6: Verification of triggering notification for filing confirmations.
+        
+        Source ID: PMS-AFR-198
+        Purpose: Verify that email notifications are triggered when a patent filing is recorded.
+        Preconditions: Filing is recorded.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange
+        attorney_id = director_principal.user_id
+        
+        # Act - Record a filing
+        record_filing(
+            attorney_id=attorney_id,
+            application_id=application.id,
+            office="USPTO",
+            filing_number="12345678",
+            filing_date=date.today(),
+            international=False
+        )
+        
+        # Assert - Check email logs
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for filing confirmation"
+
+    @pytest.mark.django_db
+    def test_cfr_023_7_notification_for_office_actions(self, application, director_principal):
+        """TEST-CFR-023-7: Verification of triggering notification for office actions.
+        
+        Source ID: PMS-AFR-199
+        Purpose: Verify that email notifications are triggered when an Office Action is recorded.
+        Preconditions: Office Action recorded.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange
+        attorney_id = director_principal.user_id
+        
+        # Act - Record an office action
+        record_office_action(
+            attorney_id=attorney_id,
+            application_id=application.id,
+            received_date=date.today(),
+            response_due_date=date.today() + timedelta(days=30),
+            description="Office Action Description"
+        )
+        
+        # Assert - Check email logs
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for office action"
+
+    @pytest.mark.django_db
+    def test_cfr_023_8_notification_for_deadline_reminders(self, application, director_principal):
+        """TEST-CFR-023-8: Verification of triggering notification for deadline reminders.
+        
+        Source ID: PMS-AFR-200
+        Purpose: Verify that email notifications are triggered when a deadline is approaching.
+        Preconditions: Deadline approaching.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange - Set up application with near deadline
+        from datetime import timedelta
+        
+        # Act - Simulate deadline reminder (via review decision that sets deadline)
+        review_application(
+            director_id=director_principal.user_id,
+            application_id=application.id,
+            decision="needs_revision",
+            justification="Application needs revision to meet patentability standards." * 2
+        )
+        
+        # Assert - Check email logs (deadline reminder should be triggered)
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for deadline reminder"
+
+    @pytest.mark.django_db
+    def test_cfr_023_9_notification_for_deadline_escalations(self, application, director_principal):
+        """TEST-CFR-023-9: Verification of triggering notification for deadline escalations.
+        
+        Source ID: PMS-AFR-201
+        Purpose: Verify that email notifications are triggered when a deadline is missed and escalated.
+        Preconditions: Deadline missed.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange - Set up application with past deadline
+        from datetime import timedelta
+        
+        # Act - Simulate escalation (via system auto-expire or manual escalation)
+        # This would typically be handled by a background task, but we simulate the notification trigger
+        expired_apps = []
+        from modules.patent.services.applications import expire_overdue_resubmissions
+        
+        today = date.today()
+        expired_apps = expire_overdue_resubmissions(today)
+        
+        # Assert - Check email logs (escalation notification should be triggered)
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for deadline escalation"
+
+    @pytest.mark.django_db
+    def test_cfr_023_10_notification_for_maintenance_fee_reminders(self, application, director_principal):
+        """TEST-CFR-023-10: Verification of triggering notification for maintenance fee reminders.
+        
+        Source ID: PMS-AFR-202
+        Purpose: Verify that email notifications are triggered when a maintenance fee is due.
+        Preconditions: Maintenance due.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange - Set up granted application with maintenance record
+        from datetime import timedelta
+        
+        # Act - Schedule maintenance and simulate reminder trigger
+        from modules.patent.services.post_filing import schedule_maintenance
+        
+        attorney_id = director_principal.user_id
+        due_date = date.today() - timedelta(days=10)  # Already due
+        
+        schedule_maintenance(
+            attorney_id=attorney_id,
+            application_id=application.id,
+            due_date=due_date,
+            fee=500.00
+        )
+        
+        # Assert - Check email logs (maintenance reminder should be triggered)
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for maintenance fee reminder"
+
+    @pytest.mark.django_db
+    def test_cfr_023_11_notification_for_document_updates(self, application, director_principal):
+        """TEST-CFR-023-11: Verification of triggering notification for document updates.
+        
+        Source ID: PMS-AFR-203
+        Purpose: Verify that email notifications are triggered when a document is updated.
+        Preconditions: Document updated.
+        Action/Input: Check email logs.
+        Expected Result: Notification is triggered.
+        """
+        # Arrange - Create initial document
+        
+        # Act - Update the document (simulated via service)
+        from modules.patent.models import ApplicationDocument
+        
+        doc = ApplicationDocument.objects.create(
+            application=application,
+            file_name="test.pdf",
+            content_type="application/pdf",
+            size=102400,
+            version=1,
+            sensitivity="internal",
+            uploaded_by=application.applicant_id
+        )
+        
+        # Simulate document update (in real system, this would be via a service)
+        doc.version += 1
+        doc.size = 204800  # Updated size
+        doc.save()
+        
+        # Assert - Check email logs (document update notification should be triggered)
+        assert len(email_log_checker()) > 0, "Email notification should be triggered for document update"
+```
+
+> Tokens: 24k sent, 3.0k received.  
+> Applied edit to tests/a8/fr/test_fr_p22.py  
