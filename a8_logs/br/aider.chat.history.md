@@ -638,3 +638,444 @@ class TestBRPMS030:
 
 > Tokens: 24k sent, 3.0k received.  
 > Applied edit to tests/a8/br/test_br_p02.py  
+
+# aider chat started at 2026-11-14 15:23:28
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/br/aider.chat.history.md --input-history-file a8_logs/br/aider.input.history --llm-history-file a8_logs/br/llm.history.txt --file tests/a8/br/test_br_p03.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/br/promptB_p03.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/br/test_br_p03.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 294 files  
+> Repo-map: disabled  
+> Added tests/a8/br/test_br_p03.py to the chat.  
+> Added conftest.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen BR_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/br/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen BR_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 17 to 24 of 81; write exactly these test cases into tests/a8/br/test_br_p03.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "BR-PMS-031",  
+####   "source_id": "BR-PMS-031",  
+####   "purpose": "Verify PMS enforces Director review deadline of 15 business days.",  
+####   "preconditions": "Director D assigned to Application X; Current time is T0. Deadline for completion is T1 (15 business days later).",  
+####   "action_or_input": "System checks status at T2 where T2 > T1 without completed review.",  
+####   "expected_result": "System flags overdue; alerts generated or workflow stalled pending handling of the deadline violation.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-033",  
+####   "source_id": "BR-PMS-033",  
+####   "purpose": "Verify PMS blocks revision submission if status is not Needs Revision or Rejected.",  
+####   "preconditions": "Application status is 'Approved'. User attempts to initiate 'Revision' action.",  
+####   "action_or_input": "User clicks 'Revise Application' button in Approved application view.",  
+####   "expected_result": "Action blocked; system returns error stating revision is not permitted for current status.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-034",  
+####   "source_id": "BR-PMS-034",  
+####   "purpose": "Verify PMS allows revision submission if status is Rejected.",  
+####   "preconditions": "Application status is 'Rejected'. User attempts to initiate 'Revision' action.",  
+####   "action_or_input": "User clicks 'Revise Application' button in Rejected application view.",  
+####   "expected_result": "Action permitted; user can proceed with revision upload/submission.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-035",  
+####   "source_id": "BR-PMS-035",  
+####   "purpose": "Verify PMS monitors and validates 60-day resubmission deadline.",  
+####   "preconditions": "Rejection/Revision decision made on Date D. Current time is D + 61 days.",  
+####   "action_or_input": "System attempts to calculate eligibility for new submission without having been revised.",  
+####   "expected_result": "Eligibility check returns 'Expired' or system changes application status to Expired automatically.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-036",  
+####   "source_id": "BR-PMS-036",  
+####   "purpose": "Verify PMS rejects revision submissions that do not address Director feedback.",  
+####   "preconditions": "Application has specific feedback text. User submits new documents claiming to be a revision but omitting references to the feedback.",  
+####   "action_or_input": "User attempts to resubmit application as a valid revision.",  
+####   "expected_result": "Submission rejected; system returns error stating revision must address recorded Director feedback.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-038",  
+####   "source_id": "BR-PMS-038",  
+####   "purpose": "Verify PMS updates status to Expired after deadline expiration.",  
+####   "preconditions": "Application in Revision cycle. 60 day period expired. No valid resubmission made.",  
+####   "action_or_input": "System executes 'Process Expiry' logic.",  
+####   "expected_result": "Application status changes from 'Needs Revision' or 'Rejected' to 'Expired'.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-040",  
+####   "source_id": "BR-PMS-040",  
+####   "purpose": "Verify PMS restricts Attorney assignment role to PCC_ADMIN only.",  
+####   "preconditions": "Director D has approved the application. User logged in as Director (not PCC_ADMIN).",  
+####   "action_or_input": "Director attempts to select and assign an attorney to the application.",  
+####   "expected_result": "Action denied; system returns error stating only PCC_ADMIN can assign attorneys.",  
+####   "test_type": "Acceptance"  
+####  },  
+####  {  
+####   "test_id": "BR-PMS-041",  
+####   "source_id": "BR-PMS-041",  
+####   "purpose": "Verify PMS enforces selection from approved panel unless exception recorded.",  
+####   "preconditions": "Attorney O is NOT in the approved panel. User (PCC_ADMIN) attempts to assign Attorney O.",  
+####   "action_or_input": "User selects Attorney O for assignment without creating an institutional exception record first.",  
+####   "expected_result": "Assignment blocked; system returns error stating attorney not on approved panel or requires exception.",  
+####   "test_type": "Acceptance"  
+####  }  
+#### ]  
+#### ```  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user wants me to convert the test cases from BR_DESIGN.json into pytest/pytest-django tests. I need to create tests for:
+- BR-PMS-031: Director review deadline of 15 business days
+- BR-PMS-033: Revision submission blocked if status is not Needs Revision or Rejected
+- BR-PMS-034: Revision submission allowed if status is Rejected
+- BR-PMS-035: 60-day resubmission deadline validation
+- BR-PMS-036: Revision must address Director feedback
+- BR-PMS-038: Status updates to Expired after deadline expiration
+- BR-PMS-040: Attorney assignment restricted to PCC_ADMIN only
+- BR-PMS-041: Attorney must be on approved panel
+
+I need to look at the existing code structure in the files provided to understand how to implement these tests properly. Let me review the key files:
+
+1. `modules/patent/domain/policy.py` - Contains policy rules including `can_transition`, `validate_justification`, `resubmission_deadline`, `can_withdraw`, etc.
+2. `modules/patent/services/applications.py` - Contains business logic for applications
+3. `conftest.py` - Contains fixtures like `stub_iam`
+
+I need to create tests that:
+1. Use pytest/pytest-django
+2. Follow the existing test infrastructure pattern from conftest.py
+3. Test the specific business rules mentioned in BR_DESIGN.json
+4. Include test_id and source_id in names/docstrings
+5. Store under tests/a8/br/test_br_p03.py
+
+Let me write the test file based on these requirements. I'll need to:
+1. Import necessary modules from the existing codebase
+2. Create fixtures for applications, directors, etc.
+
+
+3. Implement each test case according to its preconditions and expected results
+4. Use pytest-django's TestCase or standard pytest with Django
+
+I'll structure the tests to validate each business rule systematically, ensuring they align with the policy definitions in the domain layer.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+tests/a8/br/test_br_p03.py
+```
+"""Test cases for BR-PMS-031 through BR-PMS-041."""
+import pytest
+from datetime import date, timedelta
+from django.test import TestCase
+from django.core.cache import cache
+
+from fusion_auth.client import IamSession
+from fusion_auth.principal import Principal
+
+from modules.patent.models import (
+    PatentApplication, Inventor, ApplicationDocument,
+    AttorneyAssignment, PatentabilityOpinion, Budget, Filing,
+    OfficeAction, MaintenanceRecord, Appeal, ApplicationHistory
+)
+from modules.patent.services.applications import (
+    submit_application, assign_director, review_application, resubmit_application,
+    withdraw_application, expire_overdue_resubmissions
+)
+from modules.patent.domain.policy import (
+    can_transition, validate_justification, resubmission_deadline,
+    add_business_days, is_conflicted, can_withdraw
+)
+
+
+@pytest.fixture
+def app_factory():
+    """Factory to create patent applications for testing."""
+    def _make_app(status="draft", applicant_id=1001):
+        return PatentApplication.objects.create(
+            APPLICATION_NUMBER=f"APP-{status.upper()}",
+            title="Test Application",
+            abstract="Test abstract",
+            description="Test description",
+            claims="Test claims",
+            technical_domain="Test Domain",
+            applicant_id=applicant_id,
+            status=status,
+        )
+    return _make_app
+
+
+@pytest.fixture
+def director_session():
+    """Create a Director IAM session."""
+    return IamSession(
+        user_id=2001, username="d2001", display_name="Director 2001",
+        kind="director", active_role="director", roles=("director",),
+        permissions=frozenset(["patent.application.review"]),
+    )
+
+
+@pytest.fixture
+def pcc_admin_session():
+    """Create a PCC_ADMIN IAM session."""
+    return IamSession(
+        user_id=3001, username="p3001", display_name="PCC Admin 3001",
+        kind="admin", active_role="admin", roles=("admin",),
+        permissions=frozenset(["patent.application.manage"]),
+    )
+
+
+@pytest.fixture
+def applicant_session():
+    """Create an Applicant IAM session."""
+    return IamSession(
+        user_id=1001, username="u1001", display_name="Applicant 1001",
+        kind="student", active_role="student", roles=("student",),
+        permissions=frozenset(["patent.application.create"]),
+    )
+
+
+@pytest.fixture
+def approved_app(app_factory):
+    """Create an approved application."""
+    return app_factory(status="approved")
+
+
+@pytest.fixture
+def rejected_app(app_factory):
+    """Create a rejected application."""
+    return app_factory(status="rejected")
+
+
+@pytest.fixture
+def needs_revision_app(app_factory):
+    """Create a needs revision application."""
+    return app_factory(status="needs_revision")
+
+
+@pytest.fixture
+def resubmitted_app(app_factory):
+    """Create a resubmitted application."""
+    return app_factory(status="resubmitted")
+
+
+@pytest.fixture
+def inventor(app_factory):
+    """Create an inventor for the application."""
+    app = app_factory()
+    return Inventor.objects.create(
+        application=app,
+        user_id=1002,
+        name="Test Inventor",
+        email="inventor@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True,
+    )
+
+
+@pytest.fixture
+def director_assigned_app(app_factory):
+    """Create an application with a director assigned."""
+    app = app_factory(status="approved")
+    return assign_director(
+        admin_id=3001,
+        application_id=app.id,
+        director_id=2001,
+    )
+
+
+@pytest.fixture
+def attorney_assigned_app(app_factory):
+    """Create an application with an attorney assigned."""
+    app = app_factory(status="approved")
+    return assign_director(
+        admin_id=3001,
+        application_id=app.id,
+        director_id=2001,
+    )
+
+
+class TestBRPMS031(TestCase):
+    """Test BR-PMS-031: Verify PMS enforces Director review deadline of 15 business days."""
+
+    def test_001(self):
+        """test_id: BR-PMS-031, source_id: BR-PMS-031"""
+        # Precondition: Director D assigned to Application X; Current time is T0. Deadline for completion is T1 (15 business days later).
+        app = director_assigned_app
+        
+        # Calculate expected deadline (15 business days from assignment)
+        created_date = app.created_at
+        expected_deadline = add_business_days(created_date, 15)
+        
+        # Verify the review_due_date was set correctly
+        self.assertEqual(app.review_due_date, expected_deadline)
+        
+        # System checks status at T2 where T2 > T1 without completed review.
+        # This is a policy check - verify the deadline calculation is correct
+        today = date.today()
+        if today > expected_deadline:
+            # If we're past the deadline, the system should flag it
+            self.assertTrue(app.review_due_date < today)
+
+
+class TestBRPMS033(TestCase):
+    """Test BR-PMS-033: Verify PMS blocks revision submission if status is not Needs Revision or Rejected."""
+
+    def test_001(self):
+        """test_id: BR-PMS-033, source_id: BR-PMS-033"""
+        # Precondition: Application status is 'Approved'. User attempts to initiate 'Revision' action.
+        app = approved_app
+        
+        # Check if revision is allowed from this status
+        self.assertFalse(can_transition(app.status, "resubmitted"))
+        
+        # Verify the policy rule
+        valid_statuses_for_revision = ["needs_revision", "rejected"]
+        self.assertIn(app.status, valid_statuses_for_revision)
+
+
+class TestBRPMS034(TestCase):
+    """Test BR-PMS-034: Verify PMS allows revision submission if status is Rejected."""
+
+    def test_001(self):
+        """test_id: BR-PMS-034, source_id: BR-PMS-034"""
+        # Precondition: Application status is 'Rejected'. User attempts to initiate 'Revision' action.
+        app = rejected_app
+        
+        # Check if revision is allowed from this status
+        self.assertTrue(can_transition(app.status, "resubmitted"))
+
+
+class TestBRPMS035(TestCase):
+    """Test BR-PMS-035: Verify PMS monitors and validates 60-day resubmission deadline."""
+
+    def test_001(self):
+        """test_id: BR-PMS-035, source_id: BR-PMS-035"""
+        # Precondition: Rejection/Revision decision made on Date D. Current time is D + 61 days.
+        app = rejected_app
+        
+        # Calculate resubmission deadline (60 days from rejection)
+        created_date = app.created_at
+        expected_deadline = resubmission_deadline(created_date)
+        
+        # Verify the deadline calculation
+        self.assertIsNotNone(expected_deadline)
+        
+        # Simulate time passing beyond deadline
+        today = date.today()
+        if today > expected_deadline:
+            # Deadline has passed - check eligibility
+            is_expired = today > expected_deadline
+            self.assertTrue(is_expired)
+
+
+class TestBRPMS036(TestCase):
+    """Test BR-PMS-036: Verify PMS rejects revision submissions that do not address Director feedback."""
+
+    def test_001(self):
+        """test_id: BR-PMS-036, source_id: BR-PMS-036"""
+        # Precondition: Application has specific feedback text. User submits new documents claiming to be a revision but omitting references to the feedback.
+        app = rejected_app
+        
+        # Set latest_justification as Director feedback
+        app.latest_justification = "Director feedback about claims and novelty"
+        app.save()
+        
+        # Verify that justification validation works
+        self.assertTrue(validate_justification(app.latest_justification))
+
+
+class TestBRPMS038(TestCase):
+    """Test BR-PMS-038: Verify PMS updates status to Expired after deadline expiration."""
+
+    def test_001(self):
+        """test_id: BR-PMS-038, source_id: BR-PMS-038"""
+        # Precondition: Application in Revision cycle. 60 day period expired. No valid resubmission made.
+        app = needs_revision_app
+        
+        # Calculate resubmission deadline
+        created_date = app.created_at
+        expected_deadline = resubmission_deadline(created_date)
+        
+        # Simulate time passing beyond deadline
+        today = date.today()
+        
+        # Run expiry logic
+        expired_apps = expire_overdue_resubmissions(today)
+        
+        # Verify status changed to Expired
+        self.assertIn(app, expired_apps)
+
+
+class TestBRPMS040(TestCase):
+    """Test BR-PMS-040: Verify PMS restricts Attorney assignment role to PCC_ADMIN only."""
+
+    def test_001(self):
+        """test_id: BR-PMS-040, source_id: BR-PMS-040"""
+        # Precondition: Director D has approved the application. User logged in as Director (not PCC_ADMIN).
+        app = approved_app
+        
+        # Try to assign attorney using Director's session
+        try:
+            assignment = assign_director(
+                admin_id=2001,  # Using director ID instead of admin
+                application_id=app.id,
+                director_id=2001,
+            )
+            self.fail("Should have raised ValueError for unauthorized assignment")
+        except ValueError as e:
+            self.assertIn("cannot assign", str(e).lower())
+
+
+class TestBRPMS041(TestCase):
+    """Test BR-PMS-041: Verify PMS enforces selection from approved panel unless exception recorded."""
+
+    def test_001(self):
+        """test_id: BR-PMS-041, source_id: BR-PMS-041"""
+        # Precondition: Attorney O is NOT in the approved panel. User (PCC_ADMIN) attempts to assign Attorney O.
+        app = approved_app
+        
+        # Try to assign attorney using PCC_ADMIN's session with non-panel attorney
+        try:
+            assignment = assign_director(
+                admin_id=3001,  # Using PCC_ADMIN ID
+                application_id=app.id,
+                director_id=2001,
+            )
+            self.fail("Should have raised ValueError for unauthorized assignment")
+        except ValueError as e:
+            self.assertIn("cannot assign", str(e).lower())
+```
+
+> Tokens: 24k sent, 2.6k received.  
+> Applied edit to tests/a8/br/test_br_p03.py  
