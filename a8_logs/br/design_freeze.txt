@@ -1,0 +1,8 @@
+frozen: a8_design/BR_DESIGN.json
+sha256: 39928ebaf60ab8e04811d2247acb2bfbd492b15d866871785d6d6806ee83cdf5
+test cases: 81
+cases missing a required field: []
+duplicate test_ids: []
+frozen at: 2026-11-14 13:50:03
+JSON syntax fix (no model call, no content change): 1 backslash(es) that do not start a valid JSON escape were doubled so the text parses exactly as written:
+  at char 14878: ...s": "Total calculated cost is \$X where ...
