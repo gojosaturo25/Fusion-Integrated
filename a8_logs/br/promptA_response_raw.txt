@@ -1,0 +1,731 @@
+[
+  {
+    "test_id": "BR-PMS-003",
+    "source_id": "BR-PMS-003",
+    "purpose": "Verify Applicant can only access their own application reports.",
+    "preconditions": "Two users created in PMS with roles: User A as 'Applicant', User B as 'Applicant'. Two applications created: App1 belongs to User A, App2 belongs to User B. Reports generated for both apps.",
+    "action_or_input": "User B attempts to view/report on App1 (owned by User A).",
+    "expected_result": "Access denied; user is redirected to App2 or receives an error indicating lack of permission.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-005",
+    "source_id": "BR-PMS-005",
+    "purpose": "Verify Director can only access reports within their authorized scope.",
+    "preconditions": "Director D assigned to Domain X. Report generated for Domain Y (different from D's scope). User logged in as Director D.",
+    "action_or_input": "Director D attempts to view the report for Domain Y.",
+    "expected_result": "Access denied; report is hidden or unavailable.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-006",
+    "source_id": "BR-PMS-006",
+    "purpose": "Verify Director workflow oversight access is limited to their domain workflows.",
+    "preconditions": "Director D assigned only to Workflow A. User logged in as Director D.",
+    "action_or_input": "User attempts to access or override status in Workflow B (not in D's domain).",
+    "expected_result": "Access denied; action blocked.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-014",
+    "source_id": "BR-PMS-014",
+    "purpose": "Verify PMS rejects non-PDF document uploads.",
+    "preconditions": "Applicant attempting to upload application supporting documents via the submission interface.",
+    "action_or_input": "User attempts to upload a Word (.docx) file as a required document.",
+    "expected_result": "Validation fails; system prompts user to convert/upload PDF only.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-015",
+    "source_id": "BR-PMS-015",
+    "purpose": "Verify PMS rejects documents exceeding 50 MB.",
+    "preconditions": "Valid PDF file created; Upload interface open.",
+    "action_or_input": "User attempts to upload a document exactly 51 MB in size.",
+    "expected_result": "Validation fails; system returns error message stating limit is 50 MB.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-016",
+    "source_id": "BR-PMS-016",
+    "purpose": "Verify PMS rejects documents failing malware scan.",
+    "preconditions": "Malware detected in a file by security service (mocked via test fixture or simulated flag).",
+    "action_or_input": "User attempts to submit the malicious file alongside valid metadata.",
+    "expected_result": "Submission rejected; system returns error regarding failed malware validation.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-017",
+    "source_id": "BR-PMS-017",
+    "purpose": "Verify PMS rejects incomplete application submissions.",
+    "preconditions": "Application form open; Some required fields (e.g., Title, Abstract) left empty.",
+    "action_or_input": "User attempts to submit the application without filling all mandatory fields.",
+    "expected_result": "Submission rejected; system highlights missing required fields and prevents acceptance.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-020",
+    "source_id": "BR-PMS-020",
+    "purpose": "Verify PMS prevents external filing before agreement completion.",
+    "preconditions": "Application status is 'Under Review' or similar; Inventor Agreements status is 'Pending/Incomplete'.",
+    "action_or_input": "Attorney attempts to initiate 'External Filing' action.",
+    "expected_result": "Action blocked; system returns error stating Inventor agreements are not complete.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-022",
+    "source_id": "BR-PMS-022",
+    "purpose": "Verify PMS prevents automatic assignment without configured rules.",
+    "preconditions": "PCC_ADMIN attempts to assign an application; Automatic routing mechanism enabled in config but no specific expertise rules defined for a department.",
+    "action_or_input": "User initiates 'Auto-Assign' feature.",
+    "expected_result": "System rejects the auto-assignment attempt or logs warning indicating lack of governing criteria.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-023",
+    "source_id": "BR-PMS-023",
+    "purpose": "Verify PMS enforces Director expertise matching during assignment.",
+    "preconditions": "Director D has 'Legal' expertise. Application type is 'Software Patent'. User initiates assignment for this application.",
+    "action_or_input": "System auto-routes or manual assigns Application to Director D.",
+    "expected_result": "Assignment validated against domain; system ensures/flags appropriate matching based on legal domain.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-024",
+    "source_id": "BR-PMS-024",
+    "purpose": "Verify PMS enforces Director workload balance during assignment.",
+    "preconditions": "Director D currently handles max capacity; another director E has free capacity. Application available for review.",
+    "action_or_input": "System auto-routes application to Director D.",
+    "expected_result": "Assignment blocked or routed automatically to Director E based on workload balance constraint.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-025",
+    "source_id": "BR-PMS-025",
+    "purpose": "Verify PMS checks conflict-of-interest before Director assignment.",
+    "preconditions": "Director D is listed as an inventor on Application X. User attempts to assign Application X to Director D.",
+    "action_or_input": "System processes the assignment request.",
+    "expected_result": "Assignment rejected; system returns error indicating Conflict of Interest detected (Director is inventor).",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-026",
+    "source_id": "BR-PMS-026",
+    "purpose": "Verify PMS blocks Director review if they are listed as inventor.",
+    "preconditions": "Director D is registered in the system and listed as an inventor on Application X. Application status is 'Under Review'.",
+    "action_or_input": "Director D attempts to access the 'Review' function for Application X.",
+    "expected_result": "Access denied; Director receives notification of restriction due to being listed as inventor.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-027",
+    "source_id": "BR-PMS-027",
+    "purpose": "Verify PCC_ADMIN cannot review applications where they are inventors.",
+    "preconditions": "PCC_ADMIN is listed as an inventor on Application X.",
+    "action_or_input": "PCC_ADMIN attempts to view Application X for review decision purposes.",
+    "expected_result": "Access denied; system flags conflict of interest preventing review role.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-029",
+    "source_id": "BR-PMS-029",
+    "purpose": "Verify PMS rejects Director decisions other than Approve, Reject, Needs Revision.",
+    "preconditions": "Director D is reviewing Application X. Decision dropdown/UI element available.",
+    "action_or_input": "Director selects 'Withdraw' as the decision option and attempts to save.",
+    "expected_result": "Validation fails; system rejects 'Withdraw' and prompts for valid options (Approve, Reject, Needs Revision).",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-030",
+    "source_id": "BR-PMS-030",
+    "purpose": "Verify PMS rejects Director decision with justification < 50 characters.",
+    "preconditions": "Director D selects 'Approve' and enters justification text consisting of exactly 49 characters.",
+    "action_or_input": "User attempts to submit/save the review decision.",
+    "expected_result": "Submission blocked; system returns error indicating minimum 50 character justification required.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-031",
+    "source_id": "BR-PMS-031",
+    "purpose": "Verify PMS enforces Director review deadline of 15 business days.",
+    "preconditions": "Director D assigned to Application X; Current time is T0. Deadline for completion is T1 (15 business days later).",
+    "action_or_input": "System checks status at T2 where T2 > T1 without completed review.",
+    "expected_result": "System flags overdue; alerts generated or workflow stalled pending handling of the deadline violation.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-033",
+    "source_id": "BR-PMS-033",
+    "purpose": "Verify PMS blocks revision submission if status is not Needs Revision or Rejected.",
+    "preconditions": "Application status is 'Approved'. User attempts to initiate 'Revision' action.",
+    "action_or_input": "User clicks 'Revise Application' button in Approved application view.",
+    "expected_result": "Action blocked; system returns error stating revision is not permitted for current status.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-034",
+    "source_id": "BR-PMS-034",
+    "purpose": "Verify PMS allows revision submission if status is Rejected.",
+    "preconditions": "Application status is 'Rejected'. User attempts to initiate 'Revision' action.",
+    "action_or_input": "User clicks 'Revise Application' button in Rejected application view.",
+    "expected_result": "Action permitted; user can proceed with revision upload/submission.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-035",
+    "source_id": "BR-PMS-035",
+    "purpose": "Verify PMS monitors and validates 60-day resubmission deadline.",
+    "preconditions": "Rejection/Revision decision made on Date D. Current time is D + 61 days.",
+    "action_or_input": "System attempts to calculate eligibility for new submission without having been revised.",
+    "expected_result": "Eligibility check returns 'Expired' or system changes application status to Expired automatically.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-036",
+    "source_id": "BR-PMS-036",
+    "purpose": "Verify PMS rejects revision submissions that do not address Director feedback.",
+    "preconditions": "Application has specific feedback text. User submits new documents claiming to be a revision but omitting references to the feedback.",
+    "action_or_input": "User attempts to resubmit application as a valid revision.",
+    "expected_result": "Submission rejected; system returns error stating revision must address recorded Director feedback.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-038",
+    "source_id": "BR-PMS-038",
+    "purpose": "Verify PMS updates status to Expired after deadline expiration.",
+    "preconditions": "Application in Revision cycle. 60 day period expired. No valid resubmission made.",
+    "action_or_input": "System executes 'Process Expiry' logic.",
+    "expected_result": "Application status changes from 'Needs Revision' or 'Rejected' to 'Expired'.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-040",
+    "source_id": "BR-PMS-040",
+    "purpose": "Verify PMS restricts Attorney assignment role to PCC_ADMIN only.",
+    "preconditions": "Director D has approved the application. User logged in as Director (not PCC_ADMIN).",
+    "action_or_input": "Director attempts to select and assign an attorney to the application.",
+    "expected_result": "Action denied; system returns error stating only PCC_ADMIN can assign attorneys.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-041",
+    "source_id": "BR-PMS-041",
+    "purpose": "Verify PMS enforces selection from approved panel unless exception recorded.",
+    "preconditions": "Attorney O is NOT in the approved panel. User (PCC_ADMIN) attempts to assign Attorney O.",
+    "action_or_input": "User selects Attorney O for assignment without creating an institutional exception record first.",
+    "expected_result": "Assignment blocked; system returns error stating attorney not on approved panel or requires exception.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-045",
+    "source_id": "BR-PMS-045",
+    "purpose": "Verify PMS blocks assignment based on applicant preference if preferred attorney is not in panel.",
+    "preconditions": "Applicant prefers Attorney X. Attorney X is NOT in the approved panel. System allows preference consideration only if in panel.",
+    "action_or_input": "System attempts to assign based solely on Applicant's preference for Attorney X (outside panel).",
+    "expected_result": "Assignment blocked or overridden; system ignores preference because preferred attorney is not in the approved panel.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-046",
+    "source_id": "BR-PMS-046",
+    "purpose": "Verify PMS rejects Attorney opinions with invalid recommendation format.",
+    "preconditions": "Attorney creates opinion containing two recommendations (e.g., 'File Patent AND Do Not File') or one not in the list.",
+    "action_or_input": "User attempts to finalize and submit the patentability opinion.",
+    "expected_result": "Submission rejected; system validates that exactly one recommendation exists from the allowed set.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-048",
+    "source_id": "BR-PMS-048",
+    "purpose": "Verify PMS includes filing fees in generated budget data.",
+    "preconditions": "Budget form initialized for an application with defined expenses.",
+    "action_or_input": "User generates or views the Budget report/record.",
+    "expected_result": "Report displays 'Filing Fees' as a mandatory line item/component.",
+    "test_type": "Unit"
+  },
+  {
+    "test_id": "BR-PMS-049",
+    "source_id": "BR-PMS-049",
+    "purpose": "Verify PMS includes attorney fees in generated budget data.",
+    "preconditions": "Budget form initialized for an application with defined expenses.",
+    "action_or_input": "User generates or views the Budget report/record.",
+    "expected_result": "Report displays 'Attorney Fees' as a mandatory line item/component.",
+    "test_type": "Unit"
+  },
+  {
+    "test_id": "BR-PMS-050",
+    "source_id": "BR-PMS-050",
+    "purpose": "Verify PMS includes administrative costs in generated budget data.",
+    "preconditions": "Budget form initialized for an application with defined expenses.",
+    "action_or_input": "User generates or views the Budget report/record.",
+    "expected_result": "Report displays 'Administrative Costs' as a mandatory line item/component.",
+    "test_type": "Unit"
+  },
+  {
+    "test_id": "BR-PMS-051",
+    "source_id": "BR-PMS-051",
+    "purpose": "Verify PMS routes/escalates budget exceeding threshold to higher authority.",
+    "preconditions": "Total calculated cost is \$X where X > configured threshold limit. Director proposes approval.",
+    "action_or_input": "System processes the approval request for the high-cost budget.",
+    "expected_result": "Request routed/escalated to Higher Authority instead of being approved directly by Director.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-052",
+    "source_id": "BR-PMS-052",
+    "purpose": "Verify PMS blocks Budget approval if application status is not Approved.",
+    "preconditions": "Application status is 'Under Review'. Director attempts to approve budget.",
+    "action_or_input": "User clicks 'Approve Budget' button.",
+    "expected_result": "Action denied; system returns error stating Budget approval allowed only for Approved applications.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-053",
+    "source_id": "BR-PMS-053",
+    "purpose": "Verify PMS requires budget availability validation when data is available.",
+    "preconditions": "System has access to external financial data showing insufficient funds. Director attempts to approve budget.",
+    "action_or_input": "User proceeds with budget approval without verifying availability first.",
+    "expected_result": "Approval blocked; system forces/validates against available budget data and rejects if unavailable.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-055",
+    "source_id": "BR-PMS-055",
+    "purpose": "Verify PMS validates filing package format against standards where rules are available.",
+    "preconditions": "PMS has configured validation rules for Patent Office format. Attorney prepares and submits filing package.",
+    "action_or_input": "System performs format validation check on the package.",
+    "expected_result": "Recorded readiness status is set only if package satisfies applicable patent-office format standards.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-056",
+    "source_id": "BR-PMS-056",
+    "purpose": "Verify PMS enforces recording of additional justification for international filings.",
+    "preconditions": "Attorney attempts to file application as 'International' type without justification field populated.",
+    "action_or_input": "User submits the International filing action.",
+    "expected_result": "Action blocked or requires entry of 'additional justification' before submission is allowed.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-059",
+    "source_id": "BR-PMS-059",
+    "purpose": "Verify PMS activates post-grant tracking only upon Granted status.",
+    "preconditions": "Application status is 'Under Review'. Post-grant features (reminders, fee calc) attempted to be viewed/used.",
+    "action_or_input": "User attempts to access 'Maintenance Fee Calculator' or similar post-grant tool.",
+    "expected_result": "Feature unavailable; system returns error stating tracking activated only for Granted status.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-060",
+    "source_id": "BR-PMS-060",
+    "purpose": "Verify PMS calculates maintenance schedule based on grant date/jurisdiction.",
+    "preconditions": "Patent Granted. Jurisdiction 'US' set. Grant Date set to T0.",
+    "action_or_input": "System calculates/retreives maintenance-fee schedule record.",
+    "expected_result": "Schedule generated/calculated correctly based on the specific grant date and jurisdiction parameters provided.",
+    "test_type": "Unit"
+  },
+  {
+    "test_id": "BR-PMS-061",
+    "source_id": "BR-PMS-061",
+    "purpose": "Verify PMS requires explicit Renew or Do Not Renew decision before each maintenance deadline.",
+    "preconditions": "Maintenance Deadline approaching. System pending decision state.",
+    "action_or_input": "Attempt to close the maintenance tracking loop without making a Renew/DoNotRenew choice.",
+    "expected_result": "System blocks progress; error indicates explicit Renew or Do Not Renew decision is required.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-065",
+    "source_id": "BR-PMS-065",
+    "purpose": "Verify PMS enforces deadline compliance for Office Action responses.",
+    "preconditions": "Office action received; Deadline D passed. Response not submitted by attorney.",
+    "action_or_input": "System evaluates submission status at T > D.",
+    "expected_result": "Response marked as 'Missed' or error indicating non-compliance unless extension was recorded.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-066",
+    "source_id": "BR-PMS-066",
+    "purpose": "Verify PMS automates deadline tracking only where rules are available.",
+    "preconditions": "Office action received; Applicable jurisdiction has no configured deadline data/rules in system.",
+    "action_or_input": "System attempts to generate automatic deadline alerts or monitoring logs for this case.",
+    "expected_result": "Alerts not generated; manual tracking mode enforced or system states 'No deadline rule available'.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-067",
+    "source_id": "BR-PMS-067",
+    "purpose": "Verify PMS restricts withdrawal to pre-filing stage.",
+    "preconditions": "Application status is 'Filed' or 'Under Review'. Applicant attempts to withdraw.",
+    "action_or_input": "User selects 'Withdraw Application' button.",
+    "expected_result": "Action denied; system returns error stating withdrawal allowed only before filing stage.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-068",
+    "source_id": "BR-PMS-068",
+    "purpose": "Verify PMS validates withdrawal eligibility against specific status rules.",
+    "preconditions": "Application status is 'Rejected'. User attempts to withdraw.",
+    "action_or_input": "User initiates withdrawal process.",
+    "expected_result": "System checks current status configuration; withdrawal permitted/disallowed based on 'withdrawal-eligible' rule for Rejected status.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-069",
+    "source_id": "BR-PMS-069",
+    "purpose": "Verify PMS requires a reason for withdrawal requests.",
+    "preconditions": "Withdrawal form open.",
+    "action_or_input": "User attempts to submit the withdrawal without providing a reason text field.",
+    "expected_result": "Submission blocked; system requires Applicant-provided reason input.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-070",
+    "source_id": "BR-PMS-070",
+    "purpose": "Verify PMS records co-inventor consent when process requires it.",
+    "preconditions": "Application has multiple inventors. Process rules configured to require consent for withdrawal.",
+    "action_or_input": "Applicant attempts to withdraw application.",
+    "expected_result": "System prompts for or validates recording of Co-inventor consent before proceeding.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-073",
+    "source_id": "BR-PMS-073",
+    "purpose": "Verify PMS validates inventor information before acceptance.",
+    "preconditions": "Inventor details (name, email) incomplete or invalid format.",
+    "action_or_input": "User attempts to save/update inventor information.",
+    "expected_result": "Update rejected; system returns validation error for inventor information.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-074",
+    "source_id": "BR-PMS-074",
+    "purpose": "Verify PMS validates ownership percentages before acceptance.",
+    "preconditions": "Ownership percentage sum > 100% or negative value entered.",
+    "action_or_input": "User attempts to save/update ownership share data.",
+    "expected_result": "Update rejected; system returns validation error for ownership percentages.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-075",
+    "source_id": "BR-PMS-075",
+    "purpose": "Verify PMS enforces inventor consent requirement before filing.",
+    "preconditions": "Filing stage approaching; Consent status 'Pending'.",
+    "action_or_input": "System attempts to proceed to External Filing stage.",
+    "expected_result": "Filing blocked; system waits for Required inventor consent to be obtained/completed.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-076",
+    "source_id": "BR-PMS-076",
+    "purpose": "Verify PMS restricts electronic signature collection where not legally permitted.",
+    "preconditions": "System configuration indicates 'Electronic Signatures' disabled for region X. User (Attorney) attempts to collect e-sig from applicant in region X.",
+    "action_or_input": "User selects 'Collect Electronic Signature' and clicks confirm.",
+    "expected_result": "Action blocked; system prevents e-signature collection unless legally permitted and configured.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-077",
+    "source_id": "BR-PMS-077",
+    "purpose": "Verify PMS only validates e-signatures where permitted and configured.",
+    "preconditions": "E-sig data submitted; Legal configuration enabled for this jurisdiction.",
+    "action_or_input": "User attempts to submit/validate the electronic signature record.",
+    "expected_result": "Validation performed only if legally permitted and configured is true; otherwise rejected/not validated.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-078",
+    "source_id": "BR-PMS-078",
+    "purpose": "Verify PMS blocks filing if agreements are not complete.",
+    "preconditions": "Inventor Agreements incomplete; Application ready for External Filing.",
+    "action_or_input": "Attorney attempts to initiate 'External Filing' action.",
+    "expected_result": "Action blocked; system returns error stating Inventor agreements must be complete before filing.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-082",
+    "source_id": "BR-PMS-082",
+    "purpose": "Verify PMS auto-numbers document versions.",
+    "preconditions": "User uploads a new version of an existing document (v1) to an application with status 'Needs Revision'.",
+    "action_or_input": "System processes the upload and stores the version.",
+    "expected_result": "Version number automatically incremented (e.g., v2); manual numbering ignored or auto-logic enforced.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-084",
+    "source_id": "BR-PMS-084",
+    "purpose": "Verify PMS restricts access to previous document versions by role/status.",
+    "preconditions": "Director logged in. Application status 'Under Review'. Previous version of document exists (v1).",
+    "action_or_input": "Director attempts to view/download v1 via direct link or menu item not for current active doc.",
+    "expected_result": "Access denied; system restricts view based on role and application status rules.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-086",
+    "source_id": "BR-PMS-086",
+    "purpose": "Verify PMS enforces document access control by role and status.",
+    "preconditions": "PCC_ADMIN logged in. Application status 'Submitted'. Document exists.",
+    "action_or_input": "PCC_ADMIN attempts to access the specific application document view.",
+    "expected_result": "Access granted/controlled according to PMS rules; system ensures visibility is limited by applicable role and status rules.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-087",
+    "source_id": "BR-PMS-087",
+    "purpose": "Verify PMS blocks document editing outside 'Needs Revision' status.",
+    "preconditions": "Application status is 'Approved'. User (Applicant) attempts to edit the main application document.",
+    "action_or_input": "User clicks 'Edit Document' button.",
+    "expected_result": "Action denied; system returns error stating editing permitted only when status is Needs Revision.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-088",
+    "source_id": "BR-PMS-088",
+    "purpose": "Verify PMS routes licensing requests to appropriate committee/Director.",
+    "preconditions": "Licensing request created by Applicant. Targeting Technology Transfer Committee.",
+    "action_or_input": "System processes routing logic for the request.",
+    "expected_result": "Request routed to the specific Committee or Director as per institutional process configuration.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-091",
+    "source_id": "BR-PMS-091",
+    "purpose": "Verify PMS enforces confidentiality controls on license records.",
+    "preconditions": "License agreement stored in PMS. User logged in as non-restricted role (Applicant).",
+    "action_or_input": "User attempts to view sensitive clauses or export full license record.",
+    "expected_result": "Access restricted; system applies confidentiality controls based on roles.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-092",
+    "source_id": "BR-PMS-092",
+    "purpose": "Verify PMS blocks appeal submission if application status is not 'Rejected'.",
+    "preconditions": "Application status is 'Under Review' or 'Rejected - Final'. User attempts to file appeal.",
+    "action_or_input": "User selects 'File Appeal' action.",
+    "expected_result": "Action denied; system returns error stating appeals allowed only for Rejected status applications.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-093",
+    "source_id": "BR-PMS-093",
+    "purpose": "Verify PMS enforces appeal filing deadline.",
+    "preconditions": "Rejection date set. Current time > configured appeal deadline period.",
+    "action_or_input": "User attempts to submit appeal form.",
+    "expected_result": "Action blocked; system returns error stating appeal must be filed within allowed period.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-094",
+    "source_id": "BR-PMS-094",
+    "purpose": "Verify PMS validates grounds and justification in appeal submissions.",
+    "preconditions": "Appeal form open. Justification text field empty or insufficient.",
+    "action_or_input": "User attempts to submit the Appeal request.",
+    "expected_result": "Submission blocked; system requires Applicant-provided grounds and justification.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-095",
+    "source_id": "BR-PMS-095",
+    "purpose": "Verify PMS rejects Director appeal outcomes other than Uphold, Remand, Modify.",
+    "preconditions": "Director reviewing Appeal X. Decision dropdown/UI available.",
+    "action_or_input": "Director selects 'Overturn' (unsupported option) as the outcome.",
+    "expected_result": "Validation fails; system rejects invalid options and prompts for valid ones (Uphold, Remand, Modify).",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-097",
+    "source_id": "BR-PMS-097",
+    "purpose": "Verify PMS calculates Director review deadline.",
+    "preconditions": "Application assigned to Director. System initialized.",
+    "action_or_input": "System executes 'Calculate Deadline' logic.",
+    "expected_result": "System generates alert/calendar entry for the Director review deadline based on applicable rule.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-098",
+    "source_id": "BR-PMS-098",
+    "purpose": "Verify PMS calculates revision deadline.",
+    "preconditions": "Revision decision made. System initialized.",
+    "action_or_input": "System executes 'Calculate Deadline' logic for the revision period.",
+    "expected_result": "System generates alert/calendar entry based on applicable revision-deadline rule (e.g., 60 days).",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-099",
+    "source_id": "BR-PMS-099",
+    "purpose": "Verify PMS calculates office-action deadlines only where rules are available.",
+    "preconditions": "Office action received; No jurisdictional deadline data configured for this case.",
+    "action_or_input": "System attempts to set up automated deadline tracking/alerts.",
+    "expected_result": "Tracking disabled/not automated; system indicates lack of applicable deadline rule/data.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-100",
+    "source_id": "BR-PMS-100",
+    "purpose": "Verify PMS calculates maintenance deadlines only where rules are available.",
+    "preconditions": "Patent Granted; No jurisdictional schedule data configured in system.",
+    "action_or_input": "System attempts to set up automated deadline tracking/alerts for fees.",
+    "expected_result": "Tracking disabled/not automated; system indicates lack of applicable schedule rule/data.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-101",
+    "source_id": "BR-PMS-101",
+    "purpose": "Verify PMS generates 30-day deadline alerts where applicable.",
+    "preconditions": "Deadly event set for T. Current time is T - 25 days. Alert config enabled for '30 day'.",
+    "action_or_input": "System checks trigger conditions for notifications.",
+    "expected_result": "Alert generated and sent to relevant stakeholders.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-102",
+    "source_id": "BR-PMS-102",
+    "purpose": "Verify PMS generates 15-day deadline alerts where applicable.",
+    "preconditions": "Deadline event set for T. Current time is T - 20 days. Alert config enabled for '15 day'.",
+    "action_or_input": "System checks trigger conditions for notifications.",
+    "expected_result": "Alert generated and sent to relevant stakeholders.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-103",
+    "source_id": "BR-PMS-103",
+    "purpose": "Verify PMS generates 5-day deadline alerts where applicable.",
+    "preconditions": "Deadline event set for T. Current time is T - 7 days. Alert config enabled for '5 day'.",
+    "action_or_input": "System checks trigger conditions for notifications.",
+    "expected_result": "Alert generated and sent to relevant stakeholders.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-104",
+    "source_id": "BR-PMS-104",
+    "purpose": "Verify PMS escalates missed deadlines according to chain.",
+    "preconditions": "Missed deadline event (e.g., 5-day alert ignored). Escalation chain configured.",
+    "action_or_input": "System processes 'Missed Deadline' status.",
+    "expected_result": "Escalation triggered and routed according to the configured escalation chain.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-116",
+    "source_id": "BR-PMS-116",
+    "purpose": "Verify PMS scope limits email triggering to system generation.",
+    "preconditions": "User logged in. Notification payload ready (e.g., Application Approved).",
+    "action_or_input": "System attempts to execute full email delivery including subject, body, and SMTP sending.",
+    "expected_result": "PMS triggers the creation of the notification object/email draft but does not control/deliver external infrastructure; logs show PMS trigger only.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-121",
+    "source_id": "BR-PMS-121",
+    "purpose": "Verify audit logs include specific fields for applicable actions.",
+    "preconditions": "User A performs 'Delete Document' action. Audit log creation enabled.",
+    "action_or_input": "System generates the audit record immediately after action completion.",
+    "expected_result": "Record includes: User ID, Action Type, Timestamp, Application ID, Previous State, New State.",
+    "test_type": "Unit"
+  },
+  {
+    "test_id": "BR-PMS-122",
+    "source_id": "BR-PMS-122",
+    "purpose": "Verify PMS creates immutable audit records for critical operations.",
+    "preconditions": "User performs 'Delete Application' (Critical). Audit logging enabled.",
+    "action_or_input": "System commits the action to the database.",
+    "expected_result": "Audit record created and marked as 'Immutable' (writable only by system, no user edit capability).",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-126",
+    "source_id": "BR-PMS-126",
+    "purpose": "Verify PMS blocks access without valid role assignment.",
+    "preconditions": "User account exists but has 'Guest' or no assigned role. Attempt to access Patent Management function.",
+    "action_or_input": "User logs in and navigates to a protected module/page.",
+    "expected_result": "Access denied; system redirects/error states user needs a valid PMS role assignment.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-127",
+    "source_id": "BR-PMS-127",
+    "purpose": "Verify PMS prevents Attorney assignment before Director approval.",
+    "preconditions": "Application status 'Under Review' (no Director Approval). PCC_ADMIN attempts to assign Attorney.",
+    "action_or_input": "User initiates 'Assign Attorney' workflow.",
+    "expected_result": "Action denied; system error states Attorney assignment must wait for recorded Director approval.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-128",
+    "source_id": "BR-PMS-128",
+    "purpose": "Verify PMS prevents external filing before approvals and budget are complete.",
+    "preconditions": "Application has Approval but Budget is 'Pending'. Attorney attempts External Filing.",
+    "action_or_input": "User initiates 'External Filing' action.",
+    "expected_result": "Action denied; system error states External filing requires completion of required approvals and budget allocation.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-130",
+    "source_id": "BR-PMS-130",
+    "purpose": "Verify PMS protects confidential patent info via RBAC.",
+    "preconditions": "User has Role 'Guest'. Attempt to view 'Patent Portfolio Report' containing sensitive data.",
+    "action_or_input": "System attempts to grant access to the report.",
+    "expected_result": "Access denied; system enforces role-based access control restricting confidential info visibility.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-131",
+    "source_id": "BR-PMS-131",
+    "purpose": "Verify PMS maintains exactly one active PCC_ADMIN role.",
+    "preconditions": "System configuration for roles open. User attempts to create a second PCC_ADMIN account.",
+    "action_or_input": "User initiates process to add new PCC_ADMIN record.",
+    "expected_result": "Action blocked or system logs error stating exactly one active PCC_ADMIN oversight role is maintained.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-138",
+    "source_id": "BR-PMS-138",
+    "purpose": "Verify PMS treats Patent Office systems as external.",
+    "preconditions": "PMS receives data from Patent Office. System attempts to 'approve' or 'reject' the underlying decision internally.",
+    "action_or_input": "System logic attempts to execute patent office processing logic internally.",
+    "expected_result": "PMS rejects internal control attempt; system only records, tracks, notifies, logs, reports based on external data.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-139",
+    "source_id": "BR-PMS-139",
+    "purpose": "Verify PMS treats Financial/Payment systems as external.",
+    "preconditions": "PMS attempts to execute a payment transaction directly without external system call.",
+    "action_or_input": "User initiates 'Process Payment' internal function.",
+    "expected_result": "Action denied; system relies on External Financial Systems for actual execution/payment.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-140",
+    "source_id": "BR-PMS-140",
+    "purpose": "Verify PMS limits ownership of Document systems to internal behavior.",
+    "preconditions": "External DocManager System API available. PMS attempts to store full document metadata outside PMS versioning logic.",
+    "action_or_input": "System logs a direct call to external DocManager without PMS wrapper/validation.",
+    "expected_result": "Call rejected/Logged as external; PMS ownership limited to internal version/access audit behavior.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-141",
+    "source_id": "BR-PMS-141",
+    "purpose": "Verify PMS treats Prior Art DBs as external query sources.",
+    "preconditions": "User searches 'Prior Art' within PMS. System attempts to store search results in local PMS DB without querying source.",
+    "action_or_input": "System logic attempts to maintain local copy of prior art data.",
+    "expected_result": "PMS queries external databases but treats them as query sources, not owned repositories.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-142",
+    "source_id": "BR-PMS-142",
+    "purpose": "Verify PMS does not control patent office filing success internally.",
+    "preconditions": "External Patent Office System returns 'Success'. PMS records the ID/Date. User attempts to 'approve' the success internally.",
+    "action_or_input": "System attempts to mark external filing success as an internal controlled outcome.",
+    "expected_result": "PMS only records the submission details and confirmation; does not control or enforce success beyond recording.",
+    "test_type": "Acceptance"
+  },
+  {
+    "test_id": "BR-PMS-146",
+    "source_id": "BR-PMS-146",
+    "purpose": "Verify PMS restricts Applicant review of office-action responses to applicable process conditions.",
+    "preconditions": "Process configured: 'Attorney Only'. Office Action received. User (Applicant) attempts to review/approve response.",
+    "action_or_input": "User selects 'Approve Response' in the interface.",
+    "expected_result": "Action denied; system returns error stating Applicant review/approval required only when applicable process dictates it.",
+    "test_type": "Acceptance"
+  }
+]
