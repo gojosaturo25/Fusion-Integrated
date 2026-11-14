@@ -1,0 +1,19 @@
+You are designing automated specification-based tests for the Patent Management System (PMS) Fusion ERP module.
+Source of truth: Use ONLY the supplied Problem Statement and Workflow Specifications.
+Do NOT inspect implementation code.
+Do NOT infer behavior from implementation.
+Do NOT introduce behavior unsupported by the supplied specification.
+Generate the minimum non-redundant set of test cases needed to satisfy the strategy-specific adequacy rule in Section 7. Do not stop at an arbitrary number, do not omit an explicit test obligation to reduce the test count, and do not invent unsupported behavior. Prefer observable behavior that can subsequently be automated using pytest/pytest-django.
+For every test case output exactly these fields:
+- test_id
+- source_id
+- purpose
+- preconditions
+- action_or_input
+- expected_result
+- test_type
+- source_id must identify the exact obligation covered (for example: AFR-03, UC-05 Main Flow, UC-05 Alternative A1, BR-07 condition-false, WF-02 approval-rejected path).
+Output ONLY a valid JSON array. Do not provide explanation or additional prose.
+
+Section 7 — Test obligation = one explicitly specified behavior/flow/rule/path that the corresponding rule below requires to be tested. A single test may cover more than one closely related obligation, but unrelated obligations should not be merged merely to reduce the number of tests.
+WF: Cover every explicitly specified distinct workflow path/decision outcome. Ensure every important stated transition is exercised at least once; do not enumerate unsupported combinations.

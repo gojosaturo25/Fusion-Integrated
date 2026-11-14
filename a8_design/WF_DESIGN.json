@@ -1,0 +1,128 @@
+[
+  {
+    "test_id": "T-001",
+    "source_id": "UC-PMS-001",
+    "purpose": "Validate submission validation, document compliance, and application ID assignment upon a valid initial submission.",
+    "preconditions": "System running; Application draft exists with required fields, PDF documents under 50MB, and completed inventor agreement.",
+    "action_or_input": "Applicant submits the patent application via UC-PMS-001.",
+    "expected_result": "PMS validates requirements, assigns unique Application ID, sets status to 'Submitted', records history, and notifies stakeholders.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-002",
+    "source_id": "UC-PMS-007",
+    "purpose": "Validate assignment logic including expertise matching, conflict-of-interest checks, and status transition to 'Under Review'.",
+    "preconditions": "Application is in 'Submitted' state; Eligible Directors exist.",
+    "action_or_input": "PCC_ADMIN assigns the application to a Director (explicit or automatic routing).",
+    "expected_result": "PMS verifies assignment criteria, rejects invalid conflicts if applicable, and updates status to 'Under Review' with notifications.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-003",
+    "source_id": "BR-PMS-029; BR-PMS-030; BR-PMS-031",
+    "purpose": "Validate Director's review process, justification length enforcement, status transition on approval.",
+    "preconditions": "Application is in 'Under Review' state with valid documentation.",
+    "action_or_input": "Director reviews the application and provides a detailed justification of at least 50 characters; decides to Approve.",
+    "expected_result": "PMS stores decision, validates justification length, updates status to 'Approved', and notifies relevant parties.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-004",
+    "source_id": "BR-PMS-029; BR-PMS-030; BR-PMS-031; BR-PMS-033",
+    "purpose": "Validate revision submission loop where applicant addresses feedback within the 60-day resubmission period.",
+    "preconditions": "Application status is 'Needs Revision' or 'Rejected' with valid Director justification logged.",
+    "action_or_input": "Applicant resubmits application addressing Director's feedback within the applicable 60-day window via UC-PMS-005.",
+    "expected_result": "PMS validates deadline compliance and content alignment, assigns new Application ID/Version control cycle, updates status to 'Submitted' or re-routes to assignment.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-005",
+    "source_id": "BR-PMS-038",
+    "purpose": "Validate automatic status transition to 'Expired' when resubmission deadline expires (system-enforced behavior).",
+    "preconditions": "Application is in 'Needs Revision' state; Applicant has failed to resubmit within the applicable 60-day period.",
+    "action_or_input": "System checks the current date against the rejection/revision decision date and applies rule BR-PMS-038.",
+    "expected_result": "PMS automatically updates the application status to 'Expired' without actor intervention.",
+    "test_type": "System"
+  },
+  {
+    "test_id": "T-006",
+    "source_id": "UC-PMS-022",
+    "purpose": "Validate appeal submission rules, grounds justification recording, and transition to 'Appeal Submitted'.",
+    "preconditions": "Application status is 'Rejected' with valid Director justification.",
+    "action_or_input": "Applicant initiates the File Appeal Against Rejection process (UC-PMS-022) within the allowed time period.",
+    "expected_result": "PMS validates appeal deadline, records grounds/justification, updates status to 'Appeal Submitted', and notifies Director.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-007",
+    "source_id": "BR-PMS-095",
+    "purpose": "Validate Director's ability to modify a rejected application decision during an appeal review.",
+    "preconditions": "Application is in 'Appeal Submitted' state after being Rejected.",
+    "action_or_input": "Director reviews the appeal and decides to 'Modify Decision'.",
+    "expected_result": "PMS records the modification outcome, initiates next applicable process step (e.g., resubmission or new review cycle), and updates status accordingly.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-008",
+    "source_id": "UC-PMS-027",
+    "purpose": "Validate escalation handling and PCC_ADMIN monitoring for budget cases exceeding threshold limits.",
+    "preconditions": "Application is 'Approved'; Budget review decision outcome is 'Escalated' (cost > threshold).",
+    "action_or_input": "Director routes/escalates the case (simulating BR-PMS-051 outcome).",
+    "expected_result": "PCC_ADMIN monitors and tracks the exceptional case, maintains status as 'Escalation Tracked / External Decision Pending' within PMS scope.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-009",
+    "source_id": "BR-PMS-067; BR-PMS-068; BR-PMS-069; BR-PMS-070",
+    "purpose": "Validate withdrawal eligibility checks and co-inventor consent collection when applicable before 'Before Filing' or 'Under Review' states.",
+    "preconditions": "Application is in a configured pre-filing state (e.g., Submitted, Under Review); Withdrawal reason provided.",
+    "action_or_input": "Applicant initiates UC-PMS-006 to Withdraw Patent Application.",
+    "expected_result": "PMS validates if current state is withdrawal-eligible per configuration; collects co-inventor consent if required by process; updates status to 'Withdrawn' and removes from queue.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-010",
+    "source_id": "UC-PMS-018",
+    "purpose": "Validate Director's decision to Renew or Do Not Renew for maintenance fee cycles and transition logic.",
+    "preconditions": "Application status is 'Granted' / Maintenance Cycle Active; Attorney has requested Renewal Decision from Director.",
+    "action_or_input": "Director makes a 'Renew' or 'Do Not Renew' decision (UC-PMS-018).",
+    "expected_result": "PMS records the decision outcome; if 'Renew', processes maintenance action, records transaction/status, and schedules next cycle. If 'Do Not Renew', records decision and ends current cycle.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-011",
+    "source_id": "BR-PMS-048; BR-PMS-052; BR-PMS-053",
+    "purpose": "Validate Budget Approval and Rejection logic including cost validation.",
+    "preconditions": "Application is 'Approved'; Director reviews budget.",
+    "action_or_input": "Director decides to Approve or Reject the budget (validating costs against threshold and availability where applicable).",
+    "expected_result": "PMS updates status/budget records accordingly; if Rejected, ensures no downstream auto-approval occurs.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-012",
+    "source_id": "BR-PMS-055; BR-PMS-056",
+    "purpose": "Validate pre-filing readiness checks and successful external filing transition.",
+    "preconditions": "Application is 'Approved'; All pre-filing prerequisites (budget, agreement, expert approval) are complete.",
+    "action_or_input": "Attorney initiates UC-PMS-013 to Prepare and Record External Patent Filing.",
+    "expected_result": "PMS verifies format compliance and prerequisites; updates status to 'Filed' and captures filing ID/date.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-013",
+    "source_id": "BR-PMS-146; BR-PMS-065; BR-PMS-066",
+    "purpose": "Validate Office Action response submission and deadline tracking logic.",
+    "preconditions": "Application is 'Filed / Post-Filing Active'; Attorney has received an Office Action.",
+    "action_or_input": "Attorney records, prepares, and submits a response within the applicable deadline or permitted extension period (UC-PMS-015).",
+    "expected_result": "PMS updates status (e.g., to 'Response Submitted'), logs official communication history, and verifies adherence to time-bound rules.",
+    "test_type": "Functional"
+  },
+  {
+    "test_id": "T-014",
+    "source_id": "BR-PMS-146; BR-PMS-065; BR-PMS-066",
+    "purpose": "Validate conditional workflow branching where Applicant review is required for Office Action response.",
+    "preconditions": "Application is 'Filed'; Office action received; System determines Applicant review is REQUIRED (e.g., per process rules).",
+    "action_or_input": "Applicant reviews and approves the Attorney's draft response via UC-PMS-029.",
+    "expected_result": "PMS transitions state from 'Awaiting Applicant Approval' to 'Response Submitted' upon approval, triggering notification of finalization.",
+    "test_type": "Functional"
+  }
+]

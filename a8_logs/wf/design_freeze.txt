@@ -1,0 +1,6 @@
+frozen: a8_design/WF_DESIGN.json
+sha256: fb5d48daeea7e0da0f9e9769caff63d51407377c3d6b17cd3ee8c8720a25b842
+test cases: 14
+cases missing a required field: []
+duplicate test_ids: []
+frozen at: 2026-11-14 06:19:11
