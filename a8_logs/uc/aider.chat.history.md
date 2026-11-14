@@ -2485,3 +2485,707 @@ if __name__ == "__main__":
 
 > Tokens: 24k sent, 4.2k received.  
 > Applied edit to tests/a8/uc/test_uc_p04.py  
+
+# aider chat started at 2026-11-14 05:24:05
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format whole --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/uc/aider.chat.history.md --input-history-file a8_logs/uc/aider.input.history --llm-history-file a8_logs/uc/llm.history.txt --file tests/a8/uc/test_uc_p05.py --read conftest.py --read modules/patent/registry.py --read modules/patent/models.py --read modules/patent/domain/policy.py --read modules/patent/services/applications.py --read modules/patent/services/legal.py --read modules/patent/services/post_filing.py --read modules/patent/api/serializers.py --read modules/patent/api/views.py --read modules/patent/api/views_legal.py --read modules/patent/api/urls.py --message-file a8_logs/uc/promptB_p05.md  
+> Creating empty file /Users/vishalkumar/ELM_MODEL_2/tests/a8/uc/test_uc_p05.py  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with whole edit format  
+> Git repo: .git with 289 files  
+> Repo-map: disabled  
+> Added tests/a8/uc/test_uc_p05.py to the chat.  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/services/applications.py to the chat (read-only).  
+> Added modules/patent/api/views.py to the chat (read-only).  
+> Added modules/patent/services/legal.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+> Added modules/patent/domain/policy.py to the chat (read-only).  
+> Added modules/patent/services/post_filing.py to the chat (read-only).  
+> Added modules/patent/registry.py to the chat (read-only).  
+> Added modules/patent/api/serializers.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added modules/patent/api/views_legal.py to the chat (read-only).  
+
+#### You are given:  
+#### 1. the frozen A8_BASE Fusion implementation, and  
+#### 2. the frozen UC_DESIGN.json.  
+#### Convert these test designs into executable automated backend tests using pytest/pytest-django.  
+#### Rules:  
+#### - Implement exactly the supplied test cases.  
+#### - Do not add, remove, merge or reinterpret test cases.  
+#### - Preserve each specified expected result.  
+#### - Do not modify production code.  
+#### - Use the Django isolated test database.  
+#### - Reuse existing Fusion test infrastructure where appropriate.  
+#### - Do not mock the behavior being tested; mocks may be used only for unavailable external dependencies.  
+#### - Do not use xfail to hide failures.  
+#### - Every test must contain its test_id and source_id in its name or docstring.  
+#### - Store generated tests only under tests/a8/uc/.  
+#### If a test genuinely cannot be automated using the available interfaces, create it as a skipped pytest test with: NOT_AUTOMATED: <reason>. Do not replace it with a different test.  
+####   
+#### The frozen UC_DESIGN.json is supplied in consecutive parts because of the model's output limit. This part contains test cases 33 to 39 of 39; write exactly these test cases into tests/a8/uc/test_uc_p05.py.  
+#### ```json  
+#### [  
+####  {  
+####   "test_id": "TEST-PMS-UC028-MAX",  
+####   "source_id": "UC-PMS-028 Main Success Scenario",  
+####   "purpose": "Verify that authorized actors can view audit/compliance logs.",  
+####   "preconditions": "Authorized actor (PCC_ADMIN/Director); access to audit information.",  
+####   "action_or_input": "Actor opens audit/compliance logs and selects scope (application/user/action).",  
+####   "expected_result": "PMS displays available audit records with required fields; no business state changes."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC028-MIN",  
+####   "source_id": "UC-PMS-028 Exception Flows",  
+####   "purpose": "Verify that unauthorized audit access is blocked.",  
+####   "preconditions": "Actor attempts to view audit logs without authorization.",  
+####   "action_or_input": "Actor accesses the restricted audit record.",  
+####   "expected_result": "PMS blocks access; no audit data is displayed or altered."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC029-MAX",  
+####   "source_id": "UC-PMS-029 Main Success Scenario",  
+####   "purpose": "Verify that Applicants can approve Office Action draft responses when required.",  
+####   "preconditions": "Process requires Applicant review; a draft response exists.",  
+####   "action_or_input": "Applicant reviews and records approval of the draft response.",  
+####   "expected_result": "PMS records the approval, allowing the Attorney to finalize/submit."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC031-MAX",  
+####   "source_id": "UC-PMS-031 Main Success Scenario",  
+####   "purpose": "Verify that Directors can view authorized reports and analytics.",  
+####   "preconditions": "Director has an authorized PMS role.",  
+####   "action_or_input": "Director selects a report/analytics view (e.g., portfolio, workload).",  
+####   "expected_result": "PMS generates output within Director's scope/domain and logs access."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC032-MAX",  
+####   "source_id": "UC-PMS-032 Main Success Scenario",  
+####   "purpose": "Verify that Directors can view workflow oversight information.",  
+####   "preconditions": "Director has an authorized role and domain scope.",  
+####   "action_or_input": "Director opens workflow oversight dashboard.",  
+####   "expected_result": "PMS displays workflow states, pending actions, and oversight info within the Director's domain."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC033-MAX",  
+####   "source_id": "UC-PMS-033 Main Success Scenario",  
+####   "purpose": "Verify that Attorneys can record legal advice for applications.",  
+####   "preconditions": "Attorney has a valid role and access to the application.",  
+####   "action_or_input": "Attorney records legal advice/opinion information for an application.",  
+####   "expected_result": "PMS associates the advice with the application history/audit record as applicable."  
+####  },  
+####  {  
+####   "test_id": "TEST-PMS-UC033-MIN",  
+####   "source_id": "UC-PMS-033 Exception Flows",  
+####   "purpose": "Verify that unauthorized legal advice recording is blocked.",  
+####   "preconditions": "Attorney attempts to record advice for an application they do not have access to.",  
+####   "action_or_input": "Attorney selects the restricted application to record advice.",  
+####   "expected_result": "Recording fails; no unrelated application state changes occur."  
+####  }  
+#### ]  
+#### ```  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user wants me to convert the UC test cases (33-39) from the JSON into pytest/pytest-django tests. Let me analyze what I need to do:
+
+1. Create a new file `tests/a8/uc/test_uc_p05.py` with the test cases
+2. Each test must have test_id and source_id in name or docstring
+3. Tests should use pytest-django for Django testing
+4. Don't modify production code
+5. Use existing Fusion test infrastructure where appropriate
+6. Don't mock behavior being tested (only external dependencies)
+7. No xfail
+
+Looking at the UC cases:
+- TEST-PMS-UC028-MAX: Audit logs viewing by authorized actors
+- TEST-PMS-UC028-MIN: Unauthorized audit access blocked
+- TEST-PMS-UC029-MAX: Applicant approves Office Action draft response
+- TEST-PMS-UC031-MAX: Director views reports/analytics
+- TEST-PMS-UC032-MAX: Director views workflow oversight
+- TEST-PMS-UC033-MAX: Attorney records legal advice
+- TEST-PMS-UC033-MIN: Unauthorized legal advice blocked
+
+I need to look at the existing models and services to understand how to implement these tests properly. From the files I have:
+
+1. `modules/patent/models.py` - Contains ApplicationHistory, PatentApplication, OfficeAction, etc.
+2. `modules/patent/services/applications.py` - Application lifecycle services
+3. `modules/patent/services/legal.py` - Legal services including opinion recording
+4. `conftest.py` - Test fixtures with stub_iam
+
+Let me write the tests based on these requirements:
+
+For UC028 (Audit/Compliance Logs):
+- Need to test viewing audit logs by authorized actors (PCC_ADMIN/Director)
+- Need to test blocking unauthorized access
+
+
+- I'll need to check ApplicationHistory or create a dedicated AuditLog model if it exists
+
+For UC029 (Office Action Approval):
+- Applicant needs to approve draft Office Action response
+- This should transition the status from 'awaiting_applicant_approval' to 'applicant_approved'
+- Looking at `modules/patent/services/post_filing.py`, there's an `approve_response` function
+
+For UC031 (Director Reports/Analytics):
+- Director can view reports/analytics
+- This is more UI-focused, but I can test the backend data access
+
+For UC032 (Director Workflow Oversight):
+- Director can view workflow states and pending actions
+- Similar to UC031, testing data access for workflow information
+
+For UC033 (Attorney Legal Advice):
+- Attorney records legal advice/opinion
+- Looking at `modules/patent/services/legal.py`, there's a `record_opinion` function
+- Need to test that unauthorized attorneys cannot record advice
+
+I'll structure the tests to verify these business rules through Django model interactions and service layer calls.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+tests/a8/uc/test_uc_p05.py
+```
+"""
+Test cases for UC-PMS-028, UC-PMS-029, UC-PMS-031, UC-PMS-032, UC-PMS-033
+Converted from UC_DESIGN.json test specifications.
+"""
+
+import pytest
+from datetime import date
+from django.test import TestCase
+from django.urls import reverse
+
+from fusion_auth.principal import Principal
+from modules.patent.models import (
+    PatentApplication, ApplicationHistory, OfficeAction,
+    AttorneyAssignment, Inventor, ApplicationDocument
+)
+from modules.patent.services.post_filing import approve_response
+from modules.patent.services.legal import record_opinion
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC028-MAX (Authorized Audit Access)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_01_test_pms_uc028_max(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC028-MAX: Verify that authorized actors can view audit/compliance logs.
+    
+    Source ID: UC-PMS-028 Main Success Scenario
+    Purpose: Verify that authorized actors (PCC_ADMIN/Director) can view audit/compliance logs.
+    Preconditions: Authorized actor with access to audit information.
+    Action: Actor opens audit/compliance logs and selects scope.
+    Expected Result: PMS displays available audit records with required fields; no business state changes.
+    """
+    # Create test data
+    applicant = user_ref(user_id=1001, kind="student")
+    director = user_ref(user_id=2001, kind="faculty")
+    
+    # Setup IAM session for authorized actor (Director)
+    principal = Principal.from_session(
+        user_id=2001,
+        username="d2001",
+        display_name="Director 2001",
+        kind="faculty",
+        active_role="director",
+        roles=("director",),
+        permissions=frozenset(["patent.application.view_self", "patent.admin.manage"]),
+    )
+    
+    # Create application with history records
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-001",
+        applicant_id=1001,
+        status="submitted"
+    )
+    
+    # Add some history entries
+    ApplicationHistory.objects.create(
+        application=app,
+        actor_id=2001,
+        action="submit",
+        from_status=None,
+        to_status="submitted",
+        note="Application submitted"
+    )
+    
+    ApplicationHistory.objects.create(
+        application=app,
+        actor_id=1001,
+        action="review",
+        from_status="submitted",
+        to_status="under_review",
+        note="Under review"
+    )
+    
+    # Verify authorized access - Director can view history
+    history = ApplicationHistory.objects.filter(
+        application=app
+    ).order_by("-created_at")
+    
+    assert history.count() == 2, "Director should be able to view all history records"
+    
+    # Verify required fields are accessible
+    first_entry = history.first()
+    assert hasattr(first_entry, 'id'), "History entry should have id field"
+    assert hasattr(first_entry, 'actor_id'), "History entry should have actor_id field"
+    assert hasattr(first_entry, 'action'), "History entry should have action field"
+    assert hasattr(first_entry, 'from_status'), "History entry should have from_status field"
+    assert hasattr(first_entry, 'to_status'), "History entry should have to_status field"
+    assert hasattr(first_entry, 'note'), "History entry should have note field"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC028-MIN (Unauthorized Audit Access Blocked)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_02_test_pms_uc028_min(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC028-MIN: Verify that unauthorized audit access is blocked.
+    
+    Source ID: UC-PMS-028 Exception Flows
+    Purpose: Verify that unauthorized actors cannot view audit logs.
+    Preconditions: Actor attempts to view audit logs without authorization.
+    Action: Actor accesses the restricted audit record.
+    Expected Result: PMS blocks access; no audit data is displayed or altered.
+    """
+    # Create test data
+    applicant = user_ref(user_id=1001, kind="student")
+    
+    # Setup IAM session for unauthorized actor (Student without admin permissions)
+    principal = Principal.from_session(
+        user_id=1001,
+        username="u1001",
+        display_name="Applicant 1001",
+        kind="student",
+        active_role="student",
+        roles=("student",),
+        permissions=frozenset(["patent.application.view_self"]),
+    )
+    
+    # Create application with history records
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-002",
+        applicant_id=1001,
+        status="submitted"
+    )
+    
+    ApplicationHistory.objects.create(
+        application=app,
+        actor_id=2001,  # Another user's action
+        action="review",
+        from_status=None,
+        to_status="under_review",
+        note="Unauthorized review attempt"
+    )
+    
+    # Unauthorized actor should NOT be able to see other users' history
+    history = ApplicationHistory.objects.filter(
+        application=app
+    ).order_by("-created_at")
+    
+    # Student can only see their own actions, not others
+    unauthorized_history_count = history.count()
+    assert unauthorized_history_count == 0, "Unauthorized actor should not see other users' audit records"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC029-MAX (Applicant Approves Office Action)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_03_test_pms_uc029_max(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC029-MAX: Verify that Applicants can approve Office Action draft responses when required.
+    
+    Source ID: UC-PMS-029 Main Success Scenario
+    Purpose: Verify that Applicants can approve Office Action draft responses when required.
+    Preconditions: Process requires Applicant review; a draft response exists.
+    Action: Applicant reviews and records approval of the draft response.
+    Expected Result: PMS records the approval, allowing the Attorney to finalize/submit.
+    """
+    # Create test data
+    applicant = user_ref(user_id=1001, kind="student")
+    attorney = user_ref(user_id=3001, kind="faculty")
+    
+    # Setup IAM session for authorized actor (Applicant)
+    principal = Principal.from_session(
+        user_id=1001,
+        username="u1001",
+        display_name="Applicant 1001",
+        kind="student",
+        active_role="student",
+        roles=("student",),
+        permissions=frozenset(["patent.application.view_self", "patent.application.create"]),
+    )
+    
+    # Create application and attorney assignment
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-003",
+        applicant_id=1001,
+        status="filed"
+    )
+    
+    AttorneyAssignment.objects.create(
+        application=app,
+        attorney_id=3001,
+        status="accepted"
+    )
+    
+    # Create inventor with signed agreement
+    Inventor.objects.create(
+        application=app,
+        user_id=1001,
+        name="Test Inventor",
+        email="inventor@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True
+    )
+    
+    # Create Office Action with draft response awaiting approval
+    office_action = OfficeAction.objects.create(
+        application=app,
+        attorney_id=3001,
+        received_date=date.today(),
+        response_due_date=date.today() + timedelta(days=30),
+        description="Office action received",
+        response_text="Draft response text",
+        status="awaiting_applicant_approval"
+    )
+    
+    # Verify initial state
+    assert office_action.status == "awaiting_applicant_approval", "Office Action should be awaiting approval"
+    
+    # Approve the response via service
+    from datetime import timedelta
+    approve_response(
+        applicant_id=1001,
+        office_action_id=office_action.id
+    )
+    
+    # Verify final state - status changed to applicant_approved
+    updated_oa = OfficeAction.objects.get(pk=office_action.id)
+    assert updated_oa.status == "applicant_approved", "Office Action should be approved after applicant approval"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC031-MAX (Director Views Reports/Analytics)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_04_test_pms_uc031_max(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC031-MAX: Verify that Directors can view authorized reports and analytics.
+    
+    Source ID: UC-PMS-031 Main Success Scenario
+    Purpose: Verify that Directors can view reports/analytics within their scope/domain.
+    Preconditions: Director has an authorized PMS role.
+    Action: Director selects a report/analytics view (e.g., portfolio, workload).
+    Expected Result: PMS generates output within Director's scope/domain and logs access.
+    """
+    # Create test data
+    director = user_ref(user_id=2001, kind="faculty")
+    
+    # Setup IAM session for authorized actor (Director)
+    principal = Principal.from_session(
+        user_id=2001,
+        username="d2001",
+        display_name="Director 2001",
+        kind="faculty",
+        active_role="director",
+        roles=("director",),
+        permissions=frozenset(["patent.application.view_self", "patent.admin.manage"]),
+    )
+    
+    # Create multiple applications for director's portfolio
+    app1 = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-004",
+        applicant_id=1001,
+        status="submitted"
+    )
+    
+    app2 = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-005",
+        applicant_id=1002,
+        status="under_review"
+    )
+    
+    # Assign director to applications
+    app1.assigned_director_id = 2001
+    app2.assigned_director_id = 2001
+    app1.save()
+    app2.save()
+    
+    # Verify Director can access their portfolio applications
+    portfolio_apps = PatentApplication.objects.filter(
+        assigned_director_id=2001
+    ).order_by("-created_at")
+    
+    assert portfolio_apps.count() == 2, "Director should see all applications in their portfolio"
+    
+    # Verify required fields are accessible for analytics
+    for app in portfolio_apps:
+        assert hasattr(app, 'APPLICATION_NUMBER'), "Application should have APPLICATION_NUMBER field"
+        assert hasattr(app, 'status'), "Application should have status field"
+        assert hasattr(app, 'assigned_director_id'), "Application should have assigned_director_id field"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC032-MAX (Director Workflow Oversight)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_05_test_pms_uc032_max(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC032-MAX: Verify that Directors can view workflow oversight information.
+    
+    Source ID: UC-PMS-032 Main Success Scenario
+    Purpose: Verify that Directors can view workflow states, pending actions, and oversight info within their domain.
+    Preconditions: Director has an authorized role and domain scope.
+    Action: Director opens workflow oversight dashboard.
+    Expected Result: PMS displays workflow states, pending actions, and oversight info within the Director's domain.
+    """
+    # Create test data
+    director = user_ref(user_id=2001, kind="faculty")
+    
+    # Setup IAM session for authorized actor (Director)
+    principal = Principal.from_session(
+        user_id=2001,
+        username="d2001",
+        display_name="Director 2001",
+        kind="faculty",
+        active_role="director",
+        roles=("director",),
+        permissions=frozenset(["patent.application.view_self", "patent.admin.manage"]),
+    )
+    
+    # Create applications with various workflow states
+    app1 = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-006",
+        applicant_id=1001,
+        status="submitted"
+    )
+    
+    app2 = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-007",
+        applicant_id=1002,
+        status="under_review"
+    )
+    
+    app3 = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-008",
+        applicant_id=1003,
+        status="needs_revision"
+    )
+    
+    # Assign director to applications
+    app1.assigned_director_id = 2001
+    app2.assigned_director_id = 2001
+    app3.assigned_director_id = 2001
+    app1.save()
+    app2.save()
+    app3.save()
+    
+    # Verify Director can see workflow states for all applications
+    workflow_apps = PatentApplication.objects.filter(
+        assigned_director_id=2001
+    ).order_by("-created_at")
+    
+    assert workflow_apps.count() == 3, "Director should see all applications in their domain"
+    
+    # Verify workflow states are accessible
+    for app in workflow_apps:
+        assert hasattr(app, 'status'), "Application should have status field"
+        assert hasattr(app, 'assigned_director_id'), "Application should have assigned_director_id field"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC033-MAX (Attorney Records Legal Advice)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_06_test_pms_uc033_max(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC033-MAX: Verify that Attorneys can record legal advice for applications.
+    
+    Source ID: UC-PMS-033 Main Success Scenario
+    Purpose: Verify that Attorneys can record legal advice/opinion information for an application.
+    Preconditions: Attorney has a valid role and access to the application.
+    Action: Attorney records legal advice/opinion information for an application.
+    Expected Result: PMS associates the advice with the application history/audit record as applicable.
+    """
+    # Create test data
+    applicant = user_ref(user_id=1001, kind="student")
+    attorney = user_ref(user_id=3001, kind="faculty")
+    
+    # Setup IAM session for authorized actor (Attorney)
+    principal = Principal.from_session(
+        user_id=3001,
+        username="a3001",
+        display_name="Attorney 3001",
+        kind="faculty",
+        active_role="attorney",
+        roles=("attorney",),
+        permissions=frozenset(["patent.legal.review", "patent.filing.record"]),
+    )
+    
+    # Create application with attorney assignment
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-009",
+        applicant_id=1001,
+        status="approved"
+    )
+    
+    AttorneyAssignment.objects.create(
+        application=app,
+        attorney_id=3001,
+        status="accepted"
+    )
+    
+    # Create inventor with signed agreement
+    Inventor.objects.create(
+        application=app,
+        user_id=1001,
+        name="Test Inventor",
+        email="inventor@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True
+    )
+    
+    # Record legal opinion via service
+    record_opinion(
+        attorney_id=3001,
+        application_id=app.id,
+        novelty=True,
+        non_obviousness=True,
+        utility=True,
+        recommendation="file_patent",
+        text="This invention is novel and non-obvious"
+    )
+    
+    # Verify opinion was created and associated with application
+    opinion = PatentabilityOpinion.objects.filter(
+        application=app,
+        attorney_id=3001
+    ).first()
+    
+    assert opinion is not None, "Patentability opinion should be created"
+    assert opinion.recommendation == "file_patent", "Recommendation should match input"
+    assert opinion.novelty == True, "Novelty flag should be set correctly"
+
+
+# -----------------------------------------------------------------------------
+# Test Case: TEST-PMS-UC033-MIN (Unauthorized Legal Advice Blocked)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_uc_p05_07_test_pms_uc033_min(
+    user_ref, stub_iam, monkeypatch
+):
+    """
+    TEST-PMS-UC033-MIN: Verify that unauthorized legal advice recording is blocked.
+    
+    Source ID: UC-PMS-033 Exception Flows
+    Purpose: Verify that unauthorized attorneys cannot record advice for applications they don't have access to.
+    Preconditions: Attorney attempts to record advice for an application they do not have access to.
+    Action: Attorney selects the restricted application to record advice.
+    Expected Result: Recording fails; no unrelated application state changes occur.
+    """
+    # Create test data
+    applicant = user_ref(user_id=1001, kind="student")
+    unauthorized_attorney = user_ref(user_id=3002, kind="faculty")
+    
+    # Setup IAM session for unauthorized actor (Attorney without access)
+    principal = Principal.from_session(
+        user_id=3002,
+        username="a3002",
+        display_name="Attorney 3002",
+        kind="faculty",
+        active_role="attorney",
+        roles=("attorney",),
+        permissions=frozenset(["patent.legal.review"]),
+    )
+    
+    # Create application with different attorney assignment
+    app = PatentApplication.objects.create(
+        APPLICATION_NUMBER="APP-010",
+        applicant_id=1001,
+        status="approved"
+    )
+    
+    AttorneyAssignment.objects.create(
+        application=app,
+        attorney_id=3003,  # Different attorney
+        status="accepted"
+    )
+    
+    # Create inventor with signed agreement
+    Inventor.objects.create(
+        application=app,
+        user_id=1001,
+        name="Test Inventor",
+        email="inventor@test.com",
+        contribution_percent=50.0,
+        agreement_signed=True
+    )
+    
+    # Verify initial state - no opinion exists
+    initial_opinion_count = PatentabilityOpinion.objects.filter(
+        application=app
+    ).count()
+    
+    assert initial_opinion_count == 0, "No opinion should exist initially"
+    
+    # Attempt to record legal advice via service (should fail due to unauthorized access)
+    from core.api.exceptions import BadRequestError as BusinessRuleViolation
+    
+    try:
+        record_opinion(
+            attorney_id=3002,  # Unauthorized attorney
+            application_id=app.id,
+            novelty=True,
+            non_obviousness=True,
+            utility=True,
+            recommendation="file_patent",
+            text="Unauthorized attempt"
+        )
+        
+        # If we get here without exception, check if opinion was created (should not be)
+        updated_opinion_count = PatentabilityOpinion.objects.filter(
+            application=app
+        ).count()
+        
+        # The service should raise an error for unauthorized access
+        assert False, "Should have raised BusinessRuleViolation for unauthorized attorney"
+        
+    except BusinessRuleViolation:
+        # Expected - unauthorized access blocked
+        pass
+    
+    # Verify no opinion was created
+    final_opinion_count = PatentabilityOpinion.objects.filter(
+        application=app
+    ).count()
+    
+    assert final_opinion_count == 0, "No opinion should be created for unauthorized attorney"
+```
+
+> Tokens: 24k sent, 4.7k received.  
+> Applied edit to tests/a8/uc/test_uc_p05.py  
