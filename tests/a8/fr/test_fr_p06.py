@@ -148,7 +148,7 @@ def applicant_user():
 class TestResubmissionCycle:
     """Test cases for resubmission functionality."""
 
-    def test_test_id_TEST-CFR-008-4_source_id_PMS-AFR-070_restart_review_cycle_after_resubmission(
+    def test_test_id_TEST_CFR_008_4_source_id_PMS_AFR_070_restart_review_cycle_after_resubmission(
         self, application_factory, inventor_factory, documents_factory, admin_user
     ):
         """Verify restart of review cycle after resubmission.
@@ -279,7 +279,7 @@ class TestExpiredStatus:
 class TestAttorneyAssignmentRestrictions:
     """Test cases for attorney assignment restrictions."""
 
-    def test_test_id_TEST-CFR-009-0_source_id_PMS-AFR-074_restriction_of_attorney_assignment_to_pcc_admin_only(
+    def test_test_id_TEST_CFR_009_0_source_id_PMS_AFR_074_restriction_of_attorney_assignment_to_pcc_admin_only(
         self, application_factory, inventor_factory, admin_user
     ):
         """Verify restriction of attorney assignment to PCC_ADMIN only.
@@ -310,7 +310,7 @@ class TestAttorneyAssignmentRestrictions:
             # Verify appropriate error is raised
             assert "PCC_ADMIN" in str(e) or "permission" in str(e).lower()
 
-    def test_test_id_TEST-CFR-009-1_source_id_PMS-AFR-075_requirement_of_approved_panel_for_attorney_selection(
+    def test_test_id_TEST_CFR_009_1_source_id_PMS_AFR_075_requirement_of_approved_panel_for_attorney_selection(
         self, application_factory, inventor_factory, admin_user
     ):
         """Verify requirement of approved panel for attorney selection.
@@ -339,7 +339,7 @@ class TestAttorneyAssignmentRestrictions:
 class TestAttorneyAssignmentLogic:
     """Test cases for attorney assignment logic."""
 
-    def test_test_id_TEST-CFR-009-2_source_id_PMS-AFR-076_attorney_expertise_matching_during_assignment(
+    def test_test_id_TEST_CFR_009_2_source_id_PMS_AFR_076_attorney_expertise_matching_during_assignment(
         self, application_factory, inventor_factory, admin_user
     ):
         """Verify attorney expertise matching during assignment.
@@ -361,7 +361,7 @@ class TestAttorneyAssignmentLogic:
         # The system should support attorney assignment based on expertise
         assert can_transition('approved', 'attorney_assigned')
 
-    def test_test_id_TEST-CFR-009-3_source_id_PMS-AFR-077_attorney_workload_consideration_during_assignment(
+    def test_test_id_TEST_CFR_009_3_source_id_PMS_AFR_077_attorney_workload_consideration_during_assignment(
         self, application_factory, inventor_factory, admin_user
     ):
         """Verify attorney workload consideration during assignment.
@@ -383,7 +383,7 @@ class TestAttorneyAssignmentLogic:
         # The system should support attorney assignment based on workload
         assert can_transition('approved', 'attorney_assigned')
 
-    def test_test_id_TEST-CFR-009-4_source_id_PMS-AFR-078_conflict_of_interest_check_before_attorney_assignment(
+    def test_test_id_TEST_CFR_009_4_source_id_PMS_AFR_078_conflict_of_interest_check_before_attorney_assignment(
         self, application_factory, inventor_factory, admin_user
     ):
         """Verify conflict-of-interest check before attorney assignment.

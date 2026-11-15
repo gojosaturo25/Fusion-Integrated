@@ -123,8 +123,8 @@ def principal_applicant(app_with_grant):
 class TestMaintenanceRenewalDecisionRequiredBeforeDeadline:
     """Test case TEST-CFR-013-4 from PMS-AFR-110."""
     
-    def test_id(self): "TEST-CFR-013-4"
-        self.source_id = "PMS-AFR-110"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-4"
     
     def test_renewal_decision_required_before_deadline(
         self, app_with_grant, maintenance_record, principal_director
@@ -155,8 +155,8 @@ class TestMaintenanceRenewalDecisionRequiredBeforeDeadline:
 class TestAttorneyRequestRenewalDecisionFromDirector:
     """Test case TEST-CFR-013-5 from PMS-AFR-111."""
     
-    def test_id(self): "TEST-CFR-013-5"
-        self.source_id = "PMS-AFR-111"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-5"
     
     def test_attorney_requests_renewal_decision_from_director(
         self, app_with_grant, maintenance_record, principal_attorney
@@ -183,8 +183,8 @@ class TestAttorneyRequestRenewalDecisionFromDirector:
 class TestDirectorDecisionRenewOrDoNotRenew:
     """Test case TEST-CFR-013-6 from PMS-AFR-112."""
     
-    def test_id(self): "TEST-CFR-013-6"
-        self.source_id = "PMS-AFR-112"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-6"
     
     def test_director_decision_renew_or_do_not_renew(
         self, app_with_grant, maintenance_record, principal_director
@@ -229,8 +229,8 @@ class TestDirectorDecisionRenewOrDoNotRenew:
 class TestAttorneyRecordsMaintenanceActionUponRenewalApproval:
     """Test case TEST-CFR-013-7 from PMS-AFR-113."""
     
-    def test_id(self): "TEST-CFR-013-7"
-        self.source_id = "PMS-AFR-113"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-7"
     
     def test_attorney_records_maintenance_action_transaction(
         self, app_with_grant, maintenance_record, principal_attorney
@@ -263,8 +263,8 @@ class TestAttorneyRecordsMaintenanceActionUponRenewalApproval:
 class TestMaintenanceRenewalHistory:
     """Test case TEST-CFR-013-8 from PMS-AFR-114."""
     
-    def test_id(self): "TEST-CFR-013-8"
-        self.source_id = "PMS-AFR-114"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-8"
     
     def test_maintenance_renewal_history_viewed(
         self, app_with_grant, principal_attorney
@@ -315,8 +315,8 @@ class TestMaintenanceRenewalHistory:
 class TestNextMaintenanceCycleScheduled:
     """Test case TEST-CFR-013-9 from PMS-AFR-115."""
     
-    def test_id(self): "TEST-CFR-013-9"
-        self.source_id = "PMS-AFR-115"
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-9"
     
     def test_next_maintenance_cycle_scheduled(
         self, app_with_grant, principal_attorney
@@ -363,8 +363,8 @@ class TestNextMaintenanceCycleScheduled:
 class TestOfficeActionRecording:
     """Test case TEST-CFR-014-0 from PMS-AFR-116."""
     
-    def test_id(self): "TEST-CFR-014-0"
-        self.source_id = "PMS-AFR-116"
+    def test_id(self):
+        self.source_id = "TEST-CFR-014-0"
     
     def test_office_action_recorded(
         self, app_with_grant, principal_attorney
@@ -398,8 +398,8 @@ class TestOfficeActionRecording:
 class TestAttorneyReviewOfficeActions:
     """Test case TEST-CFR-014-1 from PMS-AFR-117."""
     
-    def test_id(self): "TEST-CFR-014-1"
-        self.source_id = "PMS-AFR-117"
+    def test_id(self):
+        self.source_id = "TEST-CFR-014-1"
     
     def test_attorney_reviews_office_action_details(
         self, app_with_grant, principal_attorney, office_action

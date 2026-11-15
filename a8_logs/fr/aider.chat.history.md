@@ -17188,3 +17188,305 @@ class TestCFR023_12_PMS_AFR_204(TestCase):
 > Applied edit to tests/a8/fr/test_fr_p23.py  
 > Applied edit to tests/a8/fr/test_fr_p22.py  
 > Applied edit to tests/a8/fr/test_fr_p17.py  
+
+# aider chat started at 2026-11-15 09:08:29
+
+> /opt/homebrew/bin/aider --model ollama_chat/qwen3.5:4b --model-settings-file /Users/vishalkumar/elm_specs_md/pms_kit/a8/aider_model_settings.yml --edit-format diff --map-tokens 0 --timeout 3600 --yes-always --stream --no-pretty --no-fancy-input --no-gitignore --no-auto-commits --no-dirty-commits --no-auto-lint --no-auto-test --no-check-update --analytics-disable --no-show-release-notes --no-show-model-warnings --no-suggest-shell-commands --no-detect-urls --no-restore-chat-history --aiderignore /Users/vishalkumar/elm_specs_md/pms_kit/a8/aiderignore_a8 --chat-history-file a8_logs/fr/aider.chat.history.md --input-history-file a8_logs/fr/aider.input.history --llm-history-file a8_logs/fr/llm.history.txt --file tests/a8/fr/test_fr_p06.py --file tests/a8/fr/test_fr_p11.py --read conftest.py --read modules/patent/models.py --read modules/patent/api/urls.py --message-file a8_logs/fr/promptC_r2.md  
+> Aider v0.86.2  
+> Model: ollama_chat/qwen3.5:4b with diff edit format  
+> Git repo: .git with 303 files  
+> Repo-map: disabled  
+> Added tests/a8/fr/test_fr_p06.py to the chat.  
+> Added tests/a8/fr/test_fr_p11.py to the chat.  
+> Added modules/patent/api/urls.py to the chat (read-only).  
+> Added modules/patent/models.py to the chat (read-only).  
+> Added conftest.py to the chat (read-only).  
+
+#### The generated test suite cannot execute because of the following test-code/setup error:  
+#### ==================================== ERRORS ====================================  
+#### _________________ ERROR collecting tests/a8/fr/test_fr_p06.py __________________  
+#### .venv/lib/python3.12/site-packages/_pytest/python.py:528: in importtestmodule  
+####     mod = import_path(  
+#### .venv/lib/python3.12/site-packages/_pytest/pathlib.py:640: in import_path  
+####     importlib.import_module(module_name)  
+#### /usr/lib/python3.12/importlib/__init__.py:90: in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### <frozen importlib._bootstrap>:1387: in _gcd_import  
+####     ???  
+#### <frozen importlib._bootstrap>:1360: in _find_and_load  
+####     ???  
+#### <frozen importlib._bootstrap>:1331: in _find_and_load_unlocked  
+####     ???  
+#### <frozen importlib._bootstrap>:935: in _load_unlocked  
+####     ???  
+#### .venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:176: in exec_module  
+####     source_hash, co = _rewrite_test(fn, self.config)  
+####                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### .venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:339: in _rewrite_test  
+####     tree = ast.parse(source, filename=strfn)  
+####            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### /usr/lib/python3.12/ast.py:52: in parse  
+####     return compile(source, filename, mode, flags,  
+#### E     File "tests/a8/fr/test_fr_p06.py", line 151  
+#### E       def test_test_id_TEST-CFR-008-4_source_id_PMS-AFR-070_restart_review_cycle_after_resubmission(  
+#### E                                 ^^  
+#### E   SyntaxError: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers  
+#### _________________ ERROR collecting tests/a8/fr/test_fr_p11.py __________________  
+#### .venv/lib/python3.12/site-packages/_pytest/python.py:528: in importtestmodule  
+####     mod = import_path(  
+#### .venv/lib/python3.12/site-packages/_pytest/pathlib.py:640: in import_path  
+####     importlib.import_module(module_name)  
+#### /usr/lib/python3.12/importlib/__init__.py:90: in import_module  
+####     return _bootstrap._gcd_import(name[level:], package, level)  
+####            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### <frozen importlib._bootstrap>:1387: in _gcd_import  
+####     ???  
+#### <frozen importlib._bootstrap>:1360: in _find_and_load  
+####     ???  
+#### <frozen importlib._bootstrap>:1331: in _find_and_load_unlocked  
+####     ???  
+#### <frozen importlib._bootstrap>:935: in _load_unlocked  
+####     ???  
+#### .venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:176: in exec_module  
+####     source_hash, co = _rewrite_test(fn, self.config)  
+####                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### .venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:339: in _rewrite_test  
+####     tree = ast.parse(source, filename=strfn)  
+####            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  
+#### /usr/lib/python3.12/ast.py:52: in parse  
+####     return compile(source, filename, mode, flags,  
+#### E     File "tests/a8/fr/test_fr_p11.py", line 127  
+#### E       self.source_id = "PMS-AFR-110"  
+#### E   IndentationError: unexpected indent  
+#### Repair the TEST CODE/TEST SETUP only.  
+#### Do not modify production code.  
+#### Do not alter test intent or expected results.  
+#### Do not add or remove test cases.  
+#### Do not introduce new specification information.  
+#### Make only the minimum changes required to make the frozen tests executable.  
+
+<thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+The user is reporting syntax errors in the test files. Let me analyze the errors:
+
+1. In `test_fr_p06.py` line 151: There's a SyntaxError about "leading zeros in decimal integer literals are not permitted" - this is happening with the function name which contains "008-4" and "009-0" etc. These look like they're being interpreted as octal integers somewhere.
+
+2. In `test_fr_p11.py` line 127: There's an IndentationError - the `self.source_id = "PMS-AFR-110"` line has unexpected indentation.
+
+Looking at the code, I can see the issues:
+
+1. The function names in test_fr_p06.py have leading zeros like `test_test_id_TEST-CFR-008-4_source_id_PMS-AFR-070_restart_review_cycle_after_resubmission` - these are being parsed as Python identifiers but the issue is likely that somewhere there's a numeric literal with leading zeros.
+
+2. In test_fr_p11.py, the `test_id` method has incorrect indentation - it should be at the same level as `def test_renewal_decision_required_before_deadline`.
+
+Let me fix these issues:
+
+For test_fr_p06.py:
+- The function names with leading zeros in the ID are causing issues. I need to remove the leading zeros from the numeric parts of the test IDs.
+
+For test_fr_p11.py:
+- Fix the indentation of `self.source_id = "PMS-AFR-110"` and similar lines - they should be at class level, not indented.
+
+Let me create SEARCH/REPLACE blocks to fix these issues.
+
+</thinking-content-7bbeb8e1441453ad999a0bbba8a46d4b>
+
+I'll fix the syntax errors in both test files:
+
+1. Remove leading zeros from numeric parts of test IDs (which are being interpreted as octal integers)
+2. Fix indentation errors in the `test_id` methods
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-008-4_source_id_PMS-AFR-070_restart_review_cycle_after_resubmission(
+=======
+    def test_test_id_TEST_CFR_008_4_source_id_PMS_AFR_070_restart_review_cycle_after_resubmission(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-009-0_source_id_PMS-AFR-074_restriction_of_attorney_assignment_to_pcc_admin_only(
+=======
+    def test_test_id_TEST_CFR_009_0_source_id_PMS_AFR_074_restriction_of_attorney_assignment_to_pcc_admin_only(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-009-1_source_id_PMS-AFR-075_requirement_of_approved_panel_for_attorney_selection(
+=======
+    def test_test_id_TEST_CFR_009_1_source_id_PMS_AFR_075_requirement_of_approved_panel_for_attorney_selection(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-009-2_source_id_PMS-AFR-076_attorney_expertise_matching_during_assignment(
+=======
+    def test_test_id_TEST_CFR_009_2_source_id_PMS_AFR_076_attorney_expertise_matching_during_assignment(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-009-3_source_id_PMS-AFR-077_attorney_workload_consideration_during_assignment(
+=======
+    def test_test_id_TEST_CFR_009_3_source_id_PMS_AFR_077_attorney_workload_consideration_during_assignment(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p06.py
+```python
+<<<<<<< SEARCH
+    def test_test_id_TEST-CFR-009-4_source_id_PMS-AFR-078_conflict_of_interest_check_before_attorney_assignment(
+=======
+    def test_test_id_TEST_CFR_009_4_source_id_PMS_AFR_078_conflict_of_interest_check_before_attorney_assignment(
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestMaintenanceRenewalDecisionRequiredBeforeDeadline:
+    """Test case TEST-CFR-013-4 from PMS-AFR-110."""
+    
+    def test_id(self): "TEST-CFR-013-4"
+        self.source_id = "PMS-AFR-110"
+=======
+class TestMaintenanceRenewalDecisionRequiredBeforeDeadline:
+    """Test case TEST-CFR-013-4 from PMS-AFR-110."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-4"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestAttorneyRequestRenewalDecisionFromDirector:
+    """Test case TEST-CFR-013-5 from PMS-AFR-111."""
+    
+    def test_id(self): "TEST-CFR-013-5"
+        self.source_id = "PMS-AFR-111"
+=======
+class TestAttorneyRequestRenewalDecisionFromDirector:
+    """Test case TEST-CFR-013-5 from PMS-AFR-111."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-5"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestDirectorDecisionRenewOrDoNotRenew:
+    """Test case TEST-CFR-013-6 from PMS-AFR-112."""
+    
+    def test_id(self): "TEST-CFR-013-6"
+        self.source_id = "PMS-AFR-112"
+=======
+class TestDirectorDecisionRenewOrDoNotRenew:
+    """Test case TEST-CFR-013-6 from PMS-AFR-112."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-6"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestAttorneyRecordsMaintenanceActionUponRenewalApproval:
+    """Test case TEST-CFR-013-7 from PMS-AFR-113."""
+    
+    def test_id(self): "TEST-CFR-013-7"
+        self.source_id = "PMS-AFR-113"
+=======
+class TestAttorneyRecordsMaintenanceActionUponRenewalApproval:
+    """Test case TEST-CFR-013-7 from PMS-AFR-113."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-7"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestMaintenanceRenewalHistory:
+    """Test case TEST-CFR-013-8 from PMS-AFR-114."""
+    
+    def test_id(self): "TEST-CFR-013-8"
+        self.source_id = "PMS-AFR-114"
+=======
+class TestMaintenanceRenewalHistory:
+    """Test case TEST-CFR-013-8 from PMS-AFR-114."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-8"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestNextMaintenanceCycleScheduled:
+    """Test case TEST-CFR-013-9 from PMS-AFR-115."""
+    
+    def test_id(self): "TEST-CFR-013-9"
+        self.source_id = "PMS-AFR-115"
+=======
+class TestNextMaintenanceCycleScheduled:
+    """Test case TEST-CFR-013-9 from PMS-AFR-115."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-013-9"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestOfficeActionRecording:
+    """Test case TEST-CFR-014-0 from PMS-AFR-116."""
+    
+    def test_id(self): "TEST-CFR-014-0"
+        self.source_id = "PMS-AFR-116"
+=======
+class TestOfficeActionRecording:
+    """Test case TEST-CFR-014-0 from PMS-AFR-116."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-014-0"
+>>>>>>> REPLACE
+```
+
+tests/a8/fr/test_fr_p11.py
+```python
+<<<<<<< SEARCH
+class TestAttorneyReviewOfficeActions:
+    """Test case TEST-CFR-014-1 from PMS-AFR-117."""
+    
+    def test_id(self): "TEST-CFR-014-1"
+        self.source_id = "PMS-AFR-117"
+=======
+class TestAttorneyReviewOfficeActions:
+    """Test case TEST-CFR-014-1 from PMS-AFR-117."""
+    
+    def test_id(self):
+        self.source_id = "TEST-CFR-014-1"
+>>>>>>> REPLACE
+```
+
+> Tokens: 13k sent, 2.0k received.  
+> Applied edit to tests/a8/fr/test_fr_p06.py  
+> Applied edit to tests/a8/fr/test_fr_p11.py  
