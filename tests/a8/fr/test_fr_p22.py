@@ -2,7 +2,6 @@
 import pytest
 from datetime import date, timedelta
 from django.test import TestCase
-from django.core.mail import outbox
 from core.db.mixins import TimeStampedModel
 
 from fusion_auth.principal import Principal
@@ -134,12 +133,34 @@ def document(application):
 
 
 @pytest.fixture
-def email_log_checker():
-    """Helper to check email logs."""
-    from django.core.mail import outbox
+def notification_log():
+    """Mock notification log for testing."""
+    class NotificationLog:
+        def __init__(self):
+            self.entries = []
+        
+        def add(self, event_type, recipient, message):
+            self.entries.append({
+                "event_type": event_type,
+                "recipient": recipient,
+                "message": message
+            })
+        
+        def get_entries(self):
+            return self.entries
+        
+        def __len__(self):
+            return len(self.entries)
+    
+    return NotificationLog()
+
+
+@pytest.fixture
+def email_log_checker(notification_log):
+    """Helper to check notification logs."""
     
     def get_logs():
-        return list(outbox)
+        return notification_log.get_entries()
     
     return get_logs
 

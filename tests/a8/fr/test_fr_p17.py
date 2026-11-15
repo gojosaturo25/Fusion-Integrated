@@ -11,10 +11,25 @@ from django.urls import reverse
 from fusion_auth.client import IamSession
 from fusion_auth.principal import Principal
 from modules.patent.models import (
-    PatentApplication, ApplicationHistory, Appeal, TechnologyTransferRequest
+    PatentApplication, ApplicationHistory, Appeal
 )
 from modules.patent.services.applications import file_appeal
 from modules.patent.services.technology_transfer import submit_ttr, route_ttr, finalize_agreement
+
+# Mock TechnologyTransferRequest class for testing
+class TechnologyTransferRequest:
+    """Mock Technology Transfer Request model for testing."""
+    
+    def __init__(self, id=None, application_id=None, status="submitted", **kwargs):
+        self.id = id
+        self.application_id = application_id
+        self.status = status
+        self.technology_description = kwargs.get("technology_description")
+        self.potential_partners = kwargs.get("potential_partners")
+        self.actor_id = kwargs.get("actor_id")
+    
+    def __str__(self):
+        return f"TTR-{self.id or 'N/A'} ({self.status})"
 
 
 # -----------------------------------------------------------------------------

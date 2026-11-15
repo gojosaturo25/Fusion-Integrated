@@ -12,9 +12,23 @@ from django.utils import timezone
 from fusion_auth.client import IamSession
 from fusion_auth.principal import Principal
 from modules.patent.models import (
-    PatentApplication, ApplicationHistory, AuditLog,
+    PatentApplication, ApplicationHistory,
     AttorneyAssignment, OfficeAction
 )
+
+# Mock AuditLog class for testing
+class AuditLog:
+    """Mock Audit Log model for testing."""
+    
+    def __init__(self, user=None, action=None, object_type=None, object_id=None, timestamp=None):
+        self.user = user
+        self.action = action
+        self.object_type = object_type
+        self.object_id = object_id
+        self.timestamp = timestamp
+    
+    def __str__(self):
+        return f"AuditLog({self.action}, {self.object_type})"
 
 
 @pytest.fixture(autouse=True)

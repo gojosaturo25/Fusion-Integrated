@@ -2,7 +2,6 @@
 import pytest
 from datetime import date, timedelta
 from django.test import TestCase
-from django.core.mail import outbox
 
 from modules.patent.models import (
     PatentApplication, ApplicationDocument, ApplicationHistory,
