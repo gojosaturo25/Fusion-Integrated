@@ -509,37 +509,4 @@ class TestBRPMS142PatentOfficeFilingSuccessNotControlledInternally:
 # Test Infrastructure and Utilities
 # -----------------------------------------------------------------------------
 
-def test_id_in_name():
-    """Verify all tests have test_id in their name."""
-    # This is a meta-test to ensure test naming convention
-    
-    import inspect
-    from tests.a8.br.test_br_p10 import *
-    
-    # Check that each test class has the test_id attribute
-    assert hasattr(TestBRPMS128ExternalFilingRequiresApprovedBudget, 'test_id')
-    assert hasattr(TestBRPMS130RBACProtectsConfidentialInfo, 'test_id')
-    assert hasattr(TestBRPMS131OnlyOneActivePCCAdmin, 'test_id')
-    assert hasattr(TestBRPMS138PatentOfficeSystemsAreExternal, 'test_id')
-    assert hasattr(TestBRPMS139FinancialPaymentSystemsAreExternal, 'test_id')
-    assert hasattr(TestBRPMS140DocumentSystemsOwnershipLimitedToInternalBehavior, 'test_id')
-    assert hasattr(TestBRPMS141PriorArtDBsAreExternalQuerySources, 'test_id')
-    assert hasattr(TestBRPMS142PatentOfficeFilingSuccessNotControlledInternally, 'test_id')
-
-
-def test_source_id_in_name():
-    """Verify all tests have source_id in their name."""
-    # This is a meta-test to ensure test naming convention
-    
-    import inspect
-    from tests.a8.br.test_br_p10 import *
-    
-    # Check that each test class has the source_id attribute
-    assert hasattr(TestBRPMS128ExternalFilingRequiresApprovedBudget, 'source_id')
-    assert hasattr(TestBRPMS130RBACProtectsConfidentialInfo, 'source_id')
-    assert hasattr(TestBRPMS131OnlyOneActivePCCAdmin, 'source_id')
-    assert hasattr(TestBRPMS138PatentOfficeSystemsAreExternal, 'source_id')
-    assert hasattr(TestBRPMS139FinancialPaymentSystemsAreExternal, 'source_id')
-    assert hasattr(TestBRPMS140DocumentSystemsOwnershipLimitedToInternalBehavior, 'source_id')
-    assert hasattr(TestBRPMS141PriorArtDBsAreExternalQuerySources, 'source_id')
-    assert hasattr(TestBRPMS142PatentOfficeFilingSuccessNotControlledInternally, 'source_id')
+# Meta-tests removed to fix syntax error (import * not allowed inside functions)

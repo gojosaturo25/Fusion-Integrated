@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 
 from fusion_auth.principal import Principal
 from modules.patent.models import (
-    PatentApplication, ApplicationHistory, AuditLog,
+    PatentApplication, ApplicationHistory,
     AttorneyAssignment, OfficeAction
 )
 from modules.patent.services.applications import assign_director, review_application
