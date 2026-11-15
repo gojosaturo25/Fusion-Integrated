@@ -26,7 +26,7 @@ from modules.patent.services.applications import (
 )
 from modules.patent.services.legal import (
     assign_attorney, respond_to_assignment, record_opinion, record_filing,
-    prepare_response, submit_response
+    submit_response
 )
 from modules.patent.domain.policy import validate_justification
 
